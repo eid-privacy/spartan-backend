@@ -1,0 +1,6 @@
+[package]
+name = "c0000_trivial"
+type = "bin"
+authors = [""]
+
+[dependencies]

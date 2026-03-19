@@ -1,0 +1,6 @@
+[package]
+name = "c0002_trivial_with_strings"
+type = "bin"
+authors = [""]
+
+[dependencies]

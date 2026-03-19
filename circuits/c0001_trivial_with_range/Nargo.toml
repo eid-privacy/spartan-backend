@@ -1,0 +1,6 @@
+[package]
+name = "c0001_trivial_with_range"
+type = "bin"
+authors = [""]
+
+[dependencies]
