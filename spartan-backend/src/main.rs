@@ -1,5 +1,3 @@
-extern crate core;
-
 mod utils;
 mod trivial_circuit;
 mod nizk_prover;
@@ -92,11 +90,13 @@ fn instantiate_trivial_circuit_with_strings() ->  CircuitParameters {
 
 
 fn main() {
+    env_logger::init();
+
     // let circuit = instantiate_trivial_circuit();
     let circuit = instantiate_trivial_circuit_with_range();
     // let circuit = instantiate_trivial_circuit_with_strings();
 
-    println!("ProgramArtifact loaded: {:?}", &circuit.program_artifact);
+    log::info!("ProgramArtifact loaded: {:?}", &circuit.program_artifact);
     let prover_circuit = NoirCircuitSynthesizer::new(
         circuit.program_artifact.clone(),
         circuit.prover_inputs,
@@ -111,4 +111,5 @@ fn main() {
 
     let verification_result = verify(verifier_circuit, proof);
     verification_result.expect("verify failed");
+    log::info!("Verification successful.");
 }

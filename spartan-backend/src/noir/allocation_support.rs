@@ -1,41 +1,12 @@
 use core::fmt;
 use std::collections::HashMap;
 use std::fmt::Formatter;
-use std::ops::{Deref, DerefMut};
 use acir::native_types::Witness;
 use bellpepper_core::num::AllocatedNum;
 use bellpepper_core::{ConstraintSystem, SynthesisError};
 use ff::PrimeField;
 
-#[derive(Debug, Clone)]
-pub struct WitnessMap<V> {
-    pub map: HashMap<u32, V>,
-}
-
-// might remove this or make it typealias since the utility methods gradually disappeared
-impl<V> WitnessMap<V> {
-    pub fn new() -> Self {
-        Self { map: HashMap::new() }
-    }
-
-    pub fn add(&mut self, witness: Witness, value: V) {
-        self.map.insert(witness.witness_index(), value);
-    }
-}
-
-impl<V> Deref for WitnessMap<V> {
-    type Target = HashMap<u32, V>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.map
-    }
-}
-
-impl<V> DerefMut for WitnessMap<V> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.map
-    }
-}
+pub(crate) type WitnessMap<V> = HashMap<u32, V>;
 
 #[derive(Clone, Debug)]
 pub struct FunctionParameter<V> {
@@ -61,12 +32,18 @@ pub struct AllocatedWire<V: PrimeField> {
 
 impl <V: PrimeField> fmt::Display for AllocatedWire<V> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        // This can panic for verifiers with unallocated witness values. Handle more gracefully
-        f.debug_struct("AllocatedWire")
-            .field("Witness", &self.witness)
-            .field("AllocatedNum variable", &self.allocation.as_ref().unwrap().get_variable())
-            .field("AllocatedNum value", &self.allocation.as_ref().unwrap().get_value())
-            .finish()
+        match self.allocation {
+            Ok(ref allocation) =>f.debug_struct("AllocatedWire")
+                .field("Witness", &self.witness)
+                .field("AllocatedNum variable", &allocation.get_variable())
+                .field("AllocatedNum value", &allocation.get_value())
+                .finish(),
+            Err(_) => f.debug_struct("AllocatedWire")
+                .field("Witness", &self.witness)
+                .field("AllocatedNum variable", &"Unallocated")
+                .field("AllocatedNum value", &"Unallocated")
+                .finish(),
+        }
     }
 }
 
@@ -81,31 +58,29 @@ pub fn allocate_input<V, CS>(
     cs: &mut CS,
     witness: Witness,
     value: V,
-) -> AllocatedWire<V>
+) -> Result<AllocatedWire<V>, SynthesisError>
 where
     V: PrimeField,
     CS: ConstraintSystem<V>,
 {
-    // Placeholder for input allocation logic
     let allocation_result = AllocatedNum::alloc(
         cs.namespace(|| format!("input {:?}", witness.witness_index())),
         || Ok(value)
-    ).expect("Failed to allocate input");
+    )?;
 
+    allocation_result.inputize(cs)?;
 
-    let _ = allocation_result.inputize(cs);
-
-    AllocatedWire {
+    Ok(AllocatedWire {
         witness,
         allocation: Ok(allocation_result),
-    }
+    })
 }
 
 pub fn allocate_witness<V, CS>(
     cs: &mut CS,
     witness: Witness,
     value: Option<V>,
-) -> AllocatedWire<V>
+) -> Result<AllocatedWire<V>, SynthesisError>
 where
     V: PrimeField,
     CS: ConstraintSystem<V>,
@@ -118,8 +93,11 @@ where
         },
     );
 
-    AllocatedWire {
-        witness,
-        allocation: allocation_result,
-    }
+    Ok(
+        AllocatedWire {
+            witness,
+            // this used to be a SynthesisError that was used for verifier-side synthesis
+            allocation: allocation_result,
+        }
+    )
 }

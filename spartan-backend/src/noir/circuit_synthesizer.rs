@@ -59,20 +59,20 @@ impl NoirCircuitSynthesizer {
             .first()
             .expect("No functions in bytecode");
 
-        let function_param = |p: &Witness| -> FunctionParameter<Scalar> {
+        let function_param = |p: &Witness, public: bool| -> FunctionParameter<Scalar> {
             let idx = p.witness_index();
             let name = parameters[&idx].name.clone();
             let value = inputs.get(&name).expect("Missing input");
-            FunctionParameter::<Scalar>::new(idx, *p, name, true, *value)
+            FunctionParameter::<Scalar>::new(idx, *p, name, public, *value)
         };
 
         // for now, assume order of parameters matches order of witnesses
         let mut witness_map: WitnessMap<FunctionParameter<Scalar>> = WitnessMap::new();
         for p in function.public_parameters.0.iter() {
-            witness_map.add(*p, function_param(p));
+            witness_map.insert(p.witness_index(), function_param(p, true));
         }
         for p in function.private_parameters.iter() {
-            witness_map.add(*p, function_param(p));
+            witness_map.insert(p.witness_index(), function_param(p, false));
         }
 
         witness_map
@@ -82,7 +82,7 @@ impl NoirCircuitSynthesizer {
         &self,
         cs: &mut CS,
         witness_map: &WitnessMap<FunctionParameter<Scalar>>,
-    ) -> WitnessMap<AllocatedWire<Scalar>>
+    ) -> Result<WitnessMap<AllocatedWire<Scalar>>, SynthesisError>
     where
         CS: ConstraintSystem<Scalar>,
     {
@@ -96,39 +96,53 @@ impl NoirCircuitSynthesizer {
             let value = self
                 .inputs
                 .get(&param.name)
-                .unwrap_or_else(|| panic!("Input {} not found", param.name));
+                .ok_or_else(|| SynthesisError::AssignmentMissing)? // first unwrap -> parameter might be missing
+                .ok_or_else(|| SynthesisError::AssignmentMissing)?; // second unwrap -> parameter might not have been assigned a value
 
             let allocated = if param.public {
+                let public_value = value;
                 allocate_input(
                     &mut cs.namespace(|| format!("allocate input {}", param.name)),
                     param.witness,
-                    value.expect("Unassigned public input."),
+                    public_value,
                 )
             } else {
                 allocate_witness(
                     &mut cs.namespace(|| format!("allocate witness {}", param.name)),
                     param.witness,
-                    *value,
+                    // this gymnastic is because I wish the API offered a way to assign None
+                    // to witnesses when synthesizing the verifier side but Spartan2 does not allow
+                    // for that
+                    Some(value),
                 )
-            };
+            }.map_err(|_| SynthesisError::AssignmentMissing)?;
 
-            allocation_store.add(param.witness, allocated);
+            allocation_store.insert(param.witness.witness_index(), allocated);
         }
 
-        allocation_store
+        Ok(allocation_store)
     }
 }
 
 impl SpartanCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
     // This is used by Spartan when building the transcript. We need the values at that point.
     fn public_values(&self) -> Result<Vec<Scalar>, SynthesisError> {
-        Ok(
-            self.witness_map.values()
-                .filter(|input| input.public)
-                .map(|input| input.value.unwrap())
-                .collect()
-                // .collect::<Vec<<E as Engine>::Scalar>>()
-        )
+        let mut public_inputs: Vec<&FunctionParameter<Scalar>> = self
+            .witness_map
+            .values()
+            .filter(|input| input.public)
+            .collect();
+        public_inputs.sort_by_key(|input| input.index);
+
+        public_inputs
+            .into_iter()
+            .map(|input| {
+                input
+                    .value
+                    .ok_or_else(|| SynthesisError::AssignmentMissing)
+            })
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(Into::into)
     }
 
     // Doc from library: Allocated variables in the circuit that are shared with other circuits
@@ -146,8 +160,8 @@ impl SpartanCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
         let allocation_store = self.build_allocation_store(
             cs,
             &self.witness_map,
-        );
-        println!("Allocation map: {:?}", allocation_store);
+        )?;
+        log::debug!("Allocation map: {:?}", allocation_store);
 
         // at this point we have the correct mapping from wire to allocated variable and can
         // compute the constraints from the opcodes.
@@ -158,28 +172,26 @@ impl SpartanCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
                     // let multiplicands = &expr.mul_terms;
                     let linear_combinations = &expr.linear_combinations;
                     // let constant = expr.q_c;
-                    println!("AssertZero: {:?}", opcode);
+                    log::debug!("AssertZero: {:?}", opcode);
 
-                    let scaled_wires = linear_combinations.iter().map(
-                        |(field_element, witness) | {
-                            println!("LC term: {:?} * {:?}", field_element, witness);
-                            let allocated = allocation_store
-                                .get(&witness.witness_index())
-                                .expect("Witness not allocated");
+                    let mut lin_comb = LinearCombination::<Scalar>::zero();
+                    for (field_element, witness) in linear_combinations {
+                        log::debug!("LC term: {:?} * {:?}", field_element, witness);
+                        let allocated = allocation_store
+                            .get(&witness.witness_index())
+                            .ok_or_else(|| SynthesisError::AssignmentMissing)?;
 
-                            (
+                        let allocated_num = &allocated.allocation.as_ref()
+                            .map_err(|_| SynthesisError::AssignmentMissing)?;
+
+                        lin_comb = lin_comb
+                            + (
                                 // unfortunate translation from arkworks fields to halo2curves
                                 hex_to_ff(field_element.to_hex().as_str()),
                                 // TODO: manage unallocated witnesses later (if it becomes relevant)
-                                allocated.allocation.as_ref().unwrap().get_variable()
-                            )
-                        }
-                    );
-
-                    let lin_comb: LinearCombination<Scalar> = scaled_wires.fold(
-                        LinearCombination::<Scalar>::zero(),
-                        |acc, e| acc + e
-                    );
+                                allocated_num.get_variable(),
+                            );
+                    }
 
                     cs.enforce(
                         || format!("enforce AssertZero for opcode {}", i),
@@ -191,39 +203,36 @@ impl SpartanCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
                 Opcode::BlackBoxFuncCall(call) => {
                     match call {
                         RANGE { input, num_bits } => {
-                            let witness_index = &input.to_witness().witness_index();
-                            let maybe_allocated = &allocation_store.get(witness_index).unwrap().allocation;
-                            match maybe_allocated {
-                                Ok(allocated) => {
-                                    // TODO: what to do if no value ?
-                                    let le_assigned_bits = field_into_allocated_bits_le(cs, allocated.get_value(), num_bits.as_usize(), *witness_index)?;
-                                    let powers_of_two = powers_of_two(num_bits.as_usize());
-                                    let lin_comb = le_assigned_bits.iter().zip(powers_of_two)
-                                        .fold(
-                                            LinearCombination::<Scalar>::zero(),
-                                            |acc, (bit, power_of_two)| acc + (power_of_two , bit.get_variable())
-                                        );
+                            let witness_index = input.to_witness().witness_index();
+                            let allocated_wire = allocation_store
+                                .get(&witness_index)
+                                .ok_or_else(|| SynthesisError::AssignmentMissing)?;
 
-                                    // truncated bit decomposition must equal variable
-                                    cs.enforce(
-                                        || format!("enforce lin_comb for opcode {}", i),
-                                        |lc| lc + &lin_comb,
-                                        |lc| lc + CS::one(),
-                                        |lc| lc + allocated.get_variable()
-                                    )
-                                },
-                                _ => {
-                                    panic!("RANGE operation with unassigned wires");
-                                }
-                            }
+                            let allocated = allocated_wire.allocation.as_ref()
+                                .map_err(|_| SynthesisError::AssignmentMissing)?;
+                            let le_assigned_bits = field_into_allocated_bits_le(cs, allocated.get_value(), num_bits.as_usize(), witness_index)?;
+                            let powers_of_two = powers_of_two(num_bits.as_usize());
+                            let lin_comb = le_assigned_bits.iter().zip(powers_of_two)
+                                .fold(
+                                    LinearCombination::<Scalar>::zero(),
+                                    |acc, (bit, power_of_two)| acc + (power_of_two , bit.get_variable())
+                                );
+
+                            // truncated bit decomposition must equal variable
+                            cs.enforce(
+                                || format!("enforce lin_comb for opcode {}", i),
+                                |lc| lc + &lin_comb,
+                                |lc| lc + CS::one(),
+                                |lc| lc + allocated.get_variable()
+                            )
                         },
                         _ => {
-                            panic!("BlackBox functions are not yet implemented");
+                            return Err(SynthesisError::Unsatisfiable) // waiting for a better error system
                         }
                     }
                 },
                 _ => {
-                    panic!("Opcode not handled yet");
+                    return Err(SynthesisError::Unsatisfiable) // waiting for a better error system
                 }
             }
         }

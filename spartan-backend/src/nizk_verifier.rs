@@ -9,11 +9,11 @@ pub fn verify<E: Engine, C: SpartanCircuit<E>>(
     verifier_circuit: C,
     proof: SpartanSNARK<E>
 ) -> Result<Vec<E::Scalar>, SpartanError> {
-    let (_, vk) = SpartanSNARK::<E>::setup(verifier_circuit).expect("setup failed");
+    let (_, vk) = SpartanSNARK::<E>::setup(verifier_circuit)?;
 
     let t0 = Instant::now();
     let verification_result = proof.verify(&vk);
     let verify_ms = t0.elapsed().as_millis();
-    println!("Verify: {:?}", verify_ms);
+    log::debug!("Verify: {:?}", verify_ms);
     verification_result
 }
