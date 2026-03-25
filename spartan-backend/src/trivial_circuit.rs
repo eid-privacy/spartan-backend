@@ -1,0 +1,169 @@
+use bellpepper_core::{ConstraintSystem, SynthesisError};
+use bellpepper_core::num::AllocatedNum;
+use ff::{Field, PrimeField, PrimeFieldBits};
+use spartan2::provider::T256HyraxEngine;
+use spartan2::spartan::SpartanSNARK;
+use spartan2::traits::circuit::SpartanCircuit;
+use spartan2::traits::Engine;
+use crate::nizk_prover::prove;
+use crate::nizk_verifier::verify;
+
+// Test circuit
+#[allow(unused)]
+#[derive(Clone, Debug)]
+pub struct TestCircuit<Scalar> {
+    prover_witness: Option<Scalar>,
+    public_input: Scalar,
+}
+
+impl <Scalar: PrimeField + PrimeFieldBits> TestCircuit<Scalar> {
+    #[allow(unused)]
+    pub(crate) fn new(prover_witness: Option<Scalar>, public_input: Scalar) -> Self {
+        Self { prover_witness, public_input }
+    }
+
+    /// Just a convenient one-liner for sanity checking
+    #[allow(unused)]
+    pub(crate) fn run_trivial_proof() {
+            type E = T256HyraxEngine;
+            let prover_circuit = TestCircuit::new(
+                Some(<T256HyraxEngine as Engine>::Scalar::ONE),
+                <T256HyraxEngine as Engine>::Scalar::ONE
+            );
+
+            let verifier_circuit = TestCircuit::new(
+                Some(<T256HyraxEngine as Engine>::Scalar::ZERO),
+                <T256HyraxEngine as Engine>::Scalar::ONE
+            );
+
+            let proof: SpartanSNARK<E> = prove(prover_circuit);
+
+            // VERIFY
+            let verification_result = verify(verifier_circuit, proof);
+            verification_result.expect("verify failed");
+    }
+}
+
+
+impl<E: Engine> SpartanCircuit<E> for TestCircuit<E::Scalar> {
+    fn public_values(&self) -> Result<Vec<E::Scalar>, SynthesisError> {
+        Ok(vec![self.public_input])
+    }
+
+    // not sure what is meant to go in here (sha256 example also has empty vec return value)
+    fn shared<CS: ConstraintSystem<E::Scalar>>(&self, _: &mut CS) -> Result<Vec<AllocatedNum<E::Scalar>>, SynthesisError> {
+        Ok(vec![])
+    }
+
+    // I understand that these are the private inputs, not sure why the example also does the
+    // "enforce" here instead of in the synthesis (and why does synth not receive the public inputs ?!)
+    fn precommitted<CS: ConstraintSystem<E::Scalar>>(
+        &self, cs: &mut CS,
+        _: &[AllocatedNum<E::Scalar>]
+    ) -> Result<Vec<AllocatedNum<E::Scalar>>, SynthesisError> {
+        if let Some(witness) = &self.prover_witness {
+            Ok(
+                vec![AllocatedNum::alloc(cs, || Ok(*witness))?]
+            )
+        } else {
+            Err(SynthesisError::AssignmentMissing)
+        }
+    }
+
+    // Another one I don't understand and stole from the example
+    fn num_challenges(&self) -> usize { 0 }
+
+    fn synthesize<CS: ConstraintSystem<E::Scalar>>(
+        &self,
+        cs: &mut CS,
+        _: &[AllocatedNum<E::Scalar>],
+        precommitted: &[AllocatedNum<E::Scalar>],
+        _: Option<&[E::Scalar]>, // challenges from the verifier
+    ) -> Result<(), SynthesisError> {
+        let public_input = AllocatedNum::alloc(
+            cs.namespace(|| "public input"),
+            || Ok(self.public_input)
+        )?;
+        let _ = public_input.inputize(cs.namespace(|| "inputize the public input"));
+
+
+        // Enforce that witness = public_input
+        cs.enforce(
+            || "enforce witness equals public input".to_string(),
+            |lc| lc + precommitted[0].get_variable(),
+            |lc| lc + CS::one(),
+            |lc| lc + public_input.get_variable(),
+        );
+        Ok(())
+    }
+}
+
+// pub fn prove(shape: R1CSShape<P256Fp>) -> NIZK {
+//     // get shape using only public input
+//     let hex_public_input: P256Fp = hex_to_ff("1");
+//     // let circuit_verifier= TestCircuit::new(
+//     //     None,
+//     //     hex_public_input,
+//     // );
+//     // let mut verifier_cs = ShapeCS::<P256Fp>::new();
+//     // let _ = circuit_verifier.synthesize(&mut verifier_cs);
+//     // let shape = verifier_cs.r1cs_shape();
+//
+//     // generate prover's side using shape + witness
+//     let circuit_prover = TestCircuit::new(
+//         Some(hex_to_ff::<P256Fp>("1")),
+//         hex_public_input,
+//     );
+//
+//     let mut prover_cs: SatisfyingAssignment<P256Fp> = SatisfyingAssignment::<P256Fp>::new();
+//     let t_p_synth = SystemTime::now();
+//     let _ = circuit_prover.synthesize(&mut prover_cs.namespace(|| "calculate witness"));
+//     println!("Prover's synthesis time: {:?}", t_p_synth.elapsed());
+//     let (inst, witness, inputs) = prover_cs.r1cs_instance_and_witness(&shape);
+//
+//
+//     // sanity checks
+//     // this panics if input != witness (tested it to make sure)
+//     let is_sat = inst.is_sat(&witness, &inputs);
+//     assert!(is_sat.is_ok());
+//     assert!(is_sat.unwrap());
+//
+//     // compute prover transcript
+//     let mut prover_transcript = Transcript::new(b"NIZK");
+//     let t_prove = SystemTime::now();
+//     let proof = NIZK::prove(&inst, witness, &inputs, &nizk_generator(shape), &mut prover_transcript);
+//     println!("Prover time: {:?}", t_prove.elapsed());
+//
+//     proof
+// }
+//
+// pub fn verify(shape: R1CSShape<P256Fp>, proof: &NIZK) {
+//     // get shape using only public input
+//     // let circuit_verifier= TestCircuit::new(
+//     //     None,
+//     //     hex_to_ff::<P256Fp>("1"),
+//     // );
+//     // let mut verifier_cs = ShapeCS::<P256Fp>::new();
+//     // let _ = circuit_verifier.synthesize(&mut verifier_cs);
+//     // let shape = verifier_cs.r1cs_shape();
+//     println!("Constraints count: {:?}", shape.num_cons);
+//     let hex_public_input: P256Fp = hex_to_ff("1");
+//
+//     let mut verifier_transcript = Transcript::new(b"NIZK");
+//     let inputs = vec![hex_public_input.to_bytes()];
+//     let inputs_assign = match Assignment::new(inputs.as_slice()) {
+//         Ok(i) => i,
+//         Err(_) => return
+//     };
+//     let instance = Instance::new_from_shape(&shape).unwrap();
+//     let verification = proof.verify(
+//         &instance,
+//         &inputs_assign,
+//         &mut verifier_transcript,
+//         &nizk_generator(shape),
+//     );
+//     println!("{:?}", verification);
+//     assert!(
+//         verification.is_ok()
+//     );
+// }
