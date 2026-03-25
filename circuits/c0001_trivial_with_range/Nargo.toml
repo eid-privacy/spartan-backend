@@ -2,5 +2,5 @@
 name = "c0001_trivial_with_range"
 type = "bin"
 authors = [""]
-
+description = "A trivial x == y assertion used to test and demonstrate ability to implement the BLACKBOX RANGE."
 [dependencies]

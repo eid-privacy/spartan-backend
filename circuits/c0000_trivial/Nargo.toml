@@ -2,5 +2,6 @@
 name = "c0000_trivial"
 type = "bin"
 authors = [""]
+description = "A trivial x == y assertion used to test and demonstrate ability to read and synthesis a trivial ASSERT ZERO opcode"
 
 [dependencies]

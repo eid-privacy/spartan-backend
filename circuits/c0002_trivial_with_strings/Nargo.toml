@@ -2,5 +2,6 @@
 name = "c0002_trivial_with_strings"
 type = "bin"
 authors = [""]
+description = "A trivial equality assertion, meant to test and demonstrate ability to map complex inputs."
 
 [dependencies]
