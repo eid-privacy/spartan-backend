@@ -38,34 +38,31 @@ fn instantiate_trivial_circuit() ->  CircuitParameters {
     }
 }
 
-// fn instantiate_trivial_circuit_with_range() ->  CircuitParameters {
-//     let program_artifact = read_noir_circuit("circuits/c0001_trivial_with_range.json")
-//         .expect("Failed to read noir circuit");
-//
-//     let map_input = |public: P256Fp, private: Option<P256Fp>| HashMap::from([
-//         (String::from("public_number"), Some(public)),
-//         (String::from("private_number"), private),
-//     ]);
-//
-//     // Input passing the RANGE test
-//     let verifier_inputs = map_input(hex_to_ff("1"), None);
-//     let prover_inputs = map_input(hex_to_ff("1"), Some(hex_to_ff("1")));
-//     let nizk_formatted_inputs = vec![hex_to_ff::<P256Fp>("1").to_bytes()];
-//
-//     // Inputs failing the RANGE test.
-//     // let max_input = P256Fp::zero() - P256Fp::one();
-//     // let verifier_inputs = map_input(max_input, None);
-//     // let prover_inputs = map_input(max_input, Some(max_input));
-//     // let nizk_formatted_inputs = vec![max_input.to_bytes()];
-//
-//     CircuitParameters {
-//         program_artifact,
-//         verifier_inputs,
-//         prover_inputs,
-//         nizk_formatted_inputs,
-//     }
-// }
-//
+fn instantiate_trivial_circuit_with_range() ->  CircuitParameters {
+    let program_artifact = read_noir_circuit("../circuits/c0001_trivial_with_range/target/c0001_trivial_with_range.json")
+        .expect("Failed to read noir circuit");
+
+    let map_input = |public: <E as Engine>::Scalar, private: Option<<E as Engine>::Scalar>| HashMap::from([
+        (String::from("public_number"), Some(public)),
+        (String::from("private_number"), private),
+    ]);
+
+    // Input passing the RANGE test
+    let verifier_inputs = map_input(<E as Engine>::Scalar::ONE, None);
+    let prover_inputs = map_input(<E as Engine>::Scalar::ONE, Some(<E as Engine>::Scalar::ONE));
+
+    // Inputs failing the RANGE test.
+    // let max_input = <E as Engine>::Scalar::ZERO - <E as Engine>::Scalar::ONE;
+    // let verifier_inputs = map_input(max_input, None);
+    // let prover_inputs = map_input(max_input, Some(max_input));
+
+    CircuitParameters {
+        program_artifact,
+        verifier_inputs,
+        prover_inputs,
+    }
+}
+
 // fn instantiate_trivial_circuit_with_strings() ->  CircuitParameters {
 //     let program_artifact = read_noir_circuit("circuits/c0002_trivial_with_strings.json")
 //         .expect("Failed to read noir circuit");
@@ -90,8 +87,8 @@ fn instantiate_trivial_circuit() ->  CircuitParameters {
 
 
 fn main() {
-    let circuit = instantiate_trivial_circuit();
-    // let circuit = instantiate_trivial_circuit_with_range();
+    // let circuit = instantiate_trivial_circuit();
+    let circuit = instantiate_trivial_circuit_with_range();
     // let circuit = instantiate_trivial_circuit_with_strings();
 
     println!("ProgramArtifact loaded: {:?}", &circuit.program_artifact);
