@@ -23,7 +23,7 @@ pub fn prove<E: Engine, C: SpartanCircuit<E>>(
     // PROVE
     let t0 = Instant::now();
     let proof =
-        SpartanSNARK::<E>::prove(&pk, prover_circuit.clone(), &prep_snark, true).expect("prove failed");
+        SpartanSNARK::<E>::prove(&pk, prover_circuit, &prep_snark, true).expect("prove failed");
     let prove_ms = t0.elapsed().as_millis();
     println!("Prove: {:?}", prove_ms);
 

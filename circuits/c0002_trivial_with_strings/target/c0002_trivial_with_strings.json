@@ -1,1 +1,34 @@
-{"noir_version":"1.0.0-beta.19+7088b876d14433991504e2d62c6a43805e309646","hash":"9071056901793744100","abi":{"parameters":[{"name":"private_number","type":{"kind":"string","length":12},"visibility":"private"},{"name":"public_number","type":{"kind":"string","length":12},"visibility":"public"}],"return_type":null,"error_types":{}},"bytecode":"H4sIAAAAAAAA/7XQO27CQBSF4TF+jd9vu02RjUCUpEuRJlI6C7lAcYyEQaL1DowpaChBSFQsgmWwFsBUUMGhuKcaaT7NL43YzBar/3RQJAf2Wu16edr/6w2nH5Oi/5bmebX+7n59vjfV5mcwLrKyZBxAAoI6CBIRJCFIRpCCIBVBHEEagnQEGQgyEWQhyEaQgyAXQR6CfAQFCAoRFCEoRlDCq223LLPR+DcbDed10+xf2P0JRmtO7S7n24vTdcfk4TPs+bAOhGOKsAaEI4owB8IhRVgFwgFFWAHCPkVYBsIeRVgCwi5FWATCDkW4A4RtijADwiZFWADC1uPwsv07UZIVlWu6sTQt23E9PwijOKnr+gxJIROhTgkAAA==","debug_symbols":"nZLPjoMgEIffZc4eEAvavspmY1DHhoSgobDJxvDui4y2eugeevqA4fdl+LPAgF24t9qO0wNuXwt0Thuj762ZeuX1ZNPqEgvYp613iGkJDvWUmpVD6+FmgzEF/CgT8qbHrGymVy5VWQFoh8QkHLXBdRSLV5q9j5YXuYXLun7GxTlfvs9zIatNwEXTvAwnAf9HwESzC5gUnwjk9Sk4niHG7zRRvXanSwd+ySfigiAJNaEhXDMqRigJnFARyFKtlrh257TqDG7POgbbH17Z/857Zf8Hs5t6HILDtblcS+3+AQ==","file_map":{"50":{"source":"fn main(\n    // Private inputs - \"secret\" number\n    private_number: str<12>,\n    // Public inputs\n    public_number: pub str<12>,\n) {\n    assert(private_number == public_number);\n}\n","path":"/Users/clement.humbert/PrivacyPreservingEID/building-circuits/noir-playground-ineiti/circuits/c0002_trivial_with_strings/src/main.nr"}}}
+{
+  "noir_version": "1.0.0-beta.19+7088b876d14433991504e2d62c6a43805e309646",
+  "hash": "9071056901793744100",
+  "abi": {
+    "parameters": [
+      {
+        "name": "private_number",
+        "type": {
+          "kind": "string",
+          "length": 12
+        },
+        "visibility": "private"
+      },
+      {
+        "name": "public_number",
+        "type": {
+          "kind": "string",
+          "length": 12
+        },
+        "visibility": "public"
+      }
+    ],
+    "return_type": null,
+    "error_types": {}
+  },
+  "bytecode": "H4sIAAAAAAAA/7XQO27CQBSF4TF+jd9vu02RjUCUpEuRJlI6C7lAcYyEQaL1DowpaChBSFQsgmWwFsBUUMGhuKcaaT7NL43YzBar/3RQJAf2Wu16edr/6w2nH5Oi/5bmebX+7n59vjfV5mcwLrKyZBxAAoI6CBIRJCFIRpCCIBVBHEEagnQEGQgyEWQhyEaQgyAXQR6CfAQFCAoRFCEoRlDCq223LLPR+DcbDed10+xf2P0JRmtO7S7n24vTdcfk4TPs+bAOhGOKsAaEI4owB8IhRVgFwgFFWAHCPkVYBsIeRVgCwi5FWATCDkW4A4RtijADwiZFWADC1uPwsv07UZIVlWu6sTQt23E9PwijOKnr+gxJIROhTgkAAA==",
+  "debug_symbols": "nZLPjoMgEIffZc4eEAvavspmY1DHhoSgobDJxvDui4y2eugeevqA4fdl+LPAgF24t9qO0wNuXwt0Thuj762ZeuX1ZNPqEgvYp613iGkJDvWUmpVD6+FmgzEF/CgT8qbHrGymVy5VWQFoh8QkHLXBdRSLV5q9j5YXuYXLun7GxTlfvs9zIatNwEXTvAwnAf9HwESzC5gUnwjk9Sk4niHG7zRRvXanSwd+ySfigiAJNaEhXDMqRigJnFARyFKtlrh257TqDG7POgbbH17Z/857Zf8Hs5t6HILDtblcS+3+AQ==",
+  "file_map": {
+    "50": {
+      "source": "fn main(\n    // Private inputs - \"secret\" number\n    private_number: str<12>,\n    // Public inputs\n    public_number: pub str<12>,\n) {\n    assert(private_number == public_number);\n}\n",
+      "path": "/Users/clement.humbert/PrivacyPreservingEID/building-circuits/spartan-backend-progress-track/circuits/c0002_trivial_with_strings/src/main.nr"
+    }
+  }
+}

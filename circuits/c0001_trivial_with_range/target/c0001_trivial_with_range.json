@@ -1,1 +1,36 @@
-{"noir_version":"1.0.0-beta.19+7088b876d14433991504e2d62c6a43805e309646","hash":"5354399397880372043","abi":{"parameters":[{"name":"private_number","type":{"kind":"integer","sign":"unsigned","width":8},"visibility":"private"},{"name":"public_number","type":{"kind":"integer","sign":"unsigned","width":8},"visibility":"public"}],"return_type":null,"error_types":{}},"bytecode":"H4sIAAAAAAAA/43MPQ5FQBSG4XNyG8u4W+Hm0ik0Et1EphBjJIZEOzuYGYUNEInKIqzLTzRUeKqvePN9jG67jCQcGzk5jMSpk9duxeMfYUz2ge17fyOHMCk5FQKsFxFacrSFoEUZ0SJvlDHzF+4h7M26O/bFelrw8QY0aFRKbRhZMUXVAAAA","debug_symbols":"dY/RCoMwDEX/Jc990I058FfGkFqjFEJaYjsY4r8vim7uwac0uTm3uRN02Oah8dyHEerHBK14Ij80FJxNPrBOp9nA3jZJEHUEB12paAU5Qc2ZyMDLUl6Xxmh5rcmKqoUB5E6rGvaecHnN5kcX52h5rTa4rO5f/Kb8UzvrvPxdDBddnBc78bYl3FL0md0hVHrHXdljRwkOuyy42K2afvAB","file_map":{"50":{"source":"fn main(\n    // Private inputs - \"secret\" number\n    private_number: u8,\n    // Public inputs\n    public_number: pub u8,\n) {\n    assert(private_number == public_number);\n}\n","path":"/Users/clement.humbert/PrivacyPreservingEID/building-circuits/noir-playground-ineiti/circuits/c0001_trivial_with_range/src/main.nr"}}}
+{
+  "noir_version": "1.0.0-beta.19+7088b876d14433991504e2d62c6a43805e309646",
+  "hash": "5354399397880372043",
+  "abi": {
+    "parameters": [
+      {
+        "name": "private_number",
+        "type": {
+          "kind": "integer",
+          "sign": "unsigned",
+          "width": 8
+        },
+        "visibility": "private"
+      },
+      {
+        "name": "public_number",
+        "type": {
+          "kind": "integer",
+          "sign": "unsigned",
+          "width": 8
+        },
+        "visibility": "public"
+      }
+    ],
+    "return_type": null,
+    "error_types": {}
+  },
+  "bytecode": "H4sIAAAAAAAA/43MPQ5FQBSG4XNyG8u4W+Hm0ik0Et1EphBjJIZEOzuYGYUNEInKIqzLTzRUeKqvePN9jG67jCQcGzk5jMSpk9duxeMfYUz2ge17fyOHMCk5FQKsFxFacrSFoEUZ0SJvlDHzF+4h7M26O/bFelrw8QY0aFRKbRhZMUXVAAAA",
+  "debug_symbols": "dY/RCoMwDEX/Jc990I058FfGkFqjFEJaYjsY4r8vim7uwac0uTm3uRN02Oah8dyHEerHBK14Ij80FJxNPrBOp9nA3jZJEHUEB12paAU5Qc2ZyMDLUl6Xxmh5rcmKqoUB5E6rGvaecHnN5kcX52h5rTa4rO5f/Kb8UzvrvPxdDBddnBc78bYl3FL0md0hVHrHXdljRwkOuyy42K2afvAB",
+  "file_map": {
+    "50": {
+      "source": "fn main(\n    // Private inputs - \"secret\" number\n    private_number: u8,\n    // Public inputs\n    public_number: pub u8,\n) {\n    assert(private_number == public_number);\n}\n",
+      "path": "/Users/clement.humbert/PrivacyPreservingEID/building-circuits/noir-playground-ineiti/circuits/c0001_trivial_with_range/src/main.nr"
+    }
+  }
+}

@@ -19,8 +19,13 @@ use crate::noir::circuit_synthesizer::NoirCircuitSynthesizer;
 
 type E = T256HyraxEngine;
 
+fn circuit_path(name: &str) -> String {
+    format!("../circuits/{}/target/{}.json", name, name)
+}
+
+#[allow(unused)]
 fn instantiate_trivial_circuit() ->  CircuitParameters {
-    let program_artifact = read_noir_circuit("../circuits/c0000_trivial/target/c0000_trivial.json")
+    let program_artifact = read_noir_circuit(circuit_path("c0000_trivial").as_str())
         .expect("Failed to read noir circuit");
 
     let map_input = |public: <E as Engine>::Scalar, private: Option<<E as Engine>::Scalar>| HashMap::from([
@@ -38,8 +43,9 @@ fn instantiate_trivial_circuit() ->  CircuitParameters {
     }
 }
 
+#[allow(unused)]
 fn instantiate_trivial_circuit_with_range() ->  CircuitParameters {
-    let program_artifact = read_noir_circuit("../circuits/c0001_trivial_with_range/target/c0001_trivial_with_range.json")
+    let program_artifact = read_noir_circuit(circuit_path("c0001_trivial_with_range").as_str())
         .expect("Failed to read noir circuit");
 
     let map_input = |public: <E as Engine>::Scalar, private: Option<<E as Engine>::Scalar>| HashMap::from([
@@ -63,27 +69,26 @@ fn instantiate_trivial_circuit_with_range() ->  CircuitParameters {
     }
 }
 
-// fn instantiate_trivial_circuit_with_strings() ->  CircuitParameters {
-//     let program_artifact = read_noir_circuit("circuits/c0002_trivial_with_strings.json")
-//         .expect("Failed to read noir circuit");
-//
-//     let map_input = |public: P256Fp, private: Option<P256Fp>| HashMap::from([
-//         (String::from("public_number"), Some(public)),
-//         (String::from("private_number"), private),
-//     ]);
-//
-//     // Input passing the RANGE test
-//     let verifier_inputs = map_input(hex_to_ff("1"), None);
-//     let prover_inputs = map_input(hex_to_ff("1"), Some(hex_to_ff("1")));
-//     let nizk_formatted_inputs = vec![hex_to_ff::<P256Fp>("1").to_bytes()];
-//
-//     CircuitParameters {
-//         program_artifact,
-//         verifier_inputs,
-//         prover_inputs,
-//         nizk_formatted_inputs,
-//     }
-// }
+#[allow(unused)]
+fn instantiate_trivial_circuit_with_strings() ->  CircuitParameters {
+    let program_artifact = read_noir_circuit(circuit_path("c0002_trivial_with_strings").as_str())
+        .expect("Failed to read noir circuit");
+
+    let map_input = |public: <E as Engine>::Scalar, private: Option<<E as Engine>::Scalar>| HashMap::from([
+        (String::from("public_number"), Some(public)),
+        (String::from("private_number"), private),
+    ]);
+
+    let verifier_inputs = map_input(<E as Engine>::Scalar::ONE, None);
+    let prover_inputs = map_input(<E as Engine>::Scalar::ONE, Some(<E as Engine>::Scalar::ONE));
+
+
+    CircuitParameters {
+        program_artifact,
+        verifier_inputs,
+        prover_inputs,
+    }
+}
 
 
 fn main() {

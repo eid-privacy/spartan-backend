@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use acir::AcirField;
 use acir::circuit::Opcode;
 use acir::circuit::opcodes::BlackBoxFuncCall::RANGE;
+use acir::native_types::Witness;
 use bellpepper_core::{ConstraintSystem, LinearCombination, SynthesisError};
 use bellpepper_core::num::AllocatedNum;
 use ff::derive::bitvec::macros::internal::funty::Fundamental;
@@ -54,28 +55,24 @@ impl NoirCircuitSynthesizer {
             .collect();
 
         // assuming a single function for now
-        let function = program_artifact.bytecode.functions[0].clone();
+        let function = program_artifact.bytecode.functions
+            .first()
+            .expect("No functions in bytecode");
 
-        let mut witness_map: WitnessMap<FunctionParameter<Scalar>> = WitnessMap::new();
+        let function_param = |p: &Witness| -> FunctionParameter<Scalar> {
+            let idx = p.witness_index();
+            let name = parameters[&idx].name.clone();
+            let value = inputs.get(&name).expect("Missing input");
+            FunctionParameter::<Scalar>::new(idx, *p, name, true, *value)
+        };
 
         // for now, assume order of parameters matches order of witnesses
+        let mut witness_map: WitnessMap<FunctionParameter<Scalar>> = WitnessMap::new();
         for p in function.public_parameters.0.iter() {
-            let idx = p.witness_index();
-            let name = parameters[&idx].name.clone();
-            let value = inputs[&name].clone();
-            witness_map.add(
-                *p,
-                FunctionParameter::<Scalar>::new(idx, *p, name, true, value)
-            );
+            witness_map.add(*p, function_param(p));
         }
         for p in function.private_parameters.iter() {
-            let idx = p.witness_index();
-            let name = parameters[&idx].name.clone();
-            let value = inputs[&name].clone();
-            witness_map.add(
-                *p,
-                FunctionParameter::<Scalar>::new(idx, *p, name, false, value)
-            );
+            witness_map.add(*p, function_param(p));
         }
 
         witness_map
@@ -84,7 +81,7 @@ impl NoirCircuitSynthesizer {
     fn build_allocation_store<CS>(
         &self,
         cs: &mut CS,
-        witness_map: WitnessMap<FunctionParameter<Scalar>>,
+        witness_map: &WitnessMap<FunctionParameter<Scalar>>,
     ) -> WitnessMap<AllocatedWire<Scalar>>
     where
         CS: ConstraintSystem<Scalar>,
@@ -105,13 +102,13 @@ impl NoirCircuitSynthesizer {
                 allocate_input(
                     &mut cs.namespace(|| format!("allocate input {}", param.name)),
                     param.witness,
-                    value.clone().expect("Public inputs cannot be None"),
+                    value.expect("Unassigned public input."),
                 )
             } else {
                 allocate_witness(
                     &mut cs.namespace(|| format!("allocate witness {}", param.name)),
                     param.witness,
-                    value.clone(),
+                    *value,
                 )
             };
 
@@ -148,7 +145,7 @@ impl SpartanCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
     ) -> Result<Vec<AllocatedNum<Scalar>>, SynthesisError> {
         let allocation_store = self.build_allocation_store(
             cs,
-            self.witness_map.clone(),
+            &self.witness_map,
         );
         println!("Allocation map: {:?}", allocation_store);
 
@@ -171,9 +168,10 @@ impl SpartanCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
                                 .expect("Witness not allocated");
 
                             (
+                                // unfortunate translation from arkworks fields to halo2curves
                                 hex_to_ff(field_element.to_hex().as_str()),
-                                // TODO: unwrap brutally, manage unallocated witnesses later
-                                allocated.allocation.as_ref().unwrap().clone().get_variable()
+                                // TODO: manage unallocated witnesses later (if it becomes relevant)
+                                allocated.allocation.as_ref().unwrap().get_variable()
                             )
                         }
                     );
