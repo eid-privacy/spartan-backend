@@ -406,9 +406,9 @@ use num_traits::Num;
 // //   scalar_to_biguint(x).to_bigint().unwrap()
 // // }
 // //
-// // pub fn biguint_to_scalar<Scalar:PrimeField>(x : &BigUint) -> Scalar {
-// //   Scalar::from_str_vartime(&x.to_str_radix(10)).unwrap()
-// // }
+pub fn biguint_to_scalar<Scalar:PrimeField>(x : &BigUint) -> Scalar {
+  Scalar::from_str_vartime(&x.to_str_radix(10)).unwrap()
+}
 //
 // // pub fn mod_inverse(a: &BigUint, p: &BigUint) -> BigUint {
 // //   let two = BigUint::from(2u8);

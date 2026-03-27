@@ -7,8 +7,7 @@ edition = "2024"
 acir = { path = "../../noir/acvm-repo/acir", features = ["t256"] }
 bellpepper-core = "0.4.0"
 ff = "0.13.1"
-halo2curves = "0.9.0"
-merlin = "3.0.0"
+noirc_abi = { path = "../../noir/tooling/noirc_abi" }
 noirc_artifacts = { path = "../../noir/tooling/noirc_artifacts" }
 num-bigint = {version="0.4.3", features = ["rand"]}
 num-traits = "0.2.14"

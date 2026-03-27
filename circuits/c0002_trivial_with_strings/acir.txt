@@ -1,0 +1,41 @@
+Compiled ACIR for main:
+func 0
+private parameters: [w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11]
+public parameters: [w12, w13, w14, w15, w16, w17, w18, w19, w20, w21, w22, w23]
+return values: []
+BLACKBOX::RANGE input: w0, bits: 8
+BLACKBOX::RANGE input: w1, bits: 8
+BLACKBOX::RANGE input: w2, bits: 8
+BLACKBOX::RANGE input: w3, bits: 8
+BLACKBOX::RANGE input: w4, bits: 8
+BLACKBOX::RANGE input: w5, bits: 8
+BLACKBOX::RANGE input: w6, bits: 8
+BLACKBOX::RANGE input: w7, bits: 8
+BLACKBOX::RANGE input: w8, bits: 8
+BLACKBOX::RANGE input: w9, bits: 8
+BLACKBOX::RANGE input: w10, bits: 8
+BLACKBOX::RANGE input: w11, bits: 8
+BLACKBOX::RANGE input: w12, bits: 8
+BLACKBOX::RANGE input: w13, bits: 8
+BLACKBOX::RANGE input: w14, bits: 8
+BLACKBOX::RANGE input: w15, bits: 8
+BLACKBOX::RANGE input: w16, bits: 8
+BLACKBOX::RANGE input: w17, bits: 8
+BLACKBOX::RANGE input: w18, bits: 8
+BLACKBOX::RANGE input: w19, bits: 8
+BLACKBOX::RANGE input: w20, bits: 8
+BLACKBOX::RANGE input: w21, bits: 8
+BLACKBOX::RANGE input: w22, bits: 8
+BLACKBOX::RANGE input: w23, bits: 8
+ASSERT w23 = w11
+ASSERT w22 = w10
+ASSERT w21 = w9
+ASSERT w20 = w8
+ASSERT w19 = w7
+ASSERT w18 = w6
+ASSERT w17 = w5
+ASSERT w16 = w4
+ASSERT w15 = w3
+ASSERT w14 = w2
+ASSERT w12 = w0
+ASSERT w13 = w1

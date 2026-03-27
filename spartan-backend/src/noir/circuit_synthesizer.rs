@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-use acir::AcirField;
-use acir::circuit::Opcode;
+use acir::{AcirField};
+use acir::circuit::{Opcode};
 use acir::circuit::opcodes::BlackBoxFuncCall::RANGE;
-use acir::native_types::Witness;
 use bellpepper_core::{ConstraintSystem, LinearCombination, SynthesisError};
 use bellpepper_core::num::AllocatedNum;
 use ff::derive::bitvec::macros::internal::funty::Fundamental;
@@ -11,7 +9,8 @@ use noirc_artifacts::program::ProgramArtifact;
 use spartan2::provider::T256HyraxEngine;
 use spartan2::traits::circuit::SpartanCircuit;
 use spartan2::traits::{Engine};
-use crate::noir::allocation_support::{allocate_input, allocate_witness, AllocatedWire, FunctionParameter, WitnessMap};
+use crate::InputWireMapping;
+use crate::noir::allocation_support::{allocate_input, allocate_witness, AllocatedWire, WitnessMap};
 use crate::noir::blackbox::range::{field_into_allocated_bits_le, powers_of_two};
 use crate::utils::hex_to_ff;
 
@@ -20,104 +19,64 @@ type Scalar = <T256HyraxEngine as Engine>::Scalar;
 #[derive(Clone)]
 pub struct NoirCircuitSynthesizer {
     program_artifact: ProgramArtifact,
-    inputs: HashMap<String, Option<Scalar>>,
-    witness_map: WitnessMap<FunctionParameter<Scalar>>,
+    split_inputs: InputWireMapping<Scalar>,
 }
 
 impl NoirCircuitSynthesizer {
     pub(crate) fn new(
         program_artifact: ProgramArtifact,
-        inputs: HashMap<String, Option<Scalar>>,
+        split_inputs: InputWireMapping<Option<Scalar>>,
     ) -> Self {
         Self {
-            witness_map: Self::build_witness_map(&program_artifact, &inputs),
             program_artifact,
-            inputs: Self::default_inputs(inputs),
+            split_inputs: Self::default_inputs(split_inputs),
         }
     }
 
     // for some reason we cannot provide unassigned wires for the private inputs with Spartan2.
     // This defaults them to 0 to keep a clear interface with None
-    fn default_inputs(inputs: HashMap<String, Option<Scalar>>) -> HashMap<String, Option<Scalar>> {
-        inputs.into_iter().map(|(k, v)|
-            (k, if let None = v { Some(Scalar::ZERO) } else { v })
-        ).collect::<HashMap<String, Option<Scalar>>>()
-    }
-
-    fn build_witness_map(
-        program_artifact: &ProgramArtifact,
-        inputs: &HashMap<String, Option<Scalar>>,
-    ) -> WitnessMap<FunctionParameter<Scalar>> {
-        let parameters: HashMap<_, _> = program_artifact.abi.parameters.iter().enumerate()
-            .map(|(i, param)| {
-                (i as u32, param)
-            })
-            .collect();
-
-        // assuming a single function for now
-        let function = program_artifact.bytecode.functions
-            .first()
-            .expect("No functions in bytecode");
-
-        let function_param = |p: &Witness, public: bool| -> FunctionParameter<Scalar> {
-            let idx = p.witness_index();
-            let name = parameters[&idx].name.clone();
-            let value = inputs.get(&name).expect("Missing input");
-            FunctionParameter::<Scalar>::new(idx, *p, name, public, *value)
-        };
-
-        // for now, assume order of parameters matches order of witnesses
-        let mut witness_map: WitnessMap<FunctionParameter<Scalar>> = WitnessMap::new();
-        for p in function.public_parameters.0.iter() {
-            witness_map.insert(p.witness_index(), function_param(p, true));
-        }
-        for p in function.private_parameters.iter() {
-            witness_map.insert(p.witness_index(), function_param(p, false));
-        }
-
-        witness_map
+    fn default_inputs(inputs: InputWireMapping<Option<Scalar>>) -> InputWireMapping<Scalar> {
+        inputs.into_iter().map(|(visible, witness, value)|
+            (
+                visible,
+                witness,
+                if let Some(v) = value { v } else { Scalar::ZERO }
+            )
+        ).collect::<InputWireMapping<Scalar>>()
     }
 
     fn build_allocation_store<CS>(
         &self,
         cs: &mut CS,
-        witness_map: &WitnessMap<FunctionParameter<Scalar>>,
     ) -> Result<WitnessMap<AllocatedWire<Scalar>>, SynthesisError>
     where
         CS: ConstraintSystem<Scalar>,
     {
         let mut allocation_store = WitnessMap::<AllocatedWire<Scalar>>::new();
 
-        // this loops absolutely needs to be order-stable to ensure the same circuit cannot produce
+        // the loop absolutely needs to be order-stable to ensure the same circuit cannot produce
         // different prover/verifier keys across different executions.
-        let mut params: Vec<&FunctionParameter<Scalar>> = witness_map.values().collect();
-        params.sort_by_key(|p| p.index);
-        for param in params {
-            let value = self
-                .inputs
-                .get(&param.name)
-                .ok_or_else(|| SynthesisError::AssignmentMissing)? // first unwrap -> parameter might be missing
-                .ok_or_else(|| SynthesisError::AssignmentMissing)?; // second unwrap -> parameter might not have been assigned a value
-
-            let allocated = if param.public {
-                let public_value = value;
+        let mut sorted_witnesses: Vec<_> = self.split_inputs.iter().collect();
+        sorted_witnesses.sort_by_key(|(_, witness, _)| witness.witness_index());
+        for (visible, witness, value) in sorted_witnesses {
+            let allocated = if *visible {
                 allocate_input(
-                    &mut cs.namespace(|| format!("allocate input {}", param.name)),
-                    param.witness,
-                    public_value,
+                    &mut cs.namespace(|| format!("allocate input {}", witness.witness_index())),
+                    *witness,
+                    *value,
                 )
             } else {
                 allocate_witness(
-                    &mut cs.namespace(|| format!("allocate witness {}", param.name)),
-                    param.witness,
+                    &mut cs.namespace(|| format!("allocate witness {}", witness.witness_index())),
+                    *witness,
                     // this gymnastic is because I wish the API offered a way to assign None
                     // to witnesses when synthesizing the verifier side but Spartan2 does not allow
                     // for that
-                    Some(value),
+                    Some(*value),
                 )
             }.map_err(|_| SynthesisError::AssignmentMissing)?;
 
-            allocation_store.insert(param.witness.witness_index(), allocated);
+            allocation_store.insert(witness.witness_index(), allocated);
         }
 
         Ok(allocation_store)
@@ -127,22 +86,17 @@ impl NoirCircuitSynthesizer {
 impl SpartanCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
     // This is used by Spartan when building the transcript. We need the values at that point.
     fn public_values(&self) -> Result<Vec<Scalar>, SynthesisError> {
-        let mut public_inputs: Vec<&FunctionParameter<Scalar>> = self
-            .witness_map
-            .values()
-            .filter(|input| input.public)
+        let mut sorted_witnesses: Vec<_> = self.split_inputs.iter()
+            .filter(|(visible, _, _)| *visible)
             .collect();
-        public_inputs.sort_by_key(|input| input.index);
 
-        public_inputs
-            .into_iter()
-            .map(|input| {
-                input
-                    .value
-                    .ok_or_else(|| SynthesisError::AssignmentMissing)
-            })
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(Into::into)
+        sorted_witnesses.sort_by_key(|(_, witness, _)| witness.witness_index());
+
+        Ok(
+            sorted_witnesses.into_iter()
+                .map(|(_, _, value)| *value)
+                .collect()
+        )
     }
 
     // Doc from library: Allocated variables in the circuit that are shared with other circuits
@@ -159,7 +113,6 @@ impl SpartanCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
     ) -> Result<Vec<AllocatedNum<Scalar>>, SynthesisError> {
         let allocation_store = self.build_allocation_store(
             cs,
-            &self.witness_map,
         )?;
         log::debug!("Allocation map: {:?}", allocation_store);
 

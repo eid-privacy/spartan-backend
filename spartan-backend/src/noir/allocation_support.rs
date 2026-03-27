@@ -8,21 +8,6 @@ use ff::PrimeField;
 
 pub(crate) type WitnessMap<V> = HashMap<u32, V>;
 
-#[derive(Clone, Debug)]
-pub struct FunctionParameter<V> {
-    pub index: u32,
-    pub witness: Witness,
-    pub name: String,
-    pub public: bool,
-    pub value: Option<V>
-}
-
-impl <V> FunctionParameter<V> {
-    pub fn new(index: u32, witness: Witness, name: String, public: bool, value: Option<V>) -> Self {
-        Self { index, witness, name, public, value }
-    }
-}
-
 pub struct AllocatedWire<V: PrimeField> {
     pub witness: Witness,
     // witness might be missing when synthesis is done by the verifier, SynthesisError is the
