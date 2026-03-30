@@ -4,11 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-acir = { path = "../../noir/acvm-repo/acir", features = ["t256"] }
+acir = { git = "https://github.com/eid-privacy/noir", rev = "b7f153bcda440ee4556629ffe41d728aba177939", features = ["t256"] }
 bellpepper-core = "0.4.0"
 ff = "0.13.1"
-noirc_abi = { path = "../../noir/tooling/noirc_abi" }
-noirc_artifacts = { path = "../../noir/tooling/noirc_artifacts" }
+noirc_abi = { git = "https://github.com/eid-privacy/noir", rev = "b7f153bcda440ee4556629ffe41d728aba177939", features = ["t256"] }
+noirc_artifacts = { git = "https://github.com/eid-privacy/noir", rev = "b7f153bcda440ee4556629ffe41d728aba177939" }
 num-bigint = {version="0.4.3", features = ["rand"]}
 num-traits = "0.2.14"
 serde_json = { version = "1.0", features = ["unbounded_depth"] }

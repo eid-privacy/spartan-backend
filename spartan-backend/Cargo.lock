@@ -5,6 +5,7 @@ version = 4
 [[package]]
 name = "acir"
 version = "1.0.0-beta.19"
+source = "git+https://github.com/eid-privacy/noir?rev=b7f153bcda440ee4556629ffe41d728aba177939#b7f153bcda440ee4556629ffe41d728aba177939"
 dependencies = [
  "acir_field",
  "base64",
@@ -25,6 +26,7 @@ dependencies = [
 [[package]]
 name = "acir_field"
 version = "1.0.0-beta.19"
+source = "git+https://github.com/eid-privacy/noir?rev=b7f153bcda440ee4556629ffe41d728aba177939#b7f153bcda440ee4556629ffe41d728aba177939"
 dependencies = [
  "ark-bn254",
  "ark-ff",
@@ -39,6 +41,7 @@ dependencies = [
 [[package]]
 name = "acvm"
 version = "1.0.0-beta.19"
+source = "git+https://github.com/eid-privacy/noir?rev=b7f153bcda440ee4556629ffe41d728aba177939#b7f153bcda440ee4556629ffe41d728aba177939"
 dependencies = [
  "acir",
  "acvm_blackbox_solver",
@@ -53,6 +56,7 @@ dependencies = [
 [[package]]
 name = "acvm_blackbox_solver"
 version = "1.0.0-beta.19"
+source = "git+https://github.com/eid-privacy/noir?rev=b7f153bcda440ee4556629ffe41d728aba177939#b7f153bcda440ee4556629ffe41d728aba177939"
 dependencies = [
  "acir",
  "aes",
@@ -464,6 +468,7 @@ dependencies = [
 [[package]]
 name = "brillig"
 version = "1.0.0-beta.19"
+source = "git+https://github.com/eid-privacy/noir?rev=b7f153bcda440ee4556629ffe41d728aba177939#b7f153bcda440ee4556629ffe41d728aba177939"
 dependencies = [
  "acir_field",
  "serde",
@@ -472,6 +477,7 @@ dependencies = [
 [[package]]
 name = "brillig_vm"
 version = "1.0.0-beta.19"
+source = "git+https://github.com/eid-privacy/noir?rev=b7f153bcda440ee4556629ffe41d728aba177939#b7f153bcda440ee4556629ffe41d728aba177939"
 dependencies = [
  "acir",
  "acvm_blackbox_solver",
@@ -870,6 +876,7 @@ dependencies = [
 [[package]]
 name = "fm"
 version = "1.0.0-beta.19"
+source = "git+https://github.com/eid-privacy/noir?rev=b7f153bcda440ee4556629ffe41d728aba177939#b7f153bcda440ee4556629ffe41d728aba177939"
 dependencies = [
  "codespan-reporting",
  "iter-extended",
@@ -1072,6 +1079,7 @@ checksum = "a6cb138bb79a146c1bd460005623e142ef0181e3d0219cb493e02f7d08a35695"
 [[package]]
 name = "iter-extended"
 version = "1.0.0-beta.19"
+source = "git+https://github.com/eid-privacy/noir?rev=b7f153bcda440ee4556629ffe41d728aba177939#b7f153bcda440ee4556629ffe41d728aba177939"
 
 [[package]]
 name = "itertools"
@@ -1224,6 +1232,7 @@ dependencies = [
 [[package]]
 name = "noirc_abi"
 version = "1.0.0-beta.19"
+source = "git+https://github.com/eid-privacy/noir?rev=b7f153bcda440ee4556629ffe41d728aba177939#b7f153bcda440ee4556629ffe41d728aba177939"
 dependencies = [
  "acvm",
  "iter-extended",
@@ -1239,6 +1248,7 @@ dependencies = [
 [[package]]
 name = "noirc_artifacts"
 version = "1.0.0-beta.19"
+source = "git+https://github.com/eid-privacy/noir?rev=b7f153bcda440ee4556629ffe41d728aba177939#b7f153bcda440ee4556629ffe41d728aba177939"
 dependencies = [
  "acir",
  "acvm",
@@ -1258,6 +1268,7 @@ dependencies = [
 [[package]]
 name = "noirc_errors"
 version = "1.0.0-beta.19"
+source = "git+https://github.com/eid-privacy/noir?rev=b7f153bcda440ee4556629ffe41d728aba177939#b7f153bcda440ee4556629ffe41d728aba177939"
 dependencies = [
  "codespan-reporting",
  "fm",
@@ -1269,6 +1280,7 @@ dependencies = [
 [[package]]
 name = "noirc_printable_type"
 version = "1.0.0-beta.19"
+source = "git+https://github.com/eid-privacy/noir?rev=b7f153bcda440ee4556629ffe41d728aba177939#b7f153bcda440ee4556629ffe41d728aba177939"
 dependencies = [
  "acvm",
  "iter-extended",
@@ -1279,6 +1291,7 @@ dependencies = [
 [[package]]
 name = "noirc_span"
 version = "1.0.0-beta.19"
+source = "git+https://github.com/eid-privacy/noir?rev=b7f153bcda440ee4556629ffe41d728aba177939#b7f153bcda440ee4556629ffe41d728aba177939"
 dependencies = [
  "codespan",
  "serde",
