@@ -16,8 +16,7 @@ use spartan2::provider::T256HyraxEngine;
 use spartan2::spartan::SpartanSNARK;
 use spartan2::traits::Engine;
 use std::path::PathBuf;
-#[allow(unused_imports)]
-use std::time::Instant;
+use tracing::{debug, info, info_span};
 
 type E = T256HyraxEngine;
 type Scalar = <E as Engine>::Scalar;
@@ -36,28 +35,34 @@ struct Cli {
 }
 
 fn run_proof_and_verification(circuit: CircuitParameters) {
-    log::info!("Running prover and verifier for {:?}", circuit.name);
-    log::debug!("ProgramArtifact loaded: {:?}", &circuit.program_artifact);
-    log::debug!("Prover inputs {:?}", &circuit.verifier_inputs);
+    let _total_span = info_span!("total", circuit = ?circuit.name).entered();
 
-    let prover_circuit =
-        NoirCircuitSynthesizer::new(circuit.program_artifact.clone(), circuit.prover_inputs);
+    info!("Running prover and verifier for {:?}", circuit.name);
+    debug!("ProgramArtifact loaded: {:?}", &circuit.program_artifact);
+    debug!("Prover inputs {:?}", &circuit.verifier_inputs);
 
-    let proof_start = Instant::now();
-    let proof: SpartanSNARK<E> = prove(prover_circuit);
-    let proof_duration = proof_start.elapsed();
-    log::info!("Proof creation took {:?}", proof_duration);
+    let prover_circuit = {
+        let _span = info_span!("prover_circuit_synthesis").entered();
+        NoirCircuitSynthesizer::new(circuit.program_artifact.clone(), circuit.prover_inputs)
+    };
 
-    let verifier_circuit =
-        NoirCircuitSynthesizer::new(circuit.program_artifact, circuit.verifier_inputs);
+    let proof: SpartanSNARK<E> = {
+        let _span = info_span!("proof_creation").entered();
+        prove(prover_circuit)
+    };
 
-    let verify_start = Instant::now();
-    let verification_result = verify(verifier_circuit, proof);
-    let verify_duration = verify_start.elapsed();
-    log::info!("Proof verification took {:?}", verify_duration);
+    let verifier_circuit = {
+        let _span = info_span!("verifier_circuit_synthesis").entered();
+        NoirCircuitSynthesizer::new(circuit.program_artifact, circuit.verifier_inputs)
+    };
+
+    let verification_result = {
+        let _span = info_span!("verification").entered();
+        verify(verifier_circuit, proof)
+    };
 
     verification_result.expect("verify failed");
-    log::info!("Verification successful.");
+    info!("Verification successful.");
 }
 
 fn main() {
@@ -67,14 +72,18 @@ fn main() {
     if std::env::var("RUST_LOG").is_err() {
         if cli.verbose {
             // SAFETY: called before any other threads are spawned.
-            unsafe { std::env::set_var("RUST_LOG", "info") };
+            unsafe { std::env::set_var("RUST_LOG", "warn,spartan_backend=info") };
         }
     }
-    env_logger::init();
+
+    tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
+        .init();
 
     match cli.circuit_dir {
         Some(dir) => {
-            log::info!("Running circuit from directory {}", dir.display());
+            info!("Running circuit from directory {}", dir.display());
             let circuit = instantiate_circuit_from_dir(&dir);
             run_proof_and_verification(circuit);
         }
@@ -85,7 +94,7 @@ fn main() {
                 "c0002_trivial_with_strings",
             ];
             for name in default_circuits {
-                log::info!("Running circuit {name}");
+                info!("Running circuit {name}");
                 let circuit = instantiate_circuit(name);
                 run_proof_and_verification(circuit);
             }

@@ -151,11 +151,11 @@ fn instantiate_circuit_with_settings(
             &circuit_settings.prover_inputs_file,
         ))
     } else if Path::new(&circuit_settings.witness_gz_file).exists() {
-        log::warn!("prover_input.json not found, using nargo witness file");
+        tracing::warn!("prover_input.json not found, using nargo witness file");
         let witness_map = read_witness_gz(&circuit_settings.witness_gz_file);
         witness_map_to_prover_inputs(witness_map, &program_artifact)
     } else {
-        log::warn!(
+        tracing::warn!(
             "prover_input.json not found, falling back to Prover.toml (no intermediate witnesses)"
         );
         map_into_field_flat(&read_inputs_from_prover_toml(
@@ -163,7 +163,7 @@ fn instantiate_circuit_with_settings(
             &circuit_settings.prover_toml_file,
         ))
     };
-    log::debug!("Prover inputs: {:?}", field_prover_input);
+    tracing::debug!("Prover inputs: {:?}", field_prover_input);
 
     // Each wire must be assigned for the prover.
     assert!(
@@ -182,10 +182,10 @@ fn instantiate_circuit_with_settings(
                 &circuit_settings.verifier_inputs_file,
             ))
         } else {
-            log::warn!("verifier_input.json not found, deriving from prover inputs");
+            tracing::warn!("verifier_input.json not found, deriving from prover inputs");
             derive_verifier_inputs(&field_prover_input)
         };
-    log::debug!("Verifier inputs: {:?}", field_verifier_input);
+    tracing::debug!("Verifier inputs: {:?}", field_verifier_input);
 
     CircuitParameters {
         name: String::from(name),
