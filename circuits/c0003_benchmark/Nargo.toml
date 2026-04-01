@@ -1,0 +1,7 @@
+[package]
+name = "c0003_benchmark"
+type = "bin"
+authors = [""]
+description = "Benchmarking Ultrahonk against Spartan"
+
+[dependencies]
