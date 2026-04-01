@@ -14,13 +14,13 @@ pub fn prove<E: Engine, C: SpartanCircuit<E>>(prover_circuit: C) -> SpartanSNARK
     // PREPARE
     let prep_snark = {
         let _span = debug_span!("prep_prove").entered();
-        SpartanSNARK::<E>::prep_prove(&pk, prover_circuit.clone(), true).expect("prep_prove failed")
+        SpartanSNARK::<E>::prep_prove(&pk, prover_circuit.clone(), false).expect("prep_prove failed")
     };
 
     // PROVE
     let proof = {
         let _span = debug_span!("prove").entered();
-        SpartanSNARK::<E>::prove(&pk, prover_circuit, &prep_snark, true).expect("prove failed")
+        SpartanSNARK::<E>::prove(&pk, prover_circuit, &prep_snark, false).expect("prove failed")
     };
 
     proof
