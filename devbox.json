@@ -1,0 +1,27 @@
+{
+  "packages": [
+    "rustup@latest",
+    "libiconv@latest",
+    "time@latest",
+    "github:eid-privacy/flakes#noir-versions.v1_0_0-beta_18",
+    "github:eid-privacy/flakes#barretenberg-versions.beta_18",
+    "github:eid-privacy/flakes#nargo-t256"
+  ],
+  "env": {
+    "PROJECT_DIR": "$PWD"
+  },
+  "shell": {
+    "init_hook": [
+      "rustup default stable",
+      "( cd spartan-backend && cargo fetch )"
+    ],
+    "scripts": {
+      "ls": "ls && pwd",
+      "build": "cd spartan-backend && cargo build --release",
+      "start": "cd spartan-backend && cargo run",
+      "test": "cd spartan-backend && cargo test -- --show-output",
+      "build-docs": "cd spartan-backend && cargo doc",
+      "benchmark": "./scripts/benchmark.sh"
+    }
+  }
+}
