@@ -28,7 +28,8 @@ pub fn read_inputs(
         &program.bytecode.functions.first().unwrap(),
     );
 
-    let config = read_config(path).unwrap();
+    let config = read_config(path)
+        .unwrap_or_else(|e| panic!("Failed to read input file '{}': {}", path, e));
     map_inputs(&config, &wires_mapping)
 }
 
@@ -67,6 +68,12 @@ pub fn map_inputs(
                 vec![CircuitInput::Number(n.as_u64().unwrap())]
             },
             Value::Null => vec![CircuitInput::Missing; *arity],
+            Value::Array(arr) => {
+                arr.iter().map(|v| match v {
+                    Value::Number(n) => CircuitInput::Number(n.as_u64().expect("array element must be a u64")),
+                    _ => panic!("unsupported array element type in input map: {:?}", v),
+                }).collect()
+            },
             _ => panic!("panik"),
         };
 
@@ -81,6 +88,65 @@ pub fn map_inputs(
     }
 
     new_mapping
+}
+
+/// Read a `Prover.toml` and return inputs mapped to wires, just like `read_inputs` does for JSON.
+pub fn read_inputs_from_prover_toml(
+    program: &ProgramArtifact,
+    toml_path: &str,
+) -> HashMap<String, InputWireMapping<CircuitInput>> {
+    let wires_mapping = map_wires(
+        &program.abi.parameters,
+        program.bytecode.functions.first().unwrap(),
+    );
+    let config = read_prover_toml(toml_path);
+    map_inputs(&config, &wires_mapping)
+}
+
+/// Derive verifier inputs from a `Prover.toml`: keeps public param values, nulls private ones.
+pub fn derive_verifier_inputs_from_prover_toml(
+    program: &ProgramArtifact,
+    toml_path: &str,
+) -> HashMap<String, InputWireMapping<CircuitInput>> {
+    let wires_mapping = map_wires(
+        &program.abi.parameters,
+        program.bytecode.functions.first().unwrap(),
+    );
+    let mut config = read_prover_toml(toml_path);
+    for param in &program.abi.parameters {
+        if param.visibility != AbiVisibility::Public {
+            config.insert(param.name.clone(), Value::Null);
+        }
+    }
+    map_inputs(&config, &wires_mapping)
+}
+
+fn read_prover_toml(path: &str) -> Map<String, Value> {
+    let toml_str = fs::read_to_string(path)
+        .unwrap_or_else(|e| panic!("Failed to read Prover.toml '{}': {}", path, e));
+    let table: toml::Table = toml_str
+        .parse()
+        .unwrap_or_else(|e| panic!("Failed to parse Prover.toml '{}': {}", path, e));
+    table
+        .into_iter()
+        .map(|(k, v)| (k, toml_value_to_json(v)))
+        .collect()
+}
+
+fn toml_value_to_json(value: toml::Value) -> Value {
+    match value {
+        toml::Value::Integer(n) => Value::Number(n.into()),
+        toml::Value::String(s) => Value::String(s),
+        toml::Value::Array(arr) => Value::Array(arr.into_iter().map(toml_value_to_json).collect()),
+        toml::Value::Boolean(b) => Value::Bool(b),
+        toml::Value::Float(f) => {
+            Value::Number(serde_json::Number::from_f64(f).expect("non-finite float in Prover.toml"))
+        }
+        toml::Value::Table(t) => {
+            Value::Object(t.into_iter().map(|(k, v)| (k, toml_value_to_json(v))).collect())
+        }
+        toml::Value::Datetime(dt) => Value::String(dt.to_string()),
+    }
 }
 
 /// Assign ABI parameters to their respective witnesses in the bytecode

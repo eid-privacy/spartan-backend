@@ -121,10 +121,9 @@ impl SpartanCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
         for (i, opcode) in self.program_artifact.bytecode.functions[0].opcodes.iter().enumerate() {
             match opcode {
                 Opcode::AssertZero(expr) => {
-                    // TODO: account for the multiplicands and the constant in Plonk-ish constraints
-                    // let multiplicands = &expr.mul_terms;
+                    // TODO: account for the multiplicands (mul_terms) in Plonk-ish constraints
                     let linear_combinations = &expr.linear_combinations;
-                    // let constant = expr.q_c;
+                    let constant = expr.q_c;
                     log::debug!("AssertZero: {:?}", opcode);
 
                     let mut lin_comb = LinearCombination::<Scalar>::zero();
@@ -141,14 +140,15 @@ impl SpartanCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
                             + (
                                 // unfortunate translation from arkworks fields to halo2curves
                                 hex_to_ff(field_element.to_hex().as_str()),
-                                // TODO: manage unallocated witnesses later (if it becomes relevant)
                                 allocated_num.get_variable(),
                             );
                     }
 
+                    // Include the constant term q_c: the full expression is sum(lc) + q_c = 0
+                    let q_c: Scalar = hex_to_ff(constant.to_hex().as_str());
                     cs.enforce(
                         || format!("enforce AssertZero for opcode {}", i),
-                        |lc| lc + &lin_comb,
+                        |lc| lc + &lin_comb + (q_c, CS::one()),
                         |lc| lc + CS::one(),
                         |lc| lc + &LinearCombination::<Scalar>::zero(),
                     )
