@@ -3,8 +3,8 @@
 DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 RT=$DIR/time_real.sh
 
-STEPS_INPUT_SIZES="23"
-STEPS_ASSERTS="23"
+STEPS_INPUT_SIZES="10 100 1000 10000"
+STEPS_ASSERTS="10"
 CIRCUIT=c0003_benchmark
 BENCHMARK_DIR="$PWD/circuits/$CIRCUIT"
 BENCHMARK_CONSTS="$BENCHMARK_DIR/src/const.nr"
@@ -19,14 +19,17 @@ rm -rf $BENCHMARK_PROOF $BENCHMARK_TARGET stats.txt
 
 for input_size in $STEPS_INPUT_SIZES; do
     for asserts in $STEPS_ASSERTS; do
+        [[ $asserts -gt $input_size ]] && continue
+        echo "INPUT_SIZE: $input_size -- ASSERTS: $asserts" >> stats.txt
         echo "pub global NBR_INPUTS_PRIVATE: u32 = $input_size;" > $BENCHMARK_CONSTS
         echo "pub global NBR_ASSERTS: u32 = $asserts;" >> $BENCHMARK_CONSTS
 
         sum=0
         numbers="private_numbers = [0"
         for input in $( seq 1 $(( input_size - 1)) ); do
-            numbers="$numbers, $input"
-            sum=$(( sum + $input))
+            number=$(( input % 256 ))
+            numbers="$numbers, $number"
+            sum=$(( sum + number ))
         done
         echo "$numbers]" > $BENCHMARK_PROVER
         echo "public_sum = $sum" >> $BENCHMARK_PROVER
