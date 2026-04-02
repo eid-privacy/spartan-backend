@@ -16,7 +16,7 @@ indicated number of assertions.
 
 The simplest way is to run it with:
 
-```bach
+```bash
 devbox run benchmark
 ```
 

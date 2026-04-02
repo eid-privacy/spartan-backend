@@ -25,7 +25,7 @@ type Scalar = <E as Engine>::Scalar;
 #[derive(Parser)]
 #[command(version, about)]
 struct Cli {
-    /// Path to a circuit directory (containing target/*.json and *_input.json).
+    /// Path to a noir circuit directory
     /// When omitted, all built-in circuits are run.
     circuit_dir: Option<PathBuf>,
 
@@ -39,6 +39,7 @@ fn run_proof_and_verification(circuit: CircuitParameters) {
 
     info!("Running prover and verifier for {:?}", circuit.name);
     debug!("ProgramArtifact loaded: {:?}", &circuit.program_artifact);
+    debug!("Prover inputs {:?}", &circuit.prover_inputs);
     debug!("Prover inputs {:?}", &circuit.verifier_inputs);
 
     let prover_circuit = {

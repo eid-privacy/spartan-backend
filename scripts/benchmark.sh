@@ -44,7 +44,7 @@ for input_size in $STEPS_INPUT_SIZES; do
 
         ( cd $BENCHMARK_DIR && nargo-t256 execute --force )
         ( cd $SPARTAN_DIR && cargo run --release -- -v $BENCHMARK_DIR )
-        echo "The vanilla noir and Barrettenberg speed in seconds - Creating vk :: Proving :: Verifying :"
+        echo "The vanilla noir and Barretenberg speed in seconds - Creating vk :: Proving :: Verifying :"
         cat stats.txt
     done
 done
