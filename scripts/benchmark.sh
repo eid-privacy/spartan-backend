@@ -3,7 +3,7 @@
 DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 RT=$DIR/time_real.sh
 
-STEPS_INPUT_SIZES="10 100 1000 10000"
+STEPS_INPUT_SIZES="10 100 1000 10000 100000 1000000"
 STEPS_ASSERTS="10"
 CIRCUIT=c0003_benchmark
 BENCHMARK_DIR="$PWD/circuits/$CIRCUIT"
@@ -25,13 +25,13 @@ for input_size in $STEPS_INPUT_SIZES; do
         echo "pub global NBR_ASSERTS: u32 = $asserts;" >> $BENCHMARK_CONSTS
 
         sum=0
-        numbers="private_numbers = [0"
+	echo -n "private_numbers = [0" > $BENCHMARK_PROVER
         for input in $( seq 1 $(( input_size - 1)) ); do
             number=$(( input % 256 ))
-            numbers="$numbers, $number"
+	    echo -n ", $number" >> $BENCHMARK_PROVER
             sum=$(( sum + number ))
         done
-        echo "$numbers]" > $BENCHMARK_PROVER
+	echo "]" >> $BENCHMARK_PROVER
         echo "public_sum = $sum" >> $BENCHMARK_PROVER
 
         ( cd $BENCHMARK_DIR && nargo execute --force )
