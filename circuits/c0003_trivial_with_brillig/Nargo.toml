@@ -1,0 +1,7 @@
+[package]
+name = "c0003_trivial_with_brillig"
+type = "bin"
+authors = [""]
+description = "A trivial equality assertion with additional (unconstrainted) steps."
+
+[dependencies]

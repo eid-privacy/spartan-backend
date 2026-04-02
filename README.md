@@ -10,9 +10,10 @@ bytecode are important to track.**
 
 | pass | circuit                    | noir commit                              |
 |------|----------------------------|------------------------------------------|
-| ✅    | c0000_trivial              | b7f153bcda440ee4556629ffe41d728aba177939 |
-| ✅    | c0001_trivial_with_range   | b7f153bcda440ee4556629ffe41d728aba177939 |
-| ✅    | c0001_trivial_with_strings | b7f153bcda440ee4556629ffe41d728aba177939 |
+| ✅    | c0000_trivial              | aac6859426c78b03358de4128a7ae0e68546f31a |
+| ✅    | c0001_trivial_with_range   | aac6859426c78b03358de4128a7ae0e68546f31a |
+| ✅    | c0002_trivial_with_strings | aac6859426c78b03358de4128a7ae0e68546f31a |
+| ✅    | c0003_trivial_with_brillig | aac6859426c78b03358de4128a7ae0e68546f31a |
 
 ## Reproducing the results
 

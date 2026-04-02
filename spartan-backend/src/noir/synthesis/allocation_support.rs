@@ -8,7 +8,7 @@ use ff::PrimeField;
 
 pub(crate) type WitnessMap<V> = HashMap<u32, V>;
 
-pub struct AllocatedWire<V: PrimeField> {
+pub(crate) struct AllocatedWire<V: PrimeField> {
     pub witness: Witness,
     // witness might be missing when synthesis is done by the verifier, SynthesisError is the
     // way the library handles this.

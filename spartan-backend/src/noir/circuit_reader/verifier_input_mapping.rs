@@ -1,48 +1,37 @@
 use std::collections::{BTreeSet, HashMap};
 use std::fs;
-use acir::circuit::Circuit;
-use acir::FieldElement;
-use acir::native_types::Witness;
-use noirc_abi::{AbiParameter, AbiVisibility};
 use noirc_artifacts::program::ProgramArtifact;
 use serde_json::{Error, Map, Value};
+use crate::noir::circuit_reader::types::circuit_input::CircuitInput;
+use crate::noir::circuit_reader::named_parameters_mapping::map_wires;
+use crate::noir::circuit_reader::types::input_wire::InputWire;
+use crate::noir::circuit_reader::types::wire::Wire;
 
-pub type Visible = bool;
-pub type WireMapping = Vec<(Visible, Witness)>;
-pub type InputWireMapping<V> = Vec<(Visible, Witness, V)>;
-
-#[derive(Clone, Copy, Debug)]
-pub enum CircuitInput {
-    Byte(u8),
-    Number(u64), // TODO: add other options
-    Missing,
-}
-
-pub fn read_inputs(
+pub fn read_verifier_inputs(
     program: &ProgramArtifact,
     path: &str,
-) -> HashMap<String, InputWireMapping<CircuitInput>> {
+) -> Vec<InputWire<CircuitInput>> {
     let wires_mapping= map_wires(
         &program.abi.parameters,
         // assume a single function for now
         &program.bytecode.functions.first().unwrap(),
     );
 
-    let config = read_config(path).unwrap();
-    map_inputs(&config, &wires_mapping)
+    let config = read_verifier_config(path).unwrap();
+    map_verifier_inputs(&config, &wires_mapping)
 }
 
-fn read_config(path: &str) -> Result<Map<String, Value>, Error> {
+fn read_verifier_config(path: &str) -> Result<Map<String, Value>, Error> {
     let json_str = fs::read_to_string(path).map_err(Error::io)?;
     let v: Value = serde_json::from_str(&json_str)?;
     let obj = v.as_object().cloned().unwrap();
     Ok(obj)
 }
 
-pub fn map_inputs(
+pub fn map_verifier_inputs(
     input_map: &Map<String, Value>,
-    wiring: &HashMap<String, WireMapping>,
-) -> HashMap<String, InputWireMapping<CircuitInput>> {
+    wiring: &HashMap<String, Vec<Wire>>,
+) -> Vec<InputWire<CircuitInput>> {
     assert_eq!(input_map.len(), wiring.len(), "Number of inputs mismatch with abi");
     let input_keys: BTreeSet<&str> = input_map.keys().map(String::as_str).collect();
     let wiring_keys: BTreeSet<&str> = wiring.keys().map(String::as_str).collect();
@@ -75,42 +64,10 @@ pub fn map_inputs(
             k.to_string(),
             split_input.into_iter()
                 .zip(wire_mapping)
-                .map(|(byte, (visible, witness))| (*visible, *witness, byte))
-                .collect::<Vec<(Visible, Witness, CircuitInput)>>(),
+                .map(|(byte, wire)| wire.assign(byte))
+                .collect::<Vec<InputWire<CircuitInput>>>(),
         );
     }
 
-    new_mapping
-}
-
-/// Assign ABI parameters to their respective witnesses in the bytecode
-pub fn map_wires(
-    abi_parameters: &Vec<AbiParameter>,
-    function: &Circuit<FieldElement>,
-) -> HashMap<String, WireMapping> {
-    // we need to consume both these vectors to map chunks to parameters
-    let mut public_wires = function.public_parameters.0.iter().copied();
-    let mut private_wires = function.private_parameters.iter().copied();
-
-    let mut wire_mapping = HashMap::new();
-
-    for abi_parameter in abi_parameters.iter() {
-        let public = abi_parameter.visibility == AbiVisibility::Public;
-        let width = abi_parameter.typ.field_count() as usize;
-        let wires = if public {
-            public_wires.by_ref()
-        } else {
-            private_wires.by_ref()
-        }
-            .take(width)
-            .map(|w| (public, w))
-            .collect::<Vec<_>>();
-
-        wire_mapping.insert(
-            abi_parameter.name.clone(),
-            wires,
-        );
-    }
-
-    wire_mapping
+    new_mapping.into_values().flatten().collect()
 }

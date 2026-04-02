@@ -1,0 +1,33 @@
+Compiled ACIR for main:
+func 0
+private parameters: [w0]
+public parameters: [w1]
+return values: []
+BRILLIG CALL func: 0, predicate: 1, inputs: [w0, 1], outputs: [w2]
+ASSERT w2 = w0 + 1
+ASSERT w2 = w1
+
+unconstrained func 0: unconstrained_add
+ 0: @2 = const u32 1
+ 1: @1 = const u32 32838
+ 2: @0 = const u32 70
+ 3: sp[4] = const u32 2
+ 4: sp[5] = const u32 0
+ 5: @67 = calldata copy [sp[5]; sp[4]]
+ 6: sp[2] = @67
+ 7: sp[3] = @68
+ 8: call 13
+ 9: @69 = sp[2]
+10: sp[3] = const u32 69
+11: sp[4] = const u32 1
+12: stop @[sp[3]; sp[4]]
+13: call 17
+14: sp[4] = field add sp[2], sp[3]
+15: sp[2] = sp[4]
+16: return
+17: @4 = const u32 30790
+18: @3 = u32 lt @0, @4
+19: jump if @3 to 22
+20: @1 = indirect const u64 15764276373176857197
+21: trap @[@1; @2]
+22: return

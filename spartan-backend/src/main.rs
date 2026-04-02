@@ -4,20 +4,16 @@ mod nizk_prover;
 mod nizk_verifier;
 pub mod noir;
 mod circuit_instance;
+pub mod types;
 
 use std::env;
-use spartan2::provider::T256HyraxEngine;
 use spartan2::spartan::SpartanSNARK;
-use spartan2::traits::Engine;
 use crate::nizk_prover::prove;
 use crate::nizk_verifier::verify;
-use crate::noir::circuit_synthesizer::NoirCircuitSynthesizer;
-use noir::circuit_reader::input_mapping::{InputWireMapping};
+use crate::noir::synthesis::circuit_synthesizer::NoirCircuitSynthesizer;
 use crate::circuit_instance::instantiate_circuit;
 use crate::noir::circuit::CircuitParameters;
-
-type E = T256HyraxEngine;
-type Scalar = <E as Engine>::Scalar;
+use crate::types::{E, Scalar};
 
 fn run_proof_and_verification(circuit: CircuitParameters) {
     log::info!("Running prover and verifier for {:?}", circuit.name);
@@ -27,14 +23,12 @@ fn run_proof_and_verification(circuit: CircuitParameters) {
         circuit.program_artifact.clone(),
         circuit.prover_inputs,
     );
+    let proof: SpartanSNARK<E> = prove(prover_circuit);
 
     let verifier_circuit = NoirCircuitSynthesizer::new(
         circuit.program_artifact,
         circuit.verifier_inputs,
     );
-
-    let proof: SpartanSNARK<E> = prove(prover_circuit);
-
     let verification_result = verify(verifier_circuit, proof);
     verification_result.expect("verify failed");
     log::info!("Verification successful.");
@@ -49,6 +43,7 @@ fn main() {
             "c0000_trivial".to_string(),
             "c0001_trivial_with_range".to_string(),
             "c0002_trivial_with_strings".to_string(),
+            "c0003_trivial_with_brillig".to_string(),
         ]
     } else {
         args[1..].to_vec()
