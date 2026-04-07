@@ -46,7 +46,7 @@ pub fn instantiate_circuit(name: &str) ->  CircuitParameters {
         &program_artifact,
         circuit_settings.prover_inputs_file.as_str()
     );
-    log::debug!("Prover inputs: {:?}", mapped_prover_input);
+    tracing::debug!("Prover inputs: {:?}", mapped_prover_input);
     let field_prover_input = map_into_field_flat(&mapped_prover_input);
     // each wire has to be assigned for the prover
     assert!(field_prover_input.iter().all(|input_wire| input_wire.value.is_some()));
@@ -56,7 +56,7 @@ pub fn instantiate_circuit(name: &str) ->  CircuitParameters {
         &program_artifact,
         circuit_settings.verifier_inputs_file.as_str()
     );
-    log::debug!("Verifier inputs: {:?}", mapped_verifier_input);
+    tracing::debug!("Verifier inputs: {:?}", mapped_verifier_input);
     let field_verifier_input = map_into_field_flat(
         &mapped_verifier_input
     );

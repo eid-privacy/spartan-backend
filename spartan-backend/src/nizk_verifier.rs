@@ -9,11 +9,14 @@ pub fn verify<E: Engine, C: SpartanCircuit<E>>(
     verifier_circuit: C,
     proof: SpartanSNARK<E>
 ) -> Result<Vec<E::Scalar>, SpartanError> {
-    let (_, vk) = SpartanSNARK::<E>::setup(verifier_circuit)?;
+    let (_, vk) = {
+        let _span = tracing::debug_span!("verifier_setup").entered();
+        SpartanSNARK::<E>::setup(verifier_circuit)?
+    };
 
-    let t0 = Instant::now();
-    let verification_result = proof.verify(&vk);
-    let verify_ms = t0.elapsed().as_millis();
-    log::debug!("Verify: {:?}", verify_ms);
+    let verification_result = {
+        let _span = tracing::debug_span!("verify").entered();
+        proof.verify(&vk)
+    };
     verification_result
 }
