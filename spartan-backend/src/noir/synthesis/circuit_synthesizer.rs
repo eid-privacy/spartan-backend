@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use acir::circuit::{Opcode};
-use bellpepper_core::{ConstraintSystem, LinearCombination, SynthesisError};
+use bellpepper_core::{ConstraintSystem, SynthesisError};
 use bellpepper_core::num::AllocatedNum;
 use ff::Field;
 use noirc_artifacts::program::ProgramArtifact;
@@ -8,7 +8,6 @@ use spartan2::provider::T256HyraxEngine;
 use spartan2::traits::circuit::SpartanCircuit;
 use crate::noir::circuit_reader::read_witnesses;
 use crate::noir::circuit_reader::types::input_wire::InputWire;
-use crate::noir::scalar_conversion::to_spartan_scalar;
 use crate::noir::synthesis::allocation_support::{allocate_input, allocate_witness, AllocatedWire, WitnessMap};
 use crate::noir::synthesis::assert_zero::handle_assert_zero;
 use crate::noir::synthesis::blackbox::router::BlackboxRouter;
@@ -120,7 +119,7 @@ impl SpartanCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
         let allocation_store = self.build_allocation_store(
             cs,
         )?;
-        log::debug!("Allocation map: {:?}", allocation_store);
+        tracing::debug!("Allocation map: {:?}", allocation_store);
         let mut blackbox_router = BlackboxRouter::new(&allocation_store);
 
         // at this point we have the correct mapping from wire to allocated variable and can
@@ -128,7 +127,7 @@ impl SpartanCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
         for (i, opcode) in self.program_artifact.bytecode.functions[0].opcodes.iter().enumerate() {
             match opcode {
                 Opcode::AssertZero(expr) => {
-                    log::debug!("Handling AssertZero: {:?}", opcode);
+                    tracing::debug!("Handling AssertZero: {:?}", opcode);
                     handle_assert_zero(
                         cs,
                         &allocation_store,
@@ -137,7 +136,7 @@ impl SpartanCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
                     )?;
                 },
                 Opcode::BlackBoxFuncCall(call) => {
-                    log::debug!("Handling BLACKBOX call {}", call);
+                    tracing::debug!("Handling BLACKBOX call {}", call);
                     blackbox_router.route(
                         cs,
                         call,
@@ -145,7 +144,7 @@ impl SpartanCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
                     )?;
                 },
                 Opcode::BrilligCall { .. } => {
-                    log::debug!("Skipping Brillig call {:?}.", opcode);
+                    tracing::debug!("Skipping Brillig call {:?}.", opcode);
                 },
                 _ => {
                     return Err(SynthesisError::Unsatisfiable) // waiting for a better error system

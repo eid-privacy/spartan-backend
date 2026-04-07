@@ -19,7 +19,7 @@ pub(crate) fn handle_assert_zero<CS: ConstraintSystem<Scalar>>(
 
     let mut lin_comb = LinearCombination::<Scalar>::zero();
     for (field_element, witness) in linear_combinations {
-        log::debug!("LC term: {:?} * {:?}", field_element, witness);
+        tracing::debug!("LC term: {:?} * {:?}", field_element, witness);
         let allocated = allocation_store
             .get(&witness.witness_index())
             .ok_or_else(|| SynthesisError::AssignmentMissing)?;
