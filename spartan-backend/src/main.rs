@@ -21,7 +21,8 @@ fn run_proof_and_verification(circuit: CircuitParameters) {
 
     tracing::info!("Running prover and verifier for {:?}", circuit.name);
     tracing::debug!("ProgramArtifact loaded: {:?}", &circuit.program_artifact);
-    tracing::debug!("Prover inputs {:?}", &circuit.verifier_inputs);
+    tracing::debug!("Prover inputs {:?}", &circuit.prover_inputs);
+    tracing::debug!("Verifier inputs {:?}", &circuit.verifier_inputs);
     let prover_circuit = {
         let _span = info_span!("prover_circuit_synthesis").entered();
         NoirCircuitSynthesizer::new(circuit.program_artifact.clone(), circuit.prover_inputs)
