@@ -1,3 +1,4 @@
+use std::path::Path;
 use crate::noir::circuit::CircuitParameters;
 use crate::noir::circuit_reader::types::circuit_input::CircuitInput;
 use crate::noir::circuit_reader::prover_input_mapping::{read_inputs};
@@ -22,6 +23,21 @@ impl CircuitSettings {
             verifier_inputs_file: format!("{}/{}/verifier_input.json", Self::BASE_PATH, name),
         }
     }
+
+    pub fn from_directory(dir: &Path) -> CircuitSettings {
+        let name = dir
+            .file_name()
+            .expect("directory path must have a final component")
+            .to_str()
+            .expect("directory name must be valid UTF-8");
+        let dir_str = dir.to_str().expect("directory path must be valid UTF-8");
+        CircuitSettings {
+            circuit_file: format!("{}/target/{}.json", dir_str, name),
+            prover_inputs_file: format!("{}/target/{}.gz", dir_str, name),
+            verifier_inputs_file: format!("{}/verifier_input.json", dir_str),
+        }
+    }
+
 }
 
 pub fn map_into_field_flat(
@@ -35,9 +51,22 @@ pub fn map_into_field_flat(
         .collect()
 }
 
-pub fn instantiate_circuit(name: &str) ->  CircuitParameters {
+pub fn instantiate_circuit_with_name(name: &str) ->  CircuitParameters {
     let circuit_settings = CircuitSettings::new(name);
+    instantiate_circuit_with_settings(name, circuit_settings)
+}
 
+pub fn instantiate_circuit_from_dir(dir: &Path) -> CircuitParameters {
+    let circuit_settings = CircuitSettings::from_directory(dir);
+    let name = dir
+        .file_name()
+        .expect("directory path must have a final component")
+        .to_str()
+        .expect("directory name must be valid UTF-8");
+    instantiate_circuit_with_settings(name, circuit_settings)
+}
+
+fn instantiate_circuit_with_settings(name: &str, circuit_settings: CircuitSettings) -> CircuitParameters {
     let program_artifact = read_noir_circuit(circuit_settings.circuit_file.as_str())
         .expect("Failed to read noir circuit");
 

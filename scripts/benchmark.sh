@@ -43,8 +43,8 @@ for input_size in $STEPS_INPUT_SIZES; do
         $RT bb verify -p $BENCHMARK_PROOF/proof -k $BENCHMARK_PROOF/vk -i $BENCHMARK_PROOF/public_inputs
 
         ( cd $BENCHMARK_DIR && nargo-t256 execute --force )
-        ( cd $SPARTAN_DIR && cargo run -- -v $BENCHMARK_DIR )
-        echo "The vanilla noir and Barrettenberg speed in seconds - Creating vk :: Proving :: Verifying :"
+        ( cd $SPARTAN_DIR && cargo run --release -- -v $BENCHMARK_DIR )
+        echo "The vanilla noir and Barretenberg speed in seconds - Creating vk :: Proving :: Verifying :"
         cat stats.txt
     done
 done
