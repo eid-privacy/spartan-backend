@@ -3466,6 +3466,7 @@ dependencies = [
  "acir",
  "acvm",
  "bellpepper-core",
+ "clap",
  "ff",
  "noir_artifact_cli",
  "noirc_abi",

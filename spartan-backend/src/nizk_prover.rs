@@ -1,4 +1,3 @@
-use std::time::Instant;
 use spartan2::spartan::SpartanSNARK;
 use spartan2::traits::circuit::SpartanCircuit;
 use spartan2::traits::Engine;
