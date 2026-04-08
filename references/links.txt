@@ -1,0 +1,2 @@
+Wikipedia's article on ECDSA: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
+Noir documentation: https://noir-lang.org/docs/

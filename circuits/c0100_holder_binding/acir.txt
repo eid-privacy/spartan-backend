@@ -1,0 +1,2124 @@
+Compiled ACIR for main:
+func 0
+private parameters: [w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14, w15, w16, w17, w18, w19, w20, w21, w22, w23, w24, w25, w26, w27, w28, w29, w30, w31, w32, w33, w34, w35, w36, w37, w38, w39, w40, w41, w42, w43, w44, w45, w46, w47, w48, w49, w50, w51, w52, w53, w54, w55, w56, w57, w58, w59, w60, w61, w62, w63, w64, w65, w66, w67, w68, w69, w70, w71, w72, w73, w74, w75, w76, w77, w78, w79, w80, w81, w82, w83, w84, w85, w86, w87, w88, w89, w90, w91, w92, w93, w94, w95, w96, w97, w98, w99, w100, w101, w102, w103, w104, w105, w106, w107, w108, w109, w110, w111, w112, w113, w114, w115, w116, w117, w118, w119, w120, w121, w122, w123, w124, w125, w126, w127, w128, w129, w130, w131, w132, w133, w134, w135, w136, w137, w138, w139, w140, w141, w142, w143, w144, w145, w146, w147, w148, w149, w150, w151, w152, w153, w154, w155, w156, w157, w158, w159, w160, w161, w162, w163, w164, w165, w166, w167, w168, w169, w170, w171, w172, w173, w174, w175, w176, w177, w178, w179, w180, w181, w182, w183, w184, w185, w186, w187, w188, w189, w190, w191, w192, w193, w194, w195, w196, w197, w198, w199, w200, w201, w202, w203, w204, w205, w206, w207, w208, w209, w210, w211, w212, w213, w214, w215, w216, w217, w218, w219, w220, w221, w222, w223, w224, w225, w226, w227, w228, w229, w230, w231, w232, w233, w234, w235, w236, w237, w238, w239, w240, w241, w242, w243, w244, w245, w246, w247, w248, w249, w250, w251, w252, w253, w254, w255, w256, w257, w258, w259, w260, w261, w262, w263, w264, w265, w266, w267, w268, w269, w270, w271, w272, w273, w274, w275, w276, w277, w278, w279, w280, w281]
+public parameters: [w282, w283, w284, w285, w286, w287, w288, w289, w290, w291, w292, w293, w294, w295, w296, w297, w298, w299, w300, w301, w302, w303, w304, w305, w306, w307, w308, w309, w310, w311, w312, w313]
+return values: []
+BLACKBOX::RANGE input: w0, bits: 8
+BLACKBOX::RANGE input: w1, bits: 8
+BLACKBOX::RANGE input: w2, bits: 8
+BLACKBOX::RANGE input: w3, bits: 8
+BLACKBOX::RANGE input: w4, bits: 8
+BLACKBOX::RANGE input: w5, bits: 8
+BLACKBOX::RANGE input: w6, bits: 8
+BLACKBOX::RANGE input: w7, bits: 8
+BLACKBOX::RANGE input: w8, bits: 8
+BLACKBOX::RANGE input: w9, bits: 8
+BLACKBOX::RANGE input: w10, bits: 8
+BLACKBOX::RANGE input: w11, bits: 8
+BLACKBOX::RANGE input: w12, bits: 8
+BLACKBOX::RANGE input: w13, bits: 8
+BLACKBOX::RANGE input: w14, bits: 8
+BLACKBOX::RANGE input: w15, bits: 8
+BLACKBOX::RANGE input: w16, bits: 8
+BLACKBOX::RANGE input: w17, bits: 8
+BLACKBOX::RANGE input: w18, bits: 8
+BLACKBOX::RANGE input: w19, bits: 8
+BLACKBOX::RANGE input: w20, bits: 8
+BLACKBOX::RANGE input: w21, bits: 8
+BLACKBOX::RANGE input: w22, bits: 8
+BLACKBOX::RANGE input: w23, bits: 8
+BLACKBOX::RANGE input: w24, bits: 8
+BLACKBOX::RANGE input: w25, bits: 8
+BLACKBOX::RANGE input: w26, bits: 8
+BLACKBOX::RANGE input: w27, bits: 8
+BLACKBOX::RANGE input: w28, bits: 8
+BLACKBOX::RANGE input: w29, bits: 8
+BLACKBOX::RANGE input: w30, bits: 8
+BLACKBOX::RANGE input: w31, bits: 8
+BLACKBOX::RANGE input: w32, bits: 8
+BLACKBOX::RANGE input: w33, bits: 8
+BLACKBOX::RANGE input: w34, bits: 8
+BLACKBOX::RANGE input: w35, bits: 8
+BLACKBOX::RANGE input: w36, bits: 8
+BLACKBOX::RANGE input: w37, bits: 8
+BLACKBOX::RANGE input: w38, bits: 8
+BLACKBOX::RANGE input: w39, bits: 8
+BLACKBOX::RANGE input: w40, bits: 8
+BLACKBOX::RANGE input: w41, bits: 8
+BLACKBOX::RANGE input: w42, bits: 8
+BLACKBOX::RANGE input: w43, bits: 8
+BLACKBOX::RANGE input: w44, bits: 8
+BLACKBOX::RANGE input: w45, bits: 8
+BLACKBOX::RANGE input: w46, bits: 8
+BLACKBOX::RANGE input: w47, bits: 8
+BLACKBOX::RANGE input: w48, bits: 8
+BLACKBOX::RANGE input: w49, bits: 8
+BLACKBOX::RANGE input: w50, bits: 8
+BLACKBOX::RANGE input: w51, bits: 8
+BLACKBOX::RANGE input: w52, bits: 8
+BLACKBOX::RANGE input: w53, bits: 8
+BLACKBOX::RANGE input: w54, bits: 8
+BLACKBOX::RANGE input: w55, bits: 8
+BLACKBOX::RANGE input: w56, bits: 8
+BLACKBOX::RANGE input: w57, bits: 8
+BLACKBOX::RANGE input: w58, bits: 8
+BLACKBOX::RANGE input: w59, bits: 8
+BLACKBOX::RANGE input: w60, bits: 8
+BLACKBOX::RANGE input: w61, bits: 8
+BLACKBOX::RANGE input: w62, bits: 8
+BLACKBOX::RANGE input: w63, bits: 8
+BLACKBOX::RANGE input: w64, bits: 8
+BLACKBOX::RANGE input: w65, bits: 8
+BLACKBOX::RANGE input: w66, bits: 8
+BLACKBOX::RANGE input: w67, bits: 8
+BLACKBOX::RANGE input: w68, bits: 8
+BLACKBOX::RANGE input: w69, bits: 8
+BLACKBOX::RANGE input: w70, bits: 8
+BLACKBOX::RANGE input: w71, bits: 8
+BLACKBOX::RANGE input: w72, bits: 8
+BLACKBOX::RANGE input: w73, bits: 8
+BLACKBOX::RANGE input: w74, bits: 8
+BLACKBOX::RANGE input: w75, bits: 8
+BLACKBOX::RANGE input: w76, bits: 8
+BLACKBOX::RANGE input: w77, bits: 8
+BLACKBOX::RANGE input: w78, bits: 8
+BLACKBOX::RANGE input: w79, bits: 8
+BLACKBOX::RANGE input: w80, bits: 8
+BLACKBOX::RANGE input: w81, bits: 8
+BLACKBOX::RANGE input: w82, bits: 8
+BLACKBOX::RANGE input: w83, bits: 8
+BLACKBOX::RANGE input: w84, bits: 8
+BLACKBOX::RANGE input: w85, bits: 8
+BLACKBOX::RANGE input: w86, bits: 8
+BLACKBOX::RANGE input: w87, bits: 8
+BLACKBOX::RANGE input: w88, bits: 8
+BLACKBOX::RANGE input: w89, bits: 8
+BLACKBOX::RANGE input: w90, bits: 8
+BLACKBOX::RANGE input: w91, bits: 8
+BLACKBOX::RANGE input: w92, bits: 8
+BLACKBOX::RANGE input: w93, bits: 8
+BLACKBOX::RANGE input: w94, bits: 8
+BLACKBOX::RANGE input: w95, bits: 8
+BLACKBOX::RANGE input: w96, bits: 8
+BLACKBOX::RANGE input: w97, bits: 8
+BLACKBOX::RANGE input: w98, bits: 8
+BLACKBOX::RANGE input: w99, bits: 8
+BLACKBOX::RANGE input: w100, bits: 8
+BLACKBOX::RANGE input: w101, bits: 8
+BLACKBOX::RANGE input: w102, bits: 8
+BLACKBOX::RANGE input: w103, bits: 8
+BLACKBOX::RANGE input: w104, bits: 8
+BLACKBOX::RANGE input: w105, bits: 8
+BLACKBOX::RANGE input: w106, bits: 8
+BLACKBOX::RANGE input: w107, bits: 8
+BLACKBOX::RANGE input: w108, bits: 8
+BLACKBOX::RANGE input: w109, bits: 8
+BLACKBOX::RANGE input: w110, bits: 8
+BLACKBOX::RANGE input: w111, bits: 8
+BLACKBOX::RANGE input: w112, bits: 8
+BLACKBOX::RANGE input: w113, bits: 8
+BLACKBOX::RANGE input: w114, bits: 8
+BLACKBOX::RANGE input: w115, bits: 8
+BLACKBOX::RANGE input: w116, bits: 8
+BLACKBOX::RANGE input: w117, bits: 8
+BLACKBOX::RANGE input: w118, bits: 8
+BLACKBOX::RANGE input: w119, bits: 8
+BLACKBOX::RANGE input: w120, bits: 8
+BLACKBOX::RANGE input: w121, bits: 8
+BLACKBOX::RANGE input: w122, bits: 8
+BLACKBOX::RANGE input: w123, bits: 8
+BLACKBOX::RANGE input: w124, bits: 8
+BLACKBOX::RANGE input: w125, bits: 8
+BLACKBOX::RANGE input: w126, bits: 8
+BLACKBOX::RANGE input: w127, bits: 8
+BLACKBOX::RANGE input: w128, bits: 8
+BLACKBOX::RANGE input: w129, bits: 8
+BLACKBOX::RANGE input: w130, bits: 8
+BLACKBOX::RANGE input: w131, bits: 8
+BLACKBOX::RANGE input: w132, bits: 8
+BLACKBOX::RANGE input: w133, bits: 8
+BLACKBOX::RANGE input: w134, bits: 8
+BLACKBOX::RANGE input: w135, bits: 8
+BLACKBOX::RANGE input: w136, bits: 8
+BLACKBOX::RANGE input: w137, bits: 8
+BLACKBOX::RANGE input: w138, bits: 8
+BLACKBOX::RANGE input: w139, bits: 8
+BLACKBOX::RANGE input: w140, bits: 8
+BLACKBOX::RANGE input: w141, bits: 8
+BLACKBOX::RANGE input: w142, bits: 8
+BLACKBOX::RANGE input: w143, bits: 8
+BLACKBOX::RANGE input: w144, bits: 8
+BLACKBOX::RANGE input: w145, bits: 8
+BLACKBOX::RANGE input: w146, bits: 8
+BLACKBOX::RANGE input: w147, bits: 8
+BLACKBOX::RANGE input: w148, bits: 8
+BLACKBOX::RANGE input: w149, bits: 8
+BLACKBOX::RANGE input: w150, bits: 8
+BLACKBOX::RANGE input: w151, bits: 8
+BLACKBOX::RANGE input: w152, bits: 8
+BLACKBOX::RANGE input: w153, bits: 8
+BLACKBOX::RANGE input: w154, bits: 8
+BLACKBOX::RANGE input: w155, bits: 8
+BLACKBOX::RANGE input: w156, bits: 8
+BLACKBOX::RANGE input: w157, bits: 8
+BLACKBOX::RANGE input: w158, bits: 8
+BLACKBOX::RANGE input: w159, bits: 8
+BLACKBOX::RANGE input: w160, bits: 8
+BLACKBOX::RANGE input: w161, bits: 8
+BLACKBOX::RANGE input: w162, bits: 8
+BLACKBOX::RANGE input: w163, bits: 8
+BLACKBOX::RANGE input: w164, bits: 8
+BLACKBOX::RANGE input: w165, bits: 8
+BLACKBOX::RANGE input: w166, bits: 8
+BLACKBOX::RANGE input: w167, bits: 8
+BLACKBOX::RANGE input: w168, bits: 8
+BLACKBOX::RANGE input: w169, bits: 8
+BLACKBOX::RANGE input: w170, bits: 8
+BLACKBOX::RANGE input: w171, bits: 8
+BLACKBOX::RANGE input: w172, bits: 8
+BLACKBOX::RANGE input: w173, bits: 8
+BLACKBOX::RANGE input: w174, bits: 8
+BLACKBOX::RANGE input: w175, bits: 8
+BLACKBOX::RANGE input: w176, bits: 8
+BLACKBOX::RANGE input: w177, bits: 8
+BLACKBOX::RANGE input: w178, bits: 8
+BLACKBOX::RANGE input: w179, bits: 8
+BLACKBOX::RANGE input: w180, bits: 8
+BLACKBOX::RANGE input: w181, bits: 8
+BLACKBOX::RANGE input: w182, bits: 8
+BLACKBOX::RANGE input: w183, bits: 8
+BLACKBOX::RANGE input: w184, bits: 8
+BLACKBOX::RANGE input: w185, bits: 8
+BLACKBOX::RANGE input: w186, bits: 8
+BLACKBOX::RANGE input: w187, bits: 8
+BLACKBOX::RANGE input: w188, bits: 8
+BLACKBOX::RANGE input: w189, bits: 8
+BLACKBOX::RANGE input: w190, bits: 8
+BLACKBOX::RANGE input: w191, bits: 8
+BLACKBOX::RANGE input: w192, bits: 8
+BLACKBOX::RANGE input: w193, bits: 8
+BLACKBOX::RANGE input: w194, bits: 8
+BLACKBOX::RANGE input: w195, bits: 8
+BLACKBOX::RANGE input: w196, bits: 8
+BLACKBOX::RANGE input: w197, bits: 8
+BLACKBOX::RANGE input: w198, bits: 8
+BLACKBOX::RANGE input: w199, bits: 8
+BLACKBOX::RANGE input: w200, bits: 8
+BLACKBOX::RANGE input: w201, bits: 8
+BLACKBOX::RANGE input: w202, bits: 8
+BLACKBOX::RANGE input: w203, bits: 8
+BLACKBOX::RANGE input: w204, bits: 8
+BLACKBOX::RANGE input: w205, bits: 8
+BLACKBOX::RANGE input: w206, bits: 8
+BLACKBOX::RANGE input: w207, bits: 8
+BLACKBOX::RANGE input: w208, bits: 8
+BLACKBOX::RANGE input: w209, bits: 8
+BLACKBOX::RANGE input: w210, bits: 8
+BLACKBOX::RANGE input: w211, bits: 8
+BLACKBOX::RANGE input: w212, bits: 8
+BLACKBOX::RANGE input: w213, bits: 8
+BLACKBOX::RANGE input: w214, bits: 8
+BLACKBOX::RANGE input: w215, bits: 8
+BLACKBOX::RANGE input: w216, bits: 8
+BLACKBOX::RANGE input: w217, bits: 8
+BLACKBOX::RANGE input: w218, bits: 8
+BLACKBOX::RANGE input: w219, bits: 8
+BLACKBOX::RANGE input: w220, bits: 8
+BLACKBOX::RANGE input: w221, bits: 8
+BLACKBOX::RANGE input: w222, bits: 8
+BLACKBOX::RANGE input: w223, bits: 8
+BLACKBOX::RANGE input: w224, bits: 8
+BLACKBOX::RANGE input: w225, bits: 8
+BLACKBOX::RANGE input: w226, bits: 8
+BLACKBOX::RANGE input: w227, bits: 8
+BLACKBOX::RANGE input: w228, bits: 8
+BLACKBOX::RANGE input: w229, bits: 8
+BLACKBOX::RANGE input: w230, bits: 8
+BLACKBOX::RANGE input: w231, bits: 8
+BLACKBOX::RANGE input: w232, bits: 8
+BLACKBOX::RANGE input: w233, bits: 8
+BLACKBOX::RANGE input: w234, bits: 8
+BLACKBOX::RANGE input: w235, bits: 8
+BLACKBOX::RANGE input: w236, bits: 8
+BLACKBOX::RANGE input: w237, bits: 8
+BLACKBOX::RANGE input: w238, bits: 8
+BLACKBOX::RANGE input: w239, bits: 8
+BLACKBOX::RANGE input: w240, bits: 8
+BLACKBOX::RANGE input: w241, bits: 8
+BLACKBOX::RANGE input: w242, bits: 8
+BLACKBOX::RANGE input: w243, bits: 8
+BLACKBOX::RANGE input: w244, bits: 8
+BLACKBOX::RANGE input: w245, bits: 8
+BLACKBOX::RANGE input: w246, bits: 8
+BLACKBOX::RANGE input: w247, bits: 8
+BLACKBOX::RANGE input: w248, bits: 8
+BLACKBOX::RANGE input: w249, bits: 8
+BLACKBOX::RANGE input: w250, bits: 8
+BLACKBOX::RANGE input: w251, bits: 8
+BLACKBOX::RANGE input: w252, bits: 8
+BLACKBOX::RANGE input: w253, bits: 8
+BLACKBOX::RANGE input: w254, bits: 8
+BLACKBOX::RANGE input: w255, bits: 8
+BLACKBOX::RANGE input: w256, bits: 8
+BLACKBOX::RANGE input: w257, bits: 8
+BLACKBOX::RANGE input: w258, bits: 8
+BLACKBOX::RANGE input: w259, bits: 8
+BLACKBOX::RANGE input: w260, bits: 8
+BLACKBOX::RANGE input: w261, bits: 8
+BLACKBOX::RANGE input: w262, bits: 8
+BLACKBOX::RANGE input: w263, bits: 8
+BLACKBOX::RANGE input: w264, bits: 8
+BLACKBOX::RANGE input: w265, bits: 8
+BLACKBOX::RANGE input: w266, bits: 8
+BLACKBOX::RANGE input: w267, bits: 8
+BLACKBOX::RANGE input: w268, bits: 8
+BLACKBOX::RANGE input: w269, bits: 8
+BLACKBOX::RANGE input: w270, bits: 8
+BLACKBOX::RANGE input: w271, bits: 8
+BLACKBOX::RANGE input: w272, bits: 8
+BLACKBOX::RANGE input: w273, bits: 8
+BLACKBOX::RANGE input: w274, bits: 8
+BLACKBOX::RANGE input: w275, bits: 8
+BLACKBOX::RANGE input: w276, bits: 8
+BLACKBOX::RANGE input: w277, bits: 8
+BLACKBOX::RANGE input: w278, bits: 8
+BLACKBOX::RANGE input: w279, bits: 8
+BLACKBOX::RANGE input: w280, bits: 8
+BLACKBOX::RANGE input: w281, bits: 8
+BLACKBOX::RANGE input: w282, bits: 8
+BLACKBOX::RANGE input: w283, bits: 8
+BLACKBOX::RANGE input: w284, bits: 8
+BLACKBOX::RANGE input: w285, bits: 8
+BLACKBOX::RANGE input: w286, bits: 8
+BLACKBOX::RANGE input: w287, bits: 8
+BLACKBOX::RANGE input: w288, bits: 8
+BLACKBOX::RANGE input: w289, bits: 8
+BLACKBOX::RANGE input: w290, bits: 8
+BLACKBOX::RANGE input: w291, bits: 8
+BLACKBOX::RANGE input: w292, bits: 8
+BLACKBOX::RANGE input: w293, bits: 8
+BLACKBOX::RANGE input: w294, bits: 8
+BLACKBOX::RANGE input: w295, bits: 8
+BLACKBOX::RANGE input: w296, bits: 8
+BLACKBOX::RANGE input: w297, bits: 8
+BLACKBOX::RANGE input: w298, bits: 8
+BLACKBOX::RANGE input: w299, bits: 8
+BLACKBOX::RANGE input: w300, bits: 8
+BLACKBOX::RANGE input: w301, bits: 8
+BLACKBOX::RANGE input: w302, bits: 8
+BLACKBOX::RANGE input: w303, bits: 8
+BLACKBOX::RANGE input: w304, bits: 8
+BLACKBOX::RANGE input: w305, bits: 8
+BLACKBOX::RANGE input: w306, bits: 8
+BLACKBOX::RANGE input: w307, bits: 8
+BLACKBOX::RANGE input: w308, bits: 8
+BLACKBOX::RANGE input: w309, bits: 8
+BLACKBOX::RANGE input: w310, bits: 8
+BLACKBOX::RANGE input: w311, bits: 8
+BLACKBOX::RANGE input: w312, bits: 8
+BLACKBOX::RANGE input: w313, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w74, 16], outputs: [w314, w315]
+BLACKBOX::RANGE input: w314, bits: 4
+BLACKBOX::RANGE input: w315, bits: 4
+ASSERT w315 = w74 - 16*w314
+BRILLIG CALL func: 0, predicate: 1, inputs: [w74, 64], outputs: [w316, w317]
+BLACKBOX::RANGE input: w316, bits: 2
+BLACKBOX::RANGE input: w317, bits: 6
+ASSERT w317 = w74 - 64*w316
+ASSERT w318 = 9*w316
+BLACKBOX::RANGE input: w318, bits: 8
+ASSERT w319 = w315 + w318
+BLACKBOX::RANGE input: w319, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w75, 16], outputs: [w320, w321]
+BLACKBOX::RANGE input: w320, bits: 4
+BLACKBOX::RANGE input: w321, bits: 4
+ASSERT w321 = w75 - 16*w320
+BRILLIG CALL func: 0, predicate: 1, inputs: [w75, 64], outputs: [w322, w323]
+BLACKBOX::RANGE input: w322, bits: 2
+BLACKBOX::RANGE input: w323, bits: 6
+ASSERT w323 = w75 - 64*w322
+ASSERT w324 = 9*w322
+BLACKBOX::RANGE input: w324, bits: 8
+ASSERT w325 = w321 + w324
+BLACKBOX::RANGE input: w325, bits: 8
+ASSERT w326 = 16*w319
+BLACKBOX::RANGE input: w326, bits: 8
+ASSERT w327 = w325 + w326
+BLACKBOX::RANGE input: w327, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w76, 16], outputs: [w328, w329]
+BLACKBOX::RANGE input: w328, bits: 4
+BLACKBOX::RANGE input: w329, bits: 4
+ASSERT w329 = w76 - 16*w328
+BRILLIG CALL func: 0, predicate: 1, inputs: [w76, 64], outputs: [w330, w331]
+BLACKBOX::RANGE input: w330, bits: 2
+BLACKBOX::RANGE input: w331, bits: 6
+ASSERT w331 = w76 - 64*w330
+ASSERT w332 = 9*w330
+BLACKBOX::RANGE input: w332, bits: 8
+ASSERT w333 = w329 + w332
+BLACKBOX::RANGE input: w333, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w77, 16], outputs: [w334, w335]
+BLACKBOX::RANGE input: w334, bits: 4
+BLACKBOX::RANGE input: w335, bits: 4
+ASSERT w335 = w77 - 16*w334
+BRILLIG CALL func: 0, predicate: 1, inputs: [w77, 64], outputs: [w336, w337]
+BLACKBOX::RANGE input: w336, bits: 2
+BLACKBOX::RANGE input: w337, bits: 6
+ASSERT w337 = w77 - 64*w336
+ASSERT w338 = 9*w336
+BLACKBOX::RANGE input: w338, bits: 8
+ASSERT w339 = w335 + w338
+BLACKBOX::RANGE input: w339, bits: 8
+ASSERT w340 = 16*w333
+BLACKBOX::RANGE input: w340, bits: 8
+ASSERT w341 = w339 + w340
+BLACKBOX::RANGE input: w341, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w78, 16], outputs: [w342, w343]
+BLACKBOX::RANGE input: w342, bits: 4
+BLACKBOX::RANGE input: w343, bits: 4
+ASSERT w343 = w78 - 16*w342
+BRILLIG CALL func: 0, predicate: 1, inputs: [w78, 64], outputs: [w344, w345]
+BLACKBOX::RANGE input: w344, bits: 2
+BLACKBOX::RANGE input: w345, bits: 6
+ASSERT w345 = w78 - 64*w344
+ASSERT w346 = 9*w344
+BLACKBOX::RANGE input: w346, bits: 8
+ASSERT w347 = w343 + w346
+BLACKBOX::RANGE input: w347, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w79, 16], outputs: [w348, w349]
+BLACKBOX::RANGE input: w348, bits: 4
+BLACKBOX::RANGE input: w349, bits: 4
+ASSERT w349 = w79 - 16*w348
+BRILLIG CALL func: 0, predicate: 1, inputs: [w79, 64], outputs: [w350, w351]
+BLACKBOX::RANGE input: w350, bits: 2
+BLACKBOX::RANGE input: w351, bits: 6
+ASSERT w351 = w79 - 64*w350
+ASSERT w352 = 9*w350
+BLACKBOX::RANGE input: w352, bits: 8
+ASSERT w353 = w349 + w352
+BLACKBOX::RANGE input: w353, bits: 8
+ASSERT w354 = 16*w347
+BLACKBOX::RANGE input: w354, bits: 8
+ASSERT w355 = w353 + w354
+BLACKBOX::RANGE input: w355, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w80, 16], outputs: [w356, w357]
+BLACKBOX::RANGE input: w356, bits: 4
+BLACKBOX::RANGE input: w357, bits: 4
+ASSERT w357 = w80 - 16*w356
+BRILLIG CALL func: 0, predicate: 1, inputs: [w80, 64], outputs: [w358, w359]
+BLACKBOX::RANGE input: w358, bits: 2
+BLACKBOX::RANGE input: w359, bits: 6
+ASSERT w359 = w80 - 64*w358
+ASSERT w360 = 9*w358
+BLACKBOX::RANGE input: w360, bits: 8
+ASSERT w361 = w357 + w360
+BLACKBOX::RANGE input: w361, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w81, 16], outputs: [w362, w363]
+BLACKBOX::RANGE input: w362, bits: 4
+BLACKBOX::RANGE input: w363, bits: 4
+ASSERT w363 = w81 - 16*w362
+BRILLIG CALL func: 0, predicate: 1, inputs: [w81, 64], outputs: [w364, w365]
+BLACKBOX::RANGE input: w364, bits: 2
+BLACKBOX::RANGE input: w365, bits: 6
+ASSERT w365 = w81 - 64*w364
+ASSERT w366 = 9*w364
+BLACKBOX::RANGE input: w366, bits: 8
+ASSERT w367 = w363 + w366
+BLACKBOX::RANGE input: w367, bits: 8
+ASSERT w368 = 16*w361
+BLACKBOX::RANGE input: w368, bits: 8
+ASSERT w369 = w367 + w368
+BLACKBOX::RANGE input: w369, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w82, 16], outputs: [w370, w371]
+BLACKBOX::RANGE input: w370, bits: 4
+BLACKBOX::RANGE input: w371, bits: 4
+ASSERT w371 = w82 - 16*w370
+BRILLIG CALL func: 0, predicate: 1, inputs: [w82, 64], outputs: [w372, w373]
+BLACKBOX::RANGE input: w372, bits: 2
+BLACKBOX::RANGE input: w373, bits: 6
+ASSERT w373 = w82 - 64*w372
+ASSERT w374 = 9*w372
+BLACKBOX::RANGE input: w374, bits: 8
+ASSERT w375 = w371 + w374
+BLACKBOX::RANGE input: w375, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w83, 16], outputs: [w376, w377]
+BLACKBOX::RANGE input: w376, bits: 4
+BLACKBOX::RANGE input: w377, bits: 4
+ASSERT w377 = w83 - 16*w376
+BRILLIG CALL func: 0, predicate: 1, inputs: [w83, 64], outputs: [w378, w379]
+BLACKBOX::RANGE input: w378, bits: 2
+BLACKBOX::RANGE input: w379, bits: 6
+ASSERT w379 = w83 - 64*w378
+ASSERT w380 = 9*w378
+BLACKBOX::RANGE input: w380, bits: 8
+ASSERT w381 = w377 + w380
+BLACKBOX::RANGE input: w381, bits: 8
+ASSERT w382 = 16*w375
+BLACKBOX::RANGE input: w382, bits: 8
+ASSERT w383 = w381 + w382
+BLACKBOX::RANGE input: w383, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w84, 16], outputs: [w384, w385]
+BLACKBOX::RANGE input: w384, bits: 4
+BLACKBOX::RANGE input: w385, bits: 4
+ASSERT w385 = w84 - 16*w384
+BRILLIG CALL func: 0, predicate: 1, inputs: [w84, 64], outputs: [w386, w387]
+BLACKBOX::RANGE input: w386, bits: 2
+BLACKBOX::RANGE input: w387, bits: 6
+ASSERT w387 = w84 - 64*w386
+ASSERT w388 = 9*w386
+BLACKBOX::RANGE input: w388, bits: 8
+ASSERT w389 = w385 + w388
+BLACKBOX::RANGE input: w389, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w85, 16], outputs: [w390, w391]
+BLACKBOX::RANGE input: w390, bits: 4
+BLACKBOX::RANGE input: w391, bits: 4
+ASSERT w391 = w85 - 16*w390
+BRILLIG CALL func: 0, predicate: 1, inputs: [w85, 64], outputs: [w392, w393]
+BLACKBOX::RANGE input: w392, bits: 2
+BLACKBOX::RANGE input: w393, bits: 6
+ASSERT w393 = w85 - 64*w392
+ASSERT w394 = 9*w392
+BLACKBOX::RANGE input: w394, bits: 8
+ASSERT w395 = w391 + w394
+BLACKBOX::RANGE input: w395, bits: 8
+ASSERT w396 = 16*w389
+BLACKBOX::RANGE input: w396, bits: 8
+ASSERT w397 = w395 + w396
+BLACKBOX::RANGE input: w397, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w86, 16], outputs: [w398, w399]
+BLACKBOX::RANGE input: w398, bits: 4
+BLACKBOX::RANGE input: w399, bits: 4
+ASSERT w399 = w86 - 16*w398
+BRILLIG CALL func: 0, predicate: 1, inputs: [w86, 64], outputs: [w400, w401]
+BLACKBOX::RANGE input: w400, bits: 2
+BLACKBOX::RANGE input: w401, bits: 6
+ASSERT w401 = w86 - 64*w400
+ASSERT w402 = 9*w400
+BLACKBOX::RANGE input: w402, bits: 8
+ASSERT w403 = w399 + w402
+BLACKBOX::RANGE input: w403, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w87, 16], outputs: [w404, w405]
+BLACKBOX::RANGE input: w404, bits: 4
+BLACKBOX::RANGE input: w405, bits: 4
+ASSERT w405 = w87 - 16*w404
+BRILLIG CALL func: 0, predicate: 1, inputs: [w87, 64], outputs: [w406, w407]
+BLACKBOX::RANGE input: w406, bits: 2
+BLACKBOX::RANGE input: w407, bits: 6
+ASSERT w407 = w87 - 64*w406
+ASSERT w408 = 9*w406
+BLACKBOX::RANGE input: w408, bits: 8
+ASSERT w409 = w405 + w408
+BLACKBOX::RANGE input: w409, bits: 8
+ASSERT w410 = 16*w403
+BLACKBOX::RANGE input: w410, bits: 8
+ASSERT w411 = w409 + w410
+BLACKBOX::RANGE input: w411, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w88, 16], outputs: [w412, w413]
+BLACKBOX::RANGE input: w412, bits: 4
+BLACKBOX::RANGE input: w413, bits: 4
+ASSERT w413 = w88 - 16*w412
+BRILLIG CALL func: 0, predicate: 1, inputs: [w88, 64], outputs: [w414, w415]
+BLACKBOX::RANGE input: w414, bits: 2
+BLACKBOX::RANGE input: w415, bits: 6
+ASSERT w415 = w88 - 64*w414
+ASSERT w416 = 9*w414
+BLACKBOX::RANGE input: w416, bits: 8
+ASSERT w417 = w413 + w416
+BLACKBOX::RANGE input: w417, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w89, 16], outputs: [w418, w419]
+BLACKBOX::RANGE input: w418, bits: 4
+BLACKBOX::RANGE input: w419, bits: 4
+ASSERT w419 = w89 - 16*w418
+BRILLIG CALL func: 0, predicate: 1, inputs: [w89, 64], outputs: [w420, w421]
+BLACKBOX::RANGE input: w420, bits: 2
+BLACKBOX::RANGE input: w421, bits: 6
+ASSERT w421 = w89 - 64*w420
+ASSERT w422 = 9*w420
+BLACKBOX::RANGE input: w422, bits: 8
+ASSERT w423 = w419 + w422
+BLACKBOX::RANGE input: w423, bits: 8
+ASSERT w424 = 16*w417
+BLACKBOX::RANGE input: w424, bits: 8
+ASSERT w425 = w423 + w424
+BLACKBOX::RANGE input: w425, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w90, 16], outputs: [w426, w427]
+BLACKBOX::RANGE input: w426, bits: 4
+BLACKBOX::RANGE input: w427, bits: 4
+ASSERT w427 = w90 - 16*w426
+BRILLIG CALL func: 0, predicate: 1, inputs: [w90, 64], outputs: [w428, w429]
+BLACKBOX::RANGE input: w428, bits: 2
+BLACKBOX::RANGE input: w429, bits: 6
+ASSERT w429 = w90 - 64*w428
+ASSERT w430 = 9*w428
+BLACKBOX::RANGE input: w430, bits: 8
+ASSERT w431 = w427 + w430
+BLACKBOX::RANGE input: w431, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w91, 16], outputs: [w432, w433]
+BLACKBOX::RANGE input: w432, bits: 4
+BLACKBOX::RANGE input: w433, bits: 4
+ASSERT w433 = w91 - 16*w432
+BRILLIG CALL func: 0, predicate: 1, inputs: [w91, 64], outputs: [w434, w435]
+BLACKBOX::RANGE input: w434, bits: 2
+BLACKBOX::RANGE input: w435, bits: 6
+ASSERT w435 = w91 - 64*w434
+ASSERT w436 = 9*w434
+BLACKBOX::RANGE input: w436, bits: 8
+ASSERT w437 = w433 + w436
+BLACKBOX::RANGE input: w437, bits: 8
+ASSERT w438 = 16*w431
+BLACKBOX::RANGE input: w438, bits: 8
+ASSERT w439 = w437 + w438
+BLACKBOX::RANGE input: w439, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w92, 16], outputs: [w440, w441]
+BLACKBOX::RANGE input: w440, bits: 4
+BLACKBOX::RANGE input: w441, bits: 4
+ASSERT w441 = w92 - 16*w440
+BRILLIG CALL func: 0, predicate: 1, inputs: [w92, 64], outputs: [w442, w443]
+BLACKBOX::RANGE input: w442, bits: 2
+BLACKBOX::RANGE input: w443, bits: 6
+ASSERT w443 = w92 - 64*w442
+ASSERT w444 = 9*w442
+BLACKBOX::RANGE input: w444, bits: 8
+ASSERT w445 = w441 + w444
+BLACKBOX::RANGE input: w445, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w93, 16], outputs: [w446, w447]
+BLACKBOX::RANGE input: w446, bits: 4
+BLACKBOX::RANGE input: w447, bits: 4
+ASSERT w447 = w93 - 16*w446
+BRILLIG CALL func: 0, predicate: 1, inputs: [w93, 64], outputs: [w448, w449]
+BLACKBOX::RANGE input: w448, bits: 2
+BLACKBOX::RANGE input: w449, bits: 6
+ASSERT w449 = w93 - 64*w448
+ASSERT w450 = 9*w448
+BLACKBOX::RANGE input: w450, bits: 8
+ASSERT w451 = w447 + w450
+BLACKBOX::RANGE input: w451, bits: 8
+ASSERT w452 = 16*w445
+BLACKBOX::RANGE input: w452, bits: 8
+ASSERT w453 = w451 + w452
+BLACKBOX::RANGE input: w453, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w94, 16], outputs: [w454, w455]
+BLACKBOX::RANGE input: w454, bits: 4
+BLACKBOX::RANGE input: w455, bits: 4
+ASSERT w455 = w94 - 16*w454
+BRILLIG CALL func: 0, predicate: 1, inputs: [w94, 64], outputs: [w456, w457]
+BLACKBOX::RANGE input: w456, bits: 2
+BLACKBOX::RANGE input: w457, bits: 6
+ASSERT w457 = w94 - 64*w456
+ASSERT w458 = 9*w456
+BLACKBOX::RANGE input: w458, bits: 8
+ASSERT w459 = w455 + w458
+BLACKBOX::RANGE input: w459, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w95, 16], outputs: [w460, w461]
+BLACKBOX::RANGE input: w460, bits: 4
+BLACKBOX::RANGE input: w461, bits: 4
+ASSERT w461 = w95 - 16*w460
+BRILLIG CALL func: 0, predicate: 1, inputs: [w95, 64], outputs: [w462, w463]
+BLACKBOX::RANGE input: w462, bits: 2
+BLACKBOX::RANGE input: w463, bits: 6
+ASSERT w463 = w95 - 64*w462
+ASSERT w464 = 9*w462
+BLACKBOX::RANGE input: w464, bits: 8
+ASSERT w465 = w461 + w464
+BLACKBOX::RANGE input: w465, bits: 8
+ASSERT w466 = 16*w459
+BLACKBOX::RANGE input: w466, bits: 8
+ASSERT w467 = w465 + w466
+BLACKBOX::RANGE input: w467, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w96, 16], outputs: [w468, w469]
+BLACKBOX::RANGE input: w468, bits: 4
+BLACKBOX::RANGE input: w469, bits: 4
+ASSERT w469 = w96 - 16*w468
+BRILLIG CALL func: 0, predicate: 1, inputs: [w96, 64], outputs: [w470, w471]
+BLACKBOX::RANGE input: w470, bits: 2
+BLACKBOX::RANGE input: w471, bits: 6
+ASSERT w471 = w96 - 64*w470
+ASSERT w472 = 9*w470
+BLACKBOX::RANGE input: w472, bits: 8
+ASSERT w473 = w469 + w472
+BLACKBOX::RANGE input: w473, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w97, 16], outputs: [w474, w475]
+BLACKBOX::RANGE input: w474, bits: 4
+BLACKBOX::RANGE input: w475, bits: 4
+ASSERT w475 = w97 - 16*w474
+BRILLIG CALL func: 0, predicate: 1, inputs: [w97, 64], outputs: [w476, w477]
+BLACKBOX::RANGE input: w476, bits: 2
+BLACKBOX::RANGE input: w477, bits: 6
+ASSERT w477 = w97 - 64*w476
+ASSERT w478 = 9*w476
+BLACKBOX::RANGE input: w478, bits: 8
+ASSERT w479 = w475 + w478
+BLACKBOX::RANGE input: w479, bits: 8
+ASSERT w480 = 16*w473
+BLACKBOX::RANGE input: w480, bits: 8
+ASSERT w481 = w479 + w480
+BLACKBOX::RANGE input: w481, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w98, 16], outputs: [w482, w483]
+BLACKBOX::RANGE input: w482, bits: 4
+BLACKBOX::RANGE input: w483, bits: 4
+ASSERT w483 = w98 - 16*w482
+BRILLIG CALL func: 0, predicate: 1, inputs: [w98, 64], outputs: [w484, w485]
+BLACKBOX::RANGE input: w484, bits: 2
+BLACKBOX::RANGE input: w485, bits: 6
+ASSERT w485 = w98 - 64*w484
+ASSERT w486 = 9*w484
+BLACKBOX::RANGE input: w486, bits: 8
+ASSERT w487 = w483 + w486
+BLACKBOX::RANGE input: w487, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w99, 16], outputs: [w488, w489]
+BLACKBOX::RANGE input: w488, bits: 4
+BLACKBOX::RANGE input: w489, bits: 4
+ASSERT w489 = w99 - 16*w488
+BRILLIG CALL func: 0, predicate: 1, inputs: [w99, 64], outputs: [w490, w491]
+BLACKBOX::RANGE input: w490, bits: 2
+BLACKBOX::RANGE input: w491, bits: 6
+ASSERT w491 = w99 - 64*w490
+ASSERT w492 = 9*w490
+BLACKBOX::RANGE input: w492, bits: 8
+ASSERT w493 = w489 + w492
+BLACKBOX::RANGE input: w493, bits: 8
+ASSERT w494 = 16*w487
+BLACKBOX::RANGE input: w494, bits: 8
+ASSERT w495 = w493 + w494
+BLACKBOX::RANGE input: w495, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w100, 16], outputs: [w496, w497]
+BLACKBOX::RANGE input: w496, bits: 4
+BLACKBOX::RANGE input: w497, bits: 4
+ASSERT w497 = w100 - 16*w496
+BRILLIG CALL func: 0, predicate: 1, inputs: [w100, 64], outputs: [w498, w499]
+BLACKBOX::RANGE input: w498, bits: 2
+BLACKBOX::RANGE input: w499, bits: 6
+ASSERT w499 = w100 - 64*w498
+ASSERT w500 = 9*w498
+BLACKBOX::RANGE input: w500, bits: 8
+ASSERT w501 = w497 + w500
+BLACKBOX::RANGE input: w501, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w101, 16], outputs: [w502, w503]
+BLACKBOX::RANGE input: w502, bits: 4
+BLACKBOX::RANGE input: w503, bits: 4
+ASSERT w503 = w101 - 16*w502
+BRILLIG CALL func: 0, predicate: 1, inputs: [w101, 64], outputs: [w504, w505]
+BLACKBOX::RANGE input: w504, bits: 2
+BLACKBOX::RANGE input: w505, bits: 6
+ASSERT w505 = w101 - 64*w504
+ASSERT w506 = 9*w504
+BLACKBOX::RANGE input: w506, bits: 8
+ASSERT w507 = w503 + w506
+BLACKBOX::RANGE input: w507, bits: 8
+ASSERT w508 = 16*w501
+BLACKBOX::RANGE input: w508, bits: 8
+ASSERT w509 = w507 + w508
+BLACKBOX::RANGE input: w509, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w102, 16], outputs: [w510, w511]
+BLACKBOX::RANGE input: w510, bits: 4
+BLACKBOX::RANGE input: w511, bits: 4
+ASSERT w511 = w102 - 16*w510
+BRILLIG CALL func: 0, predicate: 1, inputs: [w102, 64], outputs: [w512, w513]
+BLACKBOX::RANGE input: w512, bits: 2
+BLACKBOX::RANGE input: w513, bits: 6
+ASSERT w513 = w102 - 64*w512
+ASSERT w514 = 9*w512
+BLACKBOX::RANGE input: w514, bits: 8
+ASSERT w515 = w511 + w514
+BLACKBOX::RANGE input: w515, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w103, 16], outputs: [w516, w517]
+BLACKBOX::RANGE input: w516, bits: 4
+BLACKBOX::RANGE input: w517, bits: 4
+ASSERT w517 = w103 - 16*w516
+BRILLIG CALL func: 0, predicate: 1, inputs: [w103, 64], outputs: [w518, w519]
+BLACKBOX::RANGE input: w518, bits: 2
+BLACKBOX::RANGE input: w519, bits: 6
+ASSERT w519 = w103 - 64*w518
+ASSERT w520 = 9*w518
+BLACKBOX::RANGE input: w520, bits: 8
+ASSERT w521 = w517 + w520
+BLACKBOX::RANGE input: w521, bits: 8
+ASSERT w522 = 16*w515
+BLACKBOX::RANGE input: w522, bits: 8
+ASSERT w523 = w521 + w522
+BLACKBOX::RANGE input: w523, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w104, 16], outputs: [w524, w525]
+BLACKBOX::RANGE input: w524, bits: 4
+BLACKBOX::RANGE input: w525, bits: 4
+ASSERT w525 = w104 - 16*w524
+BRILLIG CALL func: 0, predicate: 1, inputs: [w104, 64], outputs: [w526, w527]
+BLACKBOX::RANGE input: w526, bits: 2
+BLACKBOX::RANGE input: w527, bits: 6
+ASSERT w527 = w104 - 64*w526
+ASSERT w528 = 9*w526
+BLACKBOX::RANGE input: w528, bits: 8
+ASSERT w529 = w525 + w528
+BLACKBOX::RANGE input: w529, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w105, 16], outputs: [w530, w531]
+BLACKBOX::RANGE input: w530, bits: 4
+BLACKBOX::RANGE input: w531, bits: 4
+ASSERT w531 = w105 - 16*w530
+BRILLIG CALL func: 0, predicate: 1, inputs: [w105, 64], outputs: [w532, w533]
+BLACKBOX::RANGE input: w532, bits: 2
+BLACKBOX::RANGE input: w533, bits: 6
+ASSERT w533 = w105 - 64*w532
+ASSERT w534 = 9*w532
+BLACKBOX::RANGE input: w534, bits: 8
+ASSERT w535 = w531 + w534
+BLACKBOX::RANGE input: w535, bits: 8
+ASSERT w536 = 16*w529
+BLACKBOX::RANGE input: w536, bits: 8
+ASSERT w537 = w535 + w536
+BLACKBOX::RANGE input: w537, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w106, 16], outputs: [w538, w539]
+BLACKBOX::RANGE input: w538, bits: 4
+BLACKBOX::RANGE input: w539, bits: 4
+ASSERT w539 = w106 - 16*w538
+BRILLIG CALL func: 0, predicate: 1, inputs: [w106, 64], outputs: [w540, w541]
+BLACKBOX::RANGE input: w540, bits: 2
+BLACKBOX::RANGE input: w541, bits: 6
+ASSERT w541 = w106 - 64*w540
+ASSERT w542 = 9*w540
+BLACKBOX::RANGE input: w542, bits: 8
+ASSERT w543 = w539 + w542
+BLACKBOX::RANGE input: w543, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w107, 16], outputs: [w544, w545]
+BLACKBOX::RANGE input: w544, bits: 4
+BLACKBOX::RANGE input: w545, bits: 4
+ASSERT w545 = w107 - 16*w544
+BRILLIG CALL func: 0, predicate: 1, inputs: [w107, 64], outputs: [w546, w547]
+BLACKBOX::RANGE input: w546, bits: 2
+BLACKBOX::RANGE input: w547, bits: 6
+ASSERT w547 = w107 - 64*w546
+ASSERT w548 = 9*w546
+BLACKBOX::RANGE input: w548, bits: 8
+ASSERT w549 = w545 + w548
+BLACKBOX::RANGE input: w549, bits: 8
+ASSERT w550 = 16*w543
+BLACKBOX::RANGE input: w550, bits: 8
+ASSERT w551 = w549 + w550
+BLACKBOX::RANGE input: w551, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w108, 16], outputs: [w552, w553]
+BLACKBOX::RANGE input: w552, bits: 4
+BLACKBOX::RANGE input: w553, bits: 4
+ASSERT w553 = w108 - 16*w552
+BRILLIG CALL func: 0, predicate: 1, inputs: [w108, 64], outputs: [w554, w555]
+BLACKBOX::RANGE input: w554, bits: 2
+BLACKBOX::RANGE input: w555, bits: 6
+ASSERT w555 = w108 - 64*w554
+ASSERT w556 = 9*w554
+BLACKBOX::RANGE input: w556, bits: 8
+ASSERT w557 = w553 + w556
+BLACKBOX::RANGE input: w557, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w109, 16], outputs: [w558, w559]
+BLACKBOX::RANGE input: w558, bits: 4
+BLACKBOX::RANGE input: w559, bits: 4
+ASSERT w559 = w109 - 16*w558
+BRILLIG CALL func: 0, predicate: 1, inputs: [w109, 64], outputs: [w560, w561]
+BLACKBOX::RANGE input: w560, bits: 2
+BLACKBOX::RANGE input: w561, bits: 6
+ASSERT w561 = w109 - 64*w560
+ASSERT w562 = 9*w560
+BLACKBOX::RANGE input: w562, bits: 8
+ASSERT w563 = w559 + w562
+BLACKBOX::RANGE input: w563, bits: 8
+ASSERT w564 = 16*w557
+BLACKBOX::RANGE input: w564, bits: 8
+ASSERT w565 = w563 + w564
+BLACKBOX::RANGE input: w565, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w110, 16], outputs: [w566, w567]
+BLACKBOX::RANGE input: w566, bits: 4
+BLACKBOX::RANGE input: w567, bits: 4
+ASSERT w567 = w110 - 16*w566
+BRILLIG CALL func: 0, predicate: 1, inputs: [w110, 64], outputs: [w568, w569]
+BLACKBOX::RANGE input: w568, bits: 2
+BLACKBOX::RANGE input: w569, bits: 6
+ASSERT w569 = w110 - 64*w568
+ASSERT w570 = 9*w568
+BLACKBOX::RANGE input: w570, bits: 8
+ASSERT w571 = w567 + w570
+BLACKBOX::RANGE input: w571, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w111, 16], outputs: [w572, w573]
+BLACKBOX::RANGE input: w572, bits: 4
+BLACKBOX::RANGE input: w573, bits: 4
+ASSERT w573 = w111 - 16*w572
+BRILLIG CALL func: 0, predicate: 1, inputs: [w111, 64], outputs: [w574, w575]
+BLACKBOX::RANGE input: w574, bits: 2
+BLACKBOX::RANGE input: w575, bits: 6
+ASSERT w575 = w111 - 64*w574
+ASSERT w576 = 9*w574
+BLACKBOX::RANGE input: w576, bits: 8
+ASSERT w577 = w573 + w576
+BLACKBOX::RANGE input: w577, bits: 8
+ASSERT w578 = 16*w571
+BLACKBOX::RANGE input: w578, bits: 8
+ASSERT w579 = w577 + w578
+BLACKBOX::RANGE input: w579, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w112, 16], outputs: [w580, w581]
+BLACKBOX::RANGE input: w580, bits: 4
+BLACKBOX::RANGE input: w581, bits: 4
+ASSERT w581 = w112 - 16*w580
+BRILLIG CALL func: 0, predicate: 1, inputs: [w112, 64], outputs: [w582, w583]
+BLACKBOX::RANGE input: w582, bits: 2
+BLACKBOX::RANGE input: w583, bits: 6
+ASSERT w583 = w112 - 64*w582
+ASSERT w584 = 9*w582
+BLACKBOX::RANGE input: w584, bits: 8
+ASSERT w585 = w581 + w584
+BLACKBOX::RANGE input: w585, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w113, 16], outputs: [w586, w587]
+BLACKBOX::RANGE input: w586, bits: 4
+BLACKBOX::RANGE input: w587, bits: 4
+ASSERT w587 = w113 - 16*w586
+BRILLIG CALL func: 0, predicate: 1, inputs: [w113, 64], outputs: [w588, w589]
+BLACKBOX::RANGE input: w588, bits: 2
+BLACKBOX::RANGE input: w589, bits: 6
+ASSERT w589 = w113 - 64*w588
+ASSERT w590 = 9*w588
+BLACKBOX::RANGE input: w590, bits: 8
+ASSERT w591 = w587 + w590
+BLACKBOX::RANGE input: w591, bits: 8
+ASSERT w592 = 16*w585
+BLACKBOX::RANGE input: w592, bits: 8
+ASSERT w593 = w591 + w592
+BLACKBOX::RANGE input: w593, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w114, 16], outputs: [w594, w595]
+BLACKBOX::RANGE input: w594, bits: 4
+BLACKBOX::RANGE input: w595, bits: 4
+ASSERT w595 = w114 - 16*w594
+BRILLIG CALL func: 0, predicate: 1, inputs: [w114, 64], outputs: [w596, w597]
+BLACKBOX::RANGE input: w596, bits: 2
+BLACKBOX::RANGE input: w597, bits: 6
+ASSERT w597 = w114 - 64*w596
+ASSERT w598 = 9*w596
+BLACKBOX::RANGE input: w598, bits: 8
+ASSERT w599 = w595 + w598
+BLACKBOX::RANGE input: w599, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w115, 16], outputs: [w600, w601]
+BLACKBOX::RANGE input: w600, bits: 4
+BLACKBOX::RANGE input: w601, bits: 4
+ASSERT w601 = w115 - 16*w600
+BRILLIG CALL func: 0, predicate: 1, inputs: [w115, 64], outputs: [w602, w603]
+BLACKBOX::RANGE input: w602, bits: 2
+BLACKBOX::RANGE input: w603, bits: 6
+ASSERT w603 = w115 - 64*w602
+ASSERT w604 = 9*w602
+BLACKBOX::RANGE input: w604, bits: 8
+ASSERT w605 = w601 + w604
+BLACKBOX::RANGE input: w605, bits: 8
+ASSERT w606 = 16*w599
+BLACKBOX::RANGE input: w606, bits: 8
+ASSERT w607 = w605 + w606
+BLACKBOX::RANGE input: w607, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w116, 16], outputs: [w608, w609]
+BLACKBOX::RANGE input: w608, bits: 4
+BLACKBOX::RANGE input: w609, bits: 4
+ASSERT w609 = w116 - 16*w608
+BRILLIG CALL func: 0, predicate: 1, inputs: [w116, 64], outputs: [w610, w611]
+BLACKBOX::RANGE input: w610, bits: 2
+BLACKBOX::RANGE input: w611, bits: 6
+ASSERT w611 = w116 - 64*w610
+ASSERT w612 = 9*w610
+BLACKBOX::RANGE input: w612, bits: 8
+ASSERT w613 = w609 + w612
+BLACKBOX::RANGE input: w613, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w117, 16], outputs: [w614, w615]
+BLACKBOX::RANGE input: w614, bits: 4
+BLACKBOX::RANGE input: w615, bits: 4
+ASSERT w615 = w117 - 16*w614
+BRILLIG CALL func: 0, predicate: 1, inputs: [w117, 64], outputs: [w616, w617]
+BLACKBOX::RANGE input: w616, bits: 2
+BLACKBOX::RANGE input: w617, bits: 6
+ASSERT w617 = w117 - 64*w616
+ASSERT w618 = 9*w616
+BLACKBOX::RANGE input: w618, bits: 8
+ASSERT w619 = w615 + w618
+BLACKBOX::RANGE input: w619, bits: 8
+ASSERT w620 = 16*w613
+BLACKBOX::RANGE input: w620, bits: 8
+ASSERT w621 = w619 + w620
+BLACKBOX::RANGE input: w621, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w118, 16], outputs: [w622, w623]
+BLACKBOX::RANGE input: w622, bits: 4
+BLACKBOX::RANGE input: w623, bits: 4
+ASSERT w623 = w118 - 16*w622
+BRILLIG CALL func: 0, predicate: 1, inputs: [w118, 64], outputs: [w624, w625]
+BLACKBOX::RANGE input: w624, bits: 2
+BLACKBOX::RANGE input: w625, bits: 6
+ASSERT w625 = w118 - 64*w624
+ASSERT w626 = 9*w624
+BLACKBOX::RANGE input: w626, bits: 8
+ASSERT w627 = w623 + w626
+BLACKBOX::RANGE input: w627, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w119, 16], outputs: [w628, w629]
+BLACKBOX::RANGE input: w628, bits: 4
+BLACKBOX::RANGE input: w629, bits: 4
+ASSERT w629 = w119 - 16*w628
+BRILLIG CALL func: 0, predicate: 1, inputs: [w119, 64], outputs: [w630, w631]
+BLACKBOX::RANGE input: w630, bits: 2
+BLACKBOX::RANGE input: w631, bits: 6
+ASSERT w631 = w119 - 64*w630
+ASSERT w632 = 9*w630
+BLACKBOX::RANGE input: w632, bits: 8
+ASSERT w633 = w629 + w632
+BLACKBOX::RANGE input: w633, bits: 8
+ASSERT w634 = 16*w627
+BLACKBOX::RANGE input: w634, bits: 8
+ASSERT w635 = w633 + w634
+BLACKBOX::RANGE input: w635, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w120, 16], outputs: [w636, w637]
+BLACKBOX::RANGE input: w636, bits: 4
+BLACKBOX::RANGE input: w637, bits: 4
+ASSERT w637 = w120 - 16*w636
+BRILLIG CALL func: 0, predicate: 1, inputs: [w120, 64], outputs: [w638, w639]
+BLACKBOX::RANGE input: w638, bits: 2
+BLACKBOX::RANGE input: w639, bits: 6
+ASSERT w639 = w120 - 64*w638
+ASSERT w640 = 9*w638
+BLACKBOX::RANGE input: w640, bits: 8
+ASSERT w641 = w637 + w640
+BLACKBOX::RANGE input: w641, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w121, 16], outputs: [w642, w643]
+BLACKBOX::RANGE input: w642, bits: 4
+BLACKBOX::RANGE input: w643, bits: 4
+ASSERT w643 = w121 - 16*w642
+BRILLIG CALL func: 0, predicate: 1, inputs: [w121, 64], outputs: [w644, w645]
+BLACKBOX::RANGE input: w644, bits: 2
+BLACKBOX::RANGE input: w645, bits: 6
+ASSERT w645 = w121 - 64*w644
+ASSERT w646 = 9*w644
+BLACKBOX::RANGE input: w646, bits: 8
+ASSERT w647 = w643 + w646
+BLACKBOX::RANGE input: w647, bits: 8
+ASSERT w648 = 16*w641
+BLACKBOX::RANGE input: w648, bits: 8
+ASSERT w649 = w647 + w648
+BLACKBOX::RANGE input: w649, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w122, 16], outputs: [w650, w651]
+BLACKBOX::RANGE input: w650, bits: 4
+BLACKBOX::RANGE input: w651, bits: 4
+ASSERT w651 = w122 - 16*w650
+BRILLIG CALL func: 0, predicate: 1, inputs: [w122, 64], outputs: [w652, w653]
+BLACKBOX::RANGE input: w652, bits: 2
+BLACKBOX::RANGE input: w653, bits: 6
+ASSERT w653 = w122 - 64*w652
+ASSERT w654 = 9*w652
+BLACKBOX::RANGE input: w654, bits: 8
+ASSERT w655 = w651 + w654
+BLACKBOX::RANGE input: w655, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w123, 16], outputs: [w656, w657]
+BLACKBOX::RANGE input: w656, bits: 4
+BLACKBOX::RANGE input: w657, bits: 4
+ASSERT w657 = w123 - 16*w656
+BRILLIG CALL func: 0, predicate: 1, inputs: [w123, 64], outputs: [w658, w659]
+BLACKBOX::RANGE input: w658, bits: 2
+BLACKBOX::RANGE input: w659, bits: 6
+ASSERT w659 = w123 - 64*w658
+ASSERT w660 = 9*w658
+BLACKBOX::RANGE input: w660, bits: 8
+ASSERT w661 = w657 + w660
+BLACKBOX::RANGE input: w661, bits: 8
+ASSERT w662 = 16*w655
+BLACKBOX::RANGE input: w662, bits: 8
+ASSERT w663 = w661 + w662
+BLACKBOX::RANGE input: w663, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w124, 16], outputs: [w664, w665]
+BLACKBOX::RANGE input: w664, bits: 4
+BLACKBOX::RANGE input: w665, bits: 4
+ASSERT w665 = w124 - 16*w664
+BRILLIG CALL func: 0, predicate: 1, inputs: [w124, 64], outputs: [w666, w667]
+BLACKBOX::RANGE input: w666, bits: 2
+BLACKBOX::RANGE input: w667, bits: 6
+ASSERT w667 = w124 - 64*w666
+ASSERT w668 = 9*w666
+BLACKBOX::RANGE input: w668, bits: 8
+ASSERT w669 = w665 + w668
+BLACKBOX::RANGE input: w669, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w125, 16], outputs: [w670, w671]
+BLACKBOX::RANGE input: w670, bits: 4
+BLACKBOX::RANGE input: w671, bits: 4
+ASSERT w671 = w125 - 16*w670
+BRILLIG CALL func: 0, predicate: 1, inputs: [w125, 64], outputs: [w672, w673]
+BLACKBOX::RANGE input: w672, bits: 2
+BLACKBOX::RANGE input: w673, bits: 6
+ASSERT w673 = w125 - 64*w672
+ASSERT w674 = 9*w672
+BLACKBOX::RANGE input: w674, bits: 8
+ASSERT w675 = w671 + w674
+BLACKBOX::RANGE input: w675, bits: 8
+ASSERT w676 = 16*w669
+BLACKBOX::RANGE input: w676, bits: 8
+ASSERT w677 = w675 + w676
+BLACKBOX::RANGE input: w677, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w126, 16], outputs: [w678, w679]
+BLACKBOX::RANGE input: w678, bits: 4
+BLACKBOX::RANGE input: w679, bits: 4
+ASSERT w679 = w126 - 16*w678
+BRILLIG CALL func: 0, predicate: 1, inputs: [w126, 64], outputs: [w680, w681]
+BLACKBOX::RANGE input: w680, bits: 2
+BLACKBOX::RANGE input: w681, bits: 6
+ASSERT w681 = w126 - 64*w680
+ASSERT w682 = 9*w680
+BLACKBOX::RANGE input: w682, bits: 8
+ASSERT w683 = w679 + w682
+BLACKBOX::RANGE input: w683, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w127, 16], outputs: [w684, w685]
+BLACKBOX::RANGE input: w684, bits: 4
+BLACKBOX::RANGE input: w685, bits: 4
+ASSERT w685 = w127 - 16*w684
+BRILLIG CALL func: 0, predicate: 1, inputs: [w127, 64], outputs: [w686, w687]
+BLACKBOX::RANGE input: w686, bits: 2
+BLACKBOX::RANGE input: w687, bits: 6
+ASSERT w687 = w127 - 64*w686
+ASSERT w688 = 9*w686
+BLACKBOX::RANGE input: w688, bits: 8
+ASSERT w689 = w685 + w688
+BLACKBOX::RANGE input: w689, bits: 8
+ASSERT w690 = 16*w683
+BLACKBOX::RANGE input: w690, bits: 8
+ASSERT w691 = w689 + w690
+BLACKBOX::RANGE input: w691, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w128, 16], outputs: [w692, w693]
+BLACKBOX::RANGE input: w692, bits: 4
+BLACKBOX::RANGE input: w693, bits: 4
+ASSERT w693 = w128 - 16*w692
+BRILLIG CALL func: 0, predicate: 1, inputs: [w128, 64], outputs: [w694, w695]
+BLACKBOX::RANGE input: w694, bits: 2
+BLACKBOX::RANGE input: w695, bits: 6
+ASSERT w695 = w128 - 64*w694
+ASSERT w696 = 9*w694
+BLACKBOX::RANGE input: w696, bits: 8
+ASSERT w697 = w693 + w696
+BLACKBOX::RANGE input: w697, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w129, 16], outputs: [w698, w699]
+BLACKBOX::RANGE input: w698, bits: 4
+BLACKBOX::RANGE input: w699, bits: 4
+ASSERT w699 = w129 - 16*w698
+BRILLIG CALL func: 0, predicate: 1, inputs: [w129, 64], outputs: [w700, w701]
+BLACKBOX::RANGE input: w700, bits: 2
+BLACKBOX::RANGE input: w701, bits: 6
+ASSERT w701 = w129 - 64*w700
+ASSERT w702 = 9*w700
+BLACKBOX::RANGE input: w702, bits: 8
+ASSERT w703 = w699 + w702
+BLACKBOX::RANGE input: w703, bits: 8
+ASSERT w704 = 16*w697
+BLACKBOX::RANGE input: w704, bits: 8
+ASSERT w705 = w703 + w704
+BLACKBOX::RANGE input: w705, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w130, 16], outputs: [w706, w707]
+BLACKBOX::RANGE input: w706, bits: 4
+BLACKBOX::RANGE input: w707, bits: 4
+ASSERT w707 = w130 - 16*w706
+BRILLIG CALL func: 0, predicate: 1, inputs: [w130, 64], outputs: [w708, w709]
+BLACKBOX::RANGE input: w708, bits: 2
+BLACKBOX::RANGE input: w709, bits: 6
+ASSERT w709 = w130 - 64*w708
+ASSERT w710 = 9*w708
+BLACKBOX::RANGE input: w710, bits: 8
+ASSERT w711 = w707 + w710
+BLACKBOX::RANGE input: w711, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w131, 16], outputs: [w712, w713]
+BLACKBOX::RANGE input: w712, bits: 4
+BLACKBOX::RANGE input: w713, bits: 4
+ASSERT w713 = w131 - 16*w712
+BRILLIG CALL func: 0, predicate: 1, inputs: [w131, 64], outputs: [w714, w715]
+BLACKBOX::RANGE input: w714, bits: 2
+BLACKBOX::RANGE input: w715, bits: 6
+ASSERT w715 = w131 - 64*w714
+ASSERT w716 = 9*w714
+BLACKBOX::RANGE input: w716, bits: 8
+ASSERT w717 = w713 + w716
+BLACKBOX::RANGE input: w717, bits: 8
+ASSERT w718 = 16*w711
+BLACKBOX::RANGE input: w718, bits: 8
+ASSERT w719 = w717 + w718
+BLACKBOX::RANGE input: w719, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w132, 16], outputs: [w720, w721]
+BLACKBOX::RANGE input: w720, bits: 4
+BLACKBOX::RANGE input: w721, bits: 4
+ASSERT w721 = w132 - 16*w720
+BRILLIG CALL func: 0, predicate: 1, inputs: [w132, 64], outputs: [w722, w723]
+BLACKBOX::RANGE input: w722, bits: 2
+BLACKBOX::RANGE input: w723, bits: 6
+ASSERT w723 = w132 - 64*w722
+ASSERT w724 = 9*w722
+BLACKBOX::RANGE input: w724, bits: 8
+ASSERT w725 = w721 + w724
+BLACKBOX::RANGE input: w725, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w133, 16], outputs: [w726, w727]
+BLACKBOX::RANGE input: w726, bits: 4
+BLACKBOX::RANGE input: w727, bits: 4
+ASSERT w727 = w133 - 16*w726
+BRILLIG CALL func: 0, predicate: 1, inputs: [w133, 64], outputs: [w728, w729]
+BLACKBOX::RANGE input: w728, bits: 2
+BLACKBOX::RANGE input: w729, bits: 6
+ASSERT w729 = w133 - 64*w728
+ASSERT w730 = 9*w728
+BLACKBOX::RANGE input: w730, bits: 8
+ASSERT w731 = w727 + w730
+BLACKBOX::RANGE input: w731, bits: 8
+ASSERT w732 = 16*w725
+BLACKBOX::RANGE input: w732, bits: 8
+ASSERT w733 = w731 + w732
+BLACKBOX::RANGE input: w733, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w134, 16], outputs: [w734, w735]
+BLACKBOX::RANGE input: w734, bits: 4
+BLACKBOX::RANGE input: w735, bits: 4
+ASSERT w735 = w134 - 16*w734
+BRILLIG CALL func: 0, predicate: 1, inputs: [w134, 64], outputs: [w736, w737]
+BLACKBOX::RANGE input: w736, bits: 2
+BLACKBOX::RANGE input: w737, bits: 6
+ASSERT w737 = w134 - 64*w736
+ASSERT w738 = 9*w736
+BLACKBOX::RANGE input: w738, bits: 8
+ASSERT w739 = w735 + w738
+BLACKBOX::RANGE input: w739, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w135, 16], outputs: [w740, w741]
+BLACKBOX::RANGE input: w740, bits: 4
+BLACKBOX::RANGE input: w741, bits: 4
+ASSERT w741 = w135 - 16*w740
+BRILLIG CALL func: 0, predicate: 1, inputs: [w135, 64], outputs: [w742, w743]
+BLACKBOX::RANGE input: w742, bits: 2
+BLACKBOX::RANGE input: w743, bits: 6
+ASSERT w743 = w135 - 64*w742
+ASSERT w744 = 9*w742
+BLACKBOX::RANGE input: w744, bits: 8
+ASSERT w745 = w741 + w744
+BLACKBOX::RANGE input: w745, bits: 8
+ASSERT w746 = 16*w739
+BLACKBOX::RANGE input: w746, bits: 8
+ASSERT w747 = w745 + w746
+BLACKBOX::RANGE input: w747, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w136, 16], outputs: [w748, w749]
+BLACKBOX::RANGE input: w748, bits: 4
+BLACKBOX::RANGE input: w749, bits: 4
+ASSERT w749 = w136 - 16*w748
+BRILLIG CALL func: 0, predicate: 1, inputs: [w136, 64], outputs: [w750, w751]
+BLACKBOX::RANGE input: w750, bits: 2
+BLACKBOX::RANGE input: w751, bits: 6
+ASSERT w751 = w136 - 64*w750
+ASSERT w752 = 9*w750
+BLACKBOX::RANGE input: w752, bits: 8
+ASSERT w753 = w749 + w752
+BLACKBOX::RANGE input: w753, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w137, 16], outputs: [w754, w755]
+BLACKBOX::RANGE input: w754, bits: 4
+BLACKBOX::RANGE input: w755, bits: 4
+ASSERT w755 = w137 - 16*w754
+BRILLIG CALL func: 0, predicate: 1, inputs: [w137, 64], outputs: [w756, w757]
+BLACKBOX::RANGE input: w756, bits: 2
+BLACKBOX::RANGE input: w757, bits: 6
+ASSERT w757 = w137 - 64*w756
+ASSERT w758 = 9*w756
+BLACKBOX::RANGE input: w758, bits: 8
+ASSERT w759 = w755 + w758
+BLACKBOX::RANGE input: w759, bits: 8
+ASSERT w760 = 16*w753
+BLACKBOX::RANGE input: w760, bits: 8
+ASSERT w761 = w759 + w760
+BLACKBOX::RANGE input: w761, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w138, 16], outputs: [w762, w763]
+BLACKBOX::RANGE input: w762, bits: 4
+BLACKBOX::RANGE input: w763, bits: 4
+ASSERT w763 = w138 - 16*w762
+BRILLIG CALL func: 0, predicate: 1, inputs: [w138, 64], outputs: [w764, w765]
+BLACKBOX::RANGE input: w764, bits: 2
+BLACKBOX::RANGE input: w765, bits: 6
+ASSERT w765 = w138 - 64*w764
+ASSERT w766 = 9*w764
+BLACKBOX::RANGE input: w766, bits: 8
+ASSERT w767 = w763 + w766
+BLACKBOX::RANGE input: w767, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w139, 16], outputs: [w768, w769]
+BLACKBOX::RANGE input: w768, bits: 4
+BLACKBOX::RANGE input: w769, bits: 4
+ASSERT w769 = w139 - 16*w768
+BRILLIG CALL func: 0, predicate: 1, inputs: [w139, 64], outputs: [w770, w771]
+BLACKBOX::RANGE input: w770, bits: 2
+BLACKBOX::RANGE input: w771, bits: 6
+ASSERT w771 = w139 - 64*w770
+ASSERT w772 = 9*w770
+BLACKBOX::RANGE input: w772, bits: 8
+ASSERT w773 = w769 + w772
+BLACKBOX::RANGE input: w773, bits: 8
+ASSERT w774 = 16*w767
+BLACKBOX::RANGE input: w774, bits: 8
+ASSERT w775 = w773 + w774
+BLACKBOX::RANGE input: w775, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w140, 16], outputs: [w776, w777]
+BLACKBOX::RANGE input: w776, bits: 4
+BLACKBOX::RANGE input: w777, bits: 4
+ASSERT w777 = w140 - 16*w776
+BRILLIG CALL func: 0, predicate: 1, inputs: [w140, 64], outputs: [w778, w779]
+BLACKBOX::RANGE input: w778, bits: 2
+BLACKBOX::RANGE input: w779, bits: 6
+ASSERT w779 = w140 - 64*w778
+ASSERT w780 = 9*w778
+BLACKBOX::RANGE input: w780, bits: 8
+ASSERT w781 = w777 + w780
+BLACKBOX::RANGE input: w781, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w141, 16], outputs: [w782, w783]
+BLACKBOX::RANGE input: w782, bits: 4
+BLACKBOX::RANGE input: w783, bits: 4
+ASSERT w783 = w141 - 16*w782
+BRILLIG CALL func: 0, predicate: 1, inputs: [w141, 64], outputs: [w784, w785]
+BLACKBOX::RANGE input: w784, bits: 2
+BLACKBOX::RANGE input: w785, bits: 6
+ASSERT w785 = w141 - 64*w784
+ASSERT w786 = 9*w784
+BLACKBOX::RANGE input: w786, bits: 8
+ASSERT w787 = w783 + w786
+BLACKBOX::RANGE input: w787, bits: 8
+ASSERT w788 = 16*w781
+BLACKBOX::RANGE input: w788, bits: 8
+ASSERT w789 = w787 + w788
+BLACKBOX::RANGE input: w789, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w142, 16], outputs: [w790, w791]
+BLACKBOX::RANGE input: w790, bits: 4
+BLACKBOX::RANGE input: w791, bits: 4
+ASSERT w791 = w142 - 16*w790
+BRILLIG CALL func: 0, predicate: 1, inputs: [w142, 64], outputs: [w792, w793]
+BLACKBOX::RANGE input: w792, bits: 2
+BLACKBOX::RANGE input: w793, bits: 6
+ASSERT w793 = w142 - 64*w792
+ASSERT w794 = 9*w792
+BLACKBOX::RANGE input: w794, bits: 8
+ASSERT w795 = w791 + w794
+BLACKBOX::RANGE input: w795, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w143, 16], outputs: [w796, w797]
+BLACKBOX::RANGE input: w796, bits: 4
+BLACKBOX::RANGE input: w797, bits: 4
+ASSERT w797 = w143 - 16*w796
+BRILLIG CALL func: 0, predicate: 1, inputs: [w143, 64], outputs: [w798, w799]
+BLACKBOX::RANGE input: w798, bits: 2
+BLACKBOX::RANGE input: w799, bits: 6
+ASSERT w799 = w143 - 64*w798
+ASSERT w800 = 9*w798
+BLACKBOX::RANGE input: w800, bits: 8
+ASSERT w801 = w797 + w800
+BLACKBOX::RANGE input: w801, bits: 8
+ASSERT w802 = 16*w795
+BLACKBOX::RANGE input: w802, bits: 8
+ASSERT w803 = w801 + w802
+BLACKBOX::RANGE input: w803, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w144, 16], outputs: [w804, w805]
+BLACKBOX::RANGE input: w804, bits: 4
+BLACKBOX::RANGE input: w805, bits: 4
+ASSERT w805 = w144 - 16*w804
+BRILLIG CALL func: 0, predicate: 1, inputs: [w144, 64], outputs: [w806, w807]
+BLACKBOX::RANGE input: w806, bits: 2
+BLACKBOX::RANGE input: w807, bits: 6
+ASSERT w807 = w144 - 64*w806
+ASSERT w808 = 9*w806
+BLACKBOX::RANGE input: w808, bits: 8
+ASSERT w809 = w805 + w808
+BLACKBOX::RANGE input: w809, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w145, 16], outputs: [w810, w811]
+BLACKBOX::RANGE input: w810, bits: 4
+BLACKBOX::RANGE input: w811, bits: 4
+ASSERT w811 = w145 - 16*w810
+BRILLIG CALL func: 0, predicate: 1, inputs: [w145, 64], outputs: [w812, w813]
+BLACKBOX::RANGE input: w812, bits: 2
+BLACKBOX::RANGE input: w813, bits: 6
+ASSERT w813 = w145 - 64*w812
+ASSERT w814 = 9*w812
+BLACKBOX::RANGE input: w814, bits: 8
+ASSERT w815 = w811 + w814
+BLACKBOX::RANGE input: w815, bits: 8
+ASSERT w816 = 16*w809
+BLACKBOX::RANGE input: w816, bits: 8
+ASSERT w817 = w815 + w816
+BLACKBOX::RANGE input: w817, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w146, 16], outputs: [w818, w819]
+BLACKBOX::RANGE input: w818, bits: 4
+BLACKBOX::RANGE input: w819, bits: 4
+ASSERT w819 = w146 - 16*w818
+BRILLIG CALL func: 0, predicate: 1, inputs: [w146, 64], outputs: [w820, w821]
+BLACKBOX::RANGE input: w820, bits: 2
+BLACKBOX::RANGE input: w821, bits: 6
+ASSERT w821 = w146 - 64*w820
+ASSERT w822 = 9*w820
+BLACKBOX::RANGE input: w822, bits: 8
+ASSERT w823 = w819 + w822
+BLACKBOX::RANGE input: w823, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w147, 16], outputs: [w824, w825]
+BLACKBOX::RANGE input: w824, bits: 4
+BLACKBOX::RANGE input: w825, bits: 4
+ASSERT w825 = w147 - 16*w824
+BRILLIG CALL func: 0, predicate: 1, inputs: [w147, 64], outputs: [w826, w827]
+BLACKBOX::RANGE input: w826, bits: 2
+BLACKBOX::RANGE input: w827, bits: 6
+ASSERT w827 = w147 - 64*w826
+ASSERT w828 = 9*w826
+BLACKBOX::RANGE input: w828, bits: 8
+ASSERT w829 = w825 + w828
+BLACKBOX::RANGE input: w829, bits: 8
+ASSERT w830 = 16*w823
+BLACKBOX::RANGE input: w830, bits: 8
+ASSERT w831 = w829 + w830
+BLACKBOX::RANGE input: w831, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w148, 16], outputs: [w832, w833]
+BLACKBOX::RANGE input: w832, bits: 4
+BLACKBOX::RANGE input: w833, bits: 4
+ASSERT w833 = w148 - 16*w832
+BRILLIG CALL func: 0, predicate: 1, inputs: [w148, 64], outputs: [w834, w835]
+BLACKBOX::RANGE input: w834, bits: 2
+BLACKBOX::RANGE input: w835, bits: 6
+ASSERT w835 = w148 - 64*w834
+ASSERT w836 = 9*w834
+BLACKBOX::RANGE input: w836, bits: 8
+ASSERT w837 = w833 + w836
+BLACKBOX::RANGE input: w837, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w149, 16], outputs: [w838, w839]
+BLACKBOX::RANGE input: w838, bits: 4
+BLACKBOX::RANGE input: w839, bits: 4
+ASSERT w839 = w149 - 16*w838
+BRILLIG CALL func: 0, predicate: 1, inputs: [w149, 64], outputs: [w840, w841]
+BLACKBOX::RANGE input: w840, bits: 2
+BLACKBOX::RANGE input: w841, bits: 6
+ASSERT w841 = w149 - 64*w840
+ASSERT w842 = 9*w840
+BLACKBOX::RANGE input: w842, bits: 8
+ASSERT w843 = w839 + w842
+BLACKBOX::RANGE input: w843, bits: 8
+ASSERT w844 = 16*w837
+BLACKBOX::RANGE input: w844, bits: 8
+ASSERT w845 = w843 + w844
+BLACKBOX::RANGE input: w845, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w150, 16], outputs: [w846, w847]
+BLACKBOX::RANGE input: w846, bits: 4
+BLACKBOX::RANGE input: w847, bits: 4
+ASSERT w847 = w150 - 16*w846
+BRILLIG CALL func: 0, predicate: 1, inputs: [w150, 64], outputs: [w848, w849]
+BLACKBOX::RANGE input: w848, bits: 2
+BLACKBOX::RANGE input: w849, bits: 6
+ASSERT w849 = w150 - 64*w848
+ASSERT w850 = 9*w848
+BLACKBOX::RANGE input: w850, bits: 8
+ASSERT w851 = w847 + w850
+BLACKBOX::RANGE input: w851, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w151, 16], outputs: [w852, w853]
+BLACKBOX::RANGE input: w852, bits: 4
+BLACKBOX::RANGE input: w853, bits: 4
+ASSERT w853 = w151 - 16*w852
+BRILLIG CALL func: 0, predicate: 1, inputs: [w151, 64], outputs: [w854, w855]
+BLACKBOX::RANGE input: w854, bits: 2
+BLACKBOX::RANGE input: w855, bits: 6
+ASSERT w855 = w151 - 64*w854
+ASSERT w856 = 9*w854
+BLACKBOX::RANGE input: w856, bits: 8
+ASSERT w857 = w853 + w856
+BLACKBOX::RANGE input: w857, bits: 8
+ASSERT w858 = 16*w851
+BLACKBOX::RANGE input: w858, bits: 8
+ASSERT w859 = w857 + w858
+BLACKBOX::RANGE input: w859, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w152, 16], outputs: [w860, w861]
+BLACKBOX::RANGE input: w860, bits: 4
+BLACKBOX::RANGE input: w861, bits: 4
+ASSERT w861 = w152 - 16*w860
+BRILLIG CALL func: 0, predicate: 1, inputs: [w152, 64], outputs: [w862, w863]
+BLACKBOX::RANGE input: w862, bits: 2
+BLACKBOX::RANGE input: w863, bits: 6
+ASSERT w863 = w152 - 64*w862
+ASSERT w864 = 9*w862
+BLACKBOX::RANGE input: w864, bits: 8
+ASSERT w865 = w861 + w864
+BLACKBOX::RANGE input: w865, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w153, 16], outputs: [w866, w867]
+BLACKBOX::RANGE input: w866, bits: 4
+BLACKBOX::RANGE input: w867, bits: 4
+ASSERT w867 = w153 - 16*w866
+BRILLIG CALL func: 0, predicate: 1, inputs: [w153, 64], outputs: [w868, w869]
+BLACKBOX::RANGE input: w868, bits: 2
+BLACKBOX::RANGE input: w869, bits: 6
+ASSERT w869 = w153 - 64*w868
+ASSERT w870 = 9*w868
+BLACKBOX::RANGE input: w870, bits: 8
+ASSERT w871 = w867 + w870
+BLACKBOX::RANGE input: w871, bits: 8
+ASSERT w872 = 16*w865
+BLACKBOX::RANGE input: w872, bits: 8
+ASSERT w873 = w871 + w872
+BLACKBOX::RANGE input: w873, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w154, 16], outputs: [w874, w875]
+BLACKBOX::RANGE input: w874, bits: 4
+BLACKBOX::RANGE input: w875, bits: 4
+ASSERT w875 = w154 - 16*w874
+BRILLIG CALL func: 0, predicate: 1, inputs: [w154, 64], outputs: [w876, w877]
+BLACKBOX::RANGE input: w876, bits: 2
+BLACKBOX::RANGE input: w877, bits: 6
+ASSERT w877 = w154 - 64*w876
+ASSERT w878 = 9*w876
+BLACKBOX::RANGE input: w878, bits: 8
+ASSERT w879 = w875 + w878
+BLACKBOX::RANGE input: w879, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w155, 16], outputs: [w880, w881]
+BLACKBOX::RANGE input: w880, bits: 4
+BLACKBOX::RANGE input: w881, bits: 4
+ASSERT w881 = w155 - 16*w880
+BRILLIG CALL func: 0, predicate: 1, inputs: [w155, 64], outputs: [w882, w883]
+BLACKBOX::RANGE input: w882, bits: 2
+BLACKBOX::RANGE input: w883, bits: 6
+ASSERT w883 = w155 - 64*w882
+ASSERT w884 = 9*w882
+BLACKBOX::RANGE input: w884, bits: 8
+ASSERT w885 = w881 + w884
+BLACKBOX::RANGE input: w885, bits: 8
+ASSERT w886 = 16*w879
+BLACKBOX::RANGE input: w886, bits: 8
+ASSERT w887 = w885 + w886
+BLACKBOX::RANGE input: w887, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w156, 16], outputs: [w888, w889]
+BLACKBOX::RANGE input: w888, bits: 4
+BLACKBOX::RANGE input: w889, bits: 4
+ASSERT w889 = w156 - 16*w888
+BRILLIG CALL func: 0, predicate: 1, inputs: [w156, 64], outputs: [w890, w891]
+BLACKBOX::RANGE input: w890, bits: 2
+BLACKBOX::RANGE input: w891, bits: 6
+ASSERT w891 = w156 - 64*w890
+ASSERT w892 = 9*w890
+BLACKBOX::RANGE input: w892, bits: 8
+ASSERT w893 = w889 + w892
+BLACKBOX::RANGE input: w893, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w157, 16], outputs: [w894, w895]
+BLACKBOX::RANGE input: w894, bits: 4
+BLACKBOX::RANGE input: w895, bits: 4
+ASSERT w895 = w157 - 16*w894
+BRILLIG CALL func: 0, predicate: 1, inputs: [w157, 64], outputs: [w896, w897]
+BLACKBOX::RANGE input: w896, bits: 2
+BLACKBOX::RANGE input: w897, bits: 6
+ASSERT w897 = w157 - 64*w896
+ASSERT w898 = 9*w896
+BLACKBOX::RANGE input: w898, bits: 8
+ASSERT w899 = w895 + w898
+BLACKBOX::RANGE input: w899, bits: 8
+ASSERT w900 = 16*w893
+BLACKBOX::RANGE input: w900, bits: 8
+ASSERT w901 = w899 + w900
+BLACKBOX::RANGE input: w901, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w158, 16], outputs: [w902, w903]
+BLACKBOX::RANGE input: w902, bits: 4
+BLACKBOX::RANGE input: w903, bits: 4
+ASSERT w903 = w158 - 16*w902
+BRILLIG CALL func: 0, predicate: 1, inputs: [w158, 64], outputs: [w904, w905]
+BLACKBOX::RANGE input: w904, bits: 2
+BLACKBOX::RANGE input: w905, bits: 6
+ASSERT w905 = w158 - 64*w904
+ASSERT w906 = 9*w904
+BLACKBOX::RANGE input: w906, bits: 8
+ASSERT w907 = w903 + w906
+BLACKBOX::RANGE input: w907, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w159, 16], outputs: [w908, w909]
+BLACKBOX::RANGE input: w908, bits: 4
+BLACKBOX::RANGE input: w909, bits: 4
+ASSERT w909 = w159 - 16*w908
+BRILLIG CALL func: 0, predicate: 1, inputs: [w159, 64], outputs: [w910, w911]
+BLACKBOX::RANGE input: w910, bits: 2
+BLACKBOX::RANGE input: w911, bits: 6
+ASSERT w911 = w159 - 64*w910
+ASSERT w912 = 9*w910
+BLACKBOX::RANGE input: w912, bits: 8
+ASSERT w913 = w909 + w912
+BLACKBOX::RANGE input: w913, bits: 8
+ASSERT w914 = 16*w907
+BLACKBOX::RANGE input: w914, bits: 8
+ASSERT w915 = w913 + w914
+BLACKBOX::RANGE input: w915, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w160, 16], outputs: [w916, w917]
+BLACKBOX::RANGE input: w916, bits: 4
+BLACKBOX::RANGE input: w917, bits: 4
+ASSERT w917 = w160 - 16*w916
+BRILLIG CALL func: 0, predicate: 1, inputs: [w160, 64], outputs: [w918, w919]
+BLACKBOX::RANGE input: w918, bits: 2
+BLACKBOX::RANGE input: w919, bits: 6
+ASSERT w919 = w160 - 64*w918
+ASSERT w920 = 9*w918
+BLACKBOX::RANGE input: w920, bits: 8
+ASSERT w921 = w917 + w920
+BLACKBOX::RANGE input: w921, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w161, 16], outputs: [w922, w923]
+BLACKBOX::RANGE input: w922, bits: 4
+BLACKBOX::RANGE input: w923, bits: 4
+ASSERT w923 = w161 - 16*w922
+BRILLIG CALL func: 0, predicate: 1, inputs: [w161, 64], outputs: [w924, w925]
+BLACKBOX::RANGE input: w924, bits: 2
+BLACKBOX::RANGE input: w925, bits: 6
+ASSERT w925 = w161 - 64*w924
+ASSERT w926 = 9*w924
+BLACKBOX::RANGE input: w926, bits: 8
+ASSERT w927 = w923 + w926
+BLACKBOX::RANGE input: w927, bits: 8
+ASSERT w928 = 16*w921
+BLACKBOX::RANGE input: w928, bits: 8
+ASSERT w929 = w927 + w928
+BLACKBOX::RANGE input: w929, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w162, 16], outputs: [w930, w931]
+BLACKBOX::RANGE input: w930, bits: 4
+BLACKBOX::RANGE input: w931, bits: 4
+ASSERT w931 = w162 - 16*w930
+BRILLIG CALL func: 0, predicate: 1, inputs: [w162, 64], outputs: [w932, w933]
+BLACKBOX::RANGE input: w932, bits: 2
+BLACKBOX::RANGE input: w933, bits: 6
+ASSERT w933 = w162 - 64*w932
+ASSERT w934 = 9*w932
+BLACKBOX::RANGE input: w934, bits: 8
+ASSERT w935 = w931 + w934
+BLACKBOX::RANGE input: w935, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w163, 16], outputs: [w936, w937]
+BLACKBOX::RANGE input: w936, bits: 4
+BLACKBOX::RANGE input: w937, bits: 4
+ASSERT w937 = w163 - 16*w936
+BRILLIG CALL func: 0, predicate: 1, inputs: [w163, 64], outputs: [w938, w939]
+BLACKBOX::RANGE input: w938, bits: 2
+BLACKBOX::RANGE input: w939, bits: 6
+ASSERT w939 = w163 - 64*w938
+ASSERT w940 = 9*w938
+BLACKBOX::RANGE input: w940, bits: 8
+ASSERT w941 = w937 + w940
+BLACKBOX::RANGE input: w941, bits: 8
+ASSERT w942 = 16*w935
+BLACKBOX::RANGE input: w942, bits: 8
+ASSERT w943 = w941 + w942
+BLACKBOX::RANGE input: w943, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w164, 16], outputs: [w944, w945]
+BLACKBOX::RANGE input: w944, bits: 4
+BLACKBOX::RANGE input: w945, bits: 4
+ASSERT w945 = w164 - 16*w944
+BRILLIG CALL func: 0, predicate: 1, inputs: [w164, 64], outputs: [w946, w947]
+BLACKBOX::RANGE input: w946, bits: 2
+BLACKBOX::RANGE input: w947, bits: 6
+ASSERT w947 = w164 - 64*w946
+ASSERT w948 = 9*w946
+BLACKBOX::RANGE input: w948, bits: 8
+ASSERT w949 = w945 + w948
+BLACKBOX::RANGE input: w949, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w165, 16], outputs: [w950, w951]
+BLACKBOX::RANGE input: w950, bits: 4
+BLACKBOX::RANGE input: w951, bits: 4
+ASSERT w951 = w165 - 16*w950
+BRILLIG CALL func: 0, predicate: 1, inputs: [w165, 64], outputs: [w952, w953]
+BLACKBOX::RANGE input: w952, bits: 2
+BLACKBOX::RANGE input: w953, bits: 6
+ASSERT w953 = w165 - 64*w952
+ASSERT w954 = 9*w952
+BLACKBOX::RANGE input: w954, bits: 8
+ASSERT w955 = w951 + w954
+BLACKBOX::RANGE input: w955, bits: 8
+ASSERT w956 = 16*w949
+BLACKBOX::RANGE input: w956, bits: 8
+ASSERT w957 = w955 + w956
+BLACKBOX::RANGE input: w957, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w166, 16], outputs: [w958, w959]
+BLACKBOX::RANGE input: w958, bits: 4
+BLACKBOX::RANGE input: w959, bits: 4
+ASSERT w959 = w166 - 16*w958
+BRILLIG CALL func: 0, predicate: 1, inputs: [w166, 64], outputs: [w960, w961]
+BLACKBOX::RANGE input: w960, bits: 2
+BLACKBOX::RANGE input: w961, bits: 6
+ASSERT w961 = w166 - 64*w960
+ASSERT w962 = 9*w960
+BLACKBOX::RANGE input: w962, bits: 8
+ASSERT w963 = w959 + w962
+BLACKBOX::RANGE input: w963, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w167, 16], outputs: [w964, w965]
+BLACKBOX::RANGE input: w964, bits: 4
+BLACKBOX::RANGE input: w965, bits: 4
+ASSERT w965 = w167 - 16*w964
+BRILLIG CALL func: 0, predicate: 1, inputs: [w167, 64], outputs: [w966, w967]
+BLACKBOX::RANGE input: w966, bits: 2
+BLACKBOX::RANGE input: w967, bits: 6
+ASSERT w967 = w167 - 64*w966
+ASSERT w968 = 9*w966
+BLACKBOX::RANGE input: w968, bits: 8
+ASSERT w969 = w965 + w968
+BLACKBOX::RANGE input: w969, bits: 8
+ASSERT w970 = 16*w963
+BLACKBOX::RANGE input: w970, bits: 8
+ASSERT w971 = w969 + w970
+BLACKBOX::RANGE input: w971, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w168, 16], outputs: [w972, w973]
+BLACKBOX::RANGE input: w972, bits: 4
+BLACKBOX::RANGE input: w973, bits: 4
+ASSERT w973 = w168 - 16*w972
+BRILLIG CALL func: 0, predicate: 1, inputs: [w168, 64], outputs: [w974, w975]
+BLACKBOX::RANGE input: w974, bits: 2
+BLACKBOX::RANGE input: w975, bits: 6
+ASSERT w975 = w168 - 64*w974
+ASSERT w976 = 9*w974
+BLACKBOX::RANGE input: w976, bits: 8
+ASSERT w977 = w973 + w976
+BLACKBOX::RANGE input: w977, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w169, 16], outputs: [w978, w979]
+BLACKBOX::RANGE input: w978, bits: 4
+BLACKBOX::RANGE input: w979, bits: 4
+ASSERT w979 = w169 - 16*w978
+BRILLIG CALL func: 0, predicate: 1, inputs: [w169, 64], outputs: [w980, w981]
+BLACKBOX::RANGE input: w980, bits: 2
+BLACKBOX::RANGE input: w981, bits: 6
+ASSERT w981 = w169 - 64*w980
+ASSERT w982 = 9*w980
+BLACKBOX::RANGE input: w982, bits: 8
+ASSERT w983 = w979 + w982
+BLACKBOX::RANGE input: w983, bits: 8
+ASSERT w984 = 16*w977
+BLACKBOX::RANGE input: w984, bits: 8
+ASSERT w985 = w983 + w984
+BLACKBOX::RANGE input: w985, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w170, 16], outputs: [w986, w987]
+BLACKBOX::RANGE input: w986, bits: 4
+BLACKBOX::RANGE input: w987, bits: 4
+ASSERT w987 = w170 - 16*w986
+BRILLIG CALL func: 0, predicate: 1, inputs: [w170, 64], outputs: [w988, w989]
+BLACKBOX::RANGE input: w988, bits: 2
+BLACKBOX::RANGE input: w989, bits: 6
+ASSERT w989 = w170 - 64*w988
+ASSERT w990 = 9*w988
+BLACKBOX::RANGE input: w990, bits: 8
+ASSERT w991 = w987 + w990
+BLACKBOX::RANGE input: w991, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w171, 16], outputs: [w992, w993]
+BLACKBOX::RANGE input: w992, bits: 4
+BLACKBOX::RANGE input: w993, bits: 4
+ASSERT w993 = w171 - 16*w992
+BRILLIG CALL func: 0, predicate: 1, inputs: [w171, 64], outputs: [w994, w995]
+BLACKBOX::RANGE input: w994, bits: 2
+BLACKBOX::RANGE input: w995, bits: 6
+ASSERT w995 = w171 - 64*w994
+ASSERT w996 = 9*w994
+BLACKBOX::RANGE input: w996, bits: 8
+ASSERT w997 = w993 + w996
+BLACKBOX::RANGE input: w997, bits: 8
+ASSERT w998 = 16*w991
+BLACKBOX::RANGE input: w998, bits: 8
+ASSERT w999 = w997 + w998
+BLACKBOX::RANGE input: w999, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w172, 16], outputs: [w1000, w1001]
+BLACKBOX::RANGE input: w1000, bits: 4
+BLACKBOX::RANGE input: w1001, bits: 4
+ASSERT w1001 = w172 - 16*w1000
+BRILLIG CALL func: 0, predicate: 1, inputs: [w172, 64], outputs: [w1002, w1003]
+BLACKBOX::RANGE input: w1002, bits: 2
+BLACKBOX::RANGE input: w1003, bits: 6
+ASSERT w1003 = w172 - 64*w1002
+ASSERT w1004 = 9*w1002
+BLACKBOX::RANGE input: w1004, bits: 8
+ASSERT w1005 = w1001 + w1004
+BLACKBOX::RANGE input: w1005, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w173, 16], outputs: [w1006, w1007]
+BLACKBOX::RANGE input: w1006, bits: 4
+BLACKBOX::RANGE input: w1007, bits: 4
+ASSERT w1007 = w173 - 16*w1006
+BRILLIG CALL func: 0, predicate: 1, inputs: [w173, 64], outputs: [w1008, w1009]
+BLACKBOX::RANGE input: w1008, bits: 2
+BLACKBOX::RANGE input: w1009, bits: 6
+ASSERT w1009 = w173 - 64*w1008
+ASSERT w1010 = 9*w1008
+BLACKBOX::RANGE input: w1010, bits: 8
+ASSERT w1011 = w1007 + w1010
+BLACKBOX::RANGE input: w1011, bits: 8
+ASSERT w1012 = 16*w1005
+BLACKBOX::RANGE input: w1012, bits: 8
+ASSERT w1013 = w1011 + w1012
+BLACKBOX::RANGE input: w1013, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w174, 16], outputs: [w1014, w1015]
+BLACKBOX::RANGE input: w1014, bits: 4
+BLACKBOX::RANGE input: w1015, bits: 4
+ASSERT w1015 = w174 - 16*w1014
+BRILLIG CALL func: 0, predicate: 1, inputs: [w174, 64], outputs: [w1016, w1017]
+BLACKBOX::RANGE input: w1016, bits: 2
+BLACKBOX::RANGE input: w1017, bits: 6
+ASSERT w1017 = w174 - 64*w1016
+ASSERT w1018 = 9*w1016
+BLACKBOX::RANGE input: w1018, bits: 8
+ASSERT w1019 = w1015 + w1018
+BLACKBOX::RANGE input: w1019, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w175, 16], outputs: [w1020, w1021]
+BLACKBOX::RANGE input: w1020, bits: 4
+BLACKBOX::RANGE input: w1021, bits: 4
+ASSERT w1021 = w175 - 16*w1020
+BRILLIG CALL func: 0, predicate: 1, inputs: [w175, 64], outputs: [w1022, w1023]
+BLACKBOX::RANGE input: w1022, bits: 2
+BLACKBOX::RANGE input: w1023, bits: 6
+ASSERT w1023 = w175 - 64*w1022
+ASSERT w1024 = 9*w1022
+BLACKBOX::RANGE input: w1024, bits: 8
+ASSERT w1025 = w1021 + w1024
+BLACKBOX::RANGE input: w1025, bits: 8
+ASSERT w1026 = 16*w1019
+BLACKBOX::RANGE input: w1026, bits: 8
+ASSERT w1027 = w1025 + w1026
+BLACKBOX::RANGE input: w1027, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w176, 16], outputs: [w1028, w1029]
+BLACKBOX::RANGE input: w1028, bits: 4
+BLACKBOX::RANGE input: w1029, bits: 4
+ASSERT w1029 = w176 - 16*w1028
+BRILLIG CALL func: 0, predicate: 1, inputs: [w176, 64], outputs: [w1030, w1031]
+BLACKBOX::RANGE input: w1030, bits: 2
+BLACKBOX::RANGE input: w1031, bits: 6
+ASSERT w1031 = w176 - 64*w1030
+ASSERT w1032 = 9*w1030
+BLACKBOX::RANGE input: w1032, bits: 8
+ASSERT w1033 = w1029 + w1032
+BLACKBOX::RANGE input: w1033, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w177, 16], outputs: [w1034, w1035]
+BLACKBOX::RANGE input: w1034, bits: 4
+BLACKBOX::RANGE input: w1035, bits: 4
+ASSERT w1035 = w177 - 16*w1034
+BRILLIG CALL func: 0, predicate: 1, inputs: [w177, 64], outputs: [w1036, w1037]
+BLACKBOX::RANGE input: w1036, bits: 2
+BLACKBOX::RANGE input: w1037, bits: 6
+ASSERT w1037 = w177 - 64*w1036
+ASSERT w1038 = 9*w1036
+BLACKBOX::RANGE input: w1038, bits: 8
+ASSERT w1039 = w1035 + w1038
+BLACKBOX::RANGE input: w1039, bits: 8
+ASSERT w1040 = 16*w1033
+BLACKBOX::RANGE input: w1040, bits: 8
+ASSERT w1041 = w1039 + w1040
+BLACKBOX::RANGE input: w1041, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w178, 16], outputs: [w1042, w1043]
+BLACKBOX::RANGE input: w1042, bits: 4
+BLACKBOX::RANGE input: w1043, bits: 4
+ASSERT w1043 = w178 - 16*w1042
+BRILLIG CALL func: 0, predicate: 1, inputs: [w178, 64], outputs: [w1044, w1045]
+BLACKBOX::RANGE input: w1044, bits: 2
+BLACKBOX::RANGE input: w1045, bits: 6
+ASSERT w1045 = w178 - 64*w1044
+ASSERT w1046 = 9*w1044
+BLACKBOX::RANGE input: w1046, bits: 8
+ASSERT w1047 = w1043 + w1046
+BLACKBOX::RANGE input: w1047, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w179, 16], outputs: [w1048, w1049]
+BLACKBOX::RANGE input: w1048, bits: 4
+BLACKBOX::RANGE input: w1049, bits: 4
+ASSERT w1049 = w179 - 16*w1048
+BRILLIG CALL func: 0, predicate: 1, inputs: [w179, 64], outputs: [w1050, w1051]
+BLACKBOX::RANGE input: w1050, bits: 2
+BLACKBOX::RANGE input: w1051, bits: 6
+ASSERT w1051 = w179 - 64*w1050
+ASSERT w1052 = 9*w1050
+BLACKBOX::RANGE input: w1052, bits: 8
+ASSERT w1053 = w1049 + w1052
+BLACKBOX::RANGE input: w1053, bits: 8
+ASSERT w1054 = 16*w1047
+BLACKBOX::RANGE input: w1054, bits: 8
+ASSERT w1055 = w1053 + w1054
+BLACKBOX::RANGE input: w1055, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w180, 16], outputs: [w1056, w1057]
+BLACKBOX::RANGE input: w1056, bits: 4
+BLACKBOX::RANGE input: w1057, bits: 4
+ASSERT w1057 = w180 - 16*w1056
+BRILLIG CALL func: 0, predicate: 1, inputs: [w180, 64], outputs: [w1058, w1059]
+BLACKBOX::RANGE input: w1058, bits: 2
+BLACKBOX::RANGE input: w1059, bits: 6
+ASSERT w1059 = w180 - 64*w1058
+ASSERT w1060 = 9*w1058
+BLACKBOX::RANGE input: w1060, bits: 8
+ASSERT w1061 = w1057 + w1060
+BLACKBOX::RANGE input: w1061, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w181, 16], outputs: [w1062, w1063]
+BLACKBOX::RANGE input: w1062, bits: 4
+BLACKBOX::RANGE input: w1063, bits: 4
+ASSERT w1063 = w181 - 16*w1062
+BRILLIG CALL func: 0, predicate: 1, inputs: [w181, 64], outputs: [w1064, w1065]
+BLACKBOX::RANGE input: w1064, bits: 2
+BLACKBOX::RANGE input: w1065, bits: 6
+ASSERT w1065 = w181 - 64*w1064
+ASSERT w1066 = 9*w1064
+BLACKBOX::RANGE input: w1066, bits: 8
+ASSERT w1067 = w1063 + w1066
+BLACKBOX::RANGE input: w1067, bits: 8
+ASSERT w1068 = 16*w1061
+BLACKBOX::RANGE input: w1068, bits: 8
+ASSERT w1069 = w1067 + w1068
+BLACKBOX::RANGE input: w1069, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w182, 16], outputs: [w1070, w1071]
+BLACKBOX::RANGE input: w1070, bits: 4
+BLACKBOX::RANGE input: w1071, bits: 4
+ASSERT w1071 = w182 - 16*w1070
+BRILLIG CALL func: 0, predicate: 1, inputs: [w182, 64], outputs: [w1072, w1073]
+BLACKBOX::RANGE input: w1072, bits: 2
+BLACKBOX::RANGE input: w1073, bits: 6
+ASSERT w1073 = w182 - 64*w1072
+ASSERT w1074 = 9*w1072
+BLACKBOX::RANGE input: w1074, bits: 8
+ASSERT w1075 = w1071 + w1074
+BLACKBOX::RANGE input: w1075, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w183, 16], outputs: [w1076, w1077]
+BLACKBOX::RANGE input: w1076, bits: 4
+BLACKBOX::RANGE input: w1077, bits: 4
+ASSERT w1077 = w183 - 16*w1076
+BRILLIG CALL func: 0, predicate: 1, inputs: [w183, 64], outputs: [w1078, w1079]
+BLACKBOX::RANGE input: w1078, bits: 2
+BLACKBOX::RANGE input: w1079, bits: 6
+ASSERT w1079 = w183 - 64*w1078
+ASSERT w1080 = 9*w1078
+BLACKBOX::RANGE input: w1080, bits: 8
+ASSERT w1081 = w1077 + w1080
+BLACKBOX::RANGE input: w1081, bits: 8
+ASSERT w1082 = 16*w1075
+BLACKBOX::RANGE input: w1082, bits: 8
+ASSERT w1083 = w1081 + w1082
+BLACKBOX::RANGE input: w1083, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w184, 16], outputs: [w1084, w1085]
+BLACKBOX::RANGE input: w1084, bits: 4
+BLACKBOX::RANGE input: w1085, bits: 4
+ASSERT w1085 = w184 - 16*w1084
+BRILLIG CALL func: 0, predicate: 1, inputs: [w184, 64], outputs: [w1086, w1087]
+BLACKBOX::RANGE input: w1086, bits: 2
+BLACKBOX::RANGE input: w1087, bits: 6
+ASSERT w1087 = w184 - 64*w1086
+ASSERT w1088 = 9*w1086
+BLACKBOX::RANGE input: w1088, bits: 8
+ASSERT w1089 = w1085 + w1088
+BLACKBOX::RANGE input: w1089, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w185, 16], outputs: [w1090, w1091]
+BLACKBOX::RANGE input: w1090, bits: 4
+BLACKBOX::RANGE input: w1091, bits: 4
+ASSERT w1091 = w185 - 16*w1090
+BRILLIG CALL func: 0, predicate: 1, inputs: [w185, 64], outputs: [w1092, w1093]
+BLACKBOX::RANGE input: w1092, bits: 2
+BLACKBOX::RANGE input: w1093, bits: 6
+ASSERT w1093 = w185 - 64*w1092
+ASSERT w1094 = 9*w1092
+BLACKBOX::RANGE input: w1094, bits: 8
+ASSERT w1095 = w1091 + w1094
+BLACKBOX::RANGE input: w1095, bits: 8
+ASSERT w1096 = 16*w1089
+BLACKBOX::RANGE input: w1096, bits: 8
+ASSERT w1097 = w1095 + w1096
+BLACKBOX::RANGE input: w1097, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w186, 16], outputs: [w1098, w1099]
+BLACKBOX::RANGE input: w1098, bits: 4
+BLACKBOX::RANGE input: w1099, bits: 4
+ASSERT w1099 = w186 - 16*w1098
+BRILLIG CALL func: 0, predicate: 1, inputs: [w186, 64], outputs: [w1100, w1101]
+BLACKBOX::RANGE input: w1100, bits: 2
+BLACKBOX::RANGE input: w1101, bits: 6
+ASSERT w1101 = w186 - 64*w1100
+ASSERT w1102 = 9*w1100
+BLACKBOX::RANGE input: w1102, bits: 8
+ASSERT w1103 = w1099 + w1102
+BLACKBOX::RANGE input: w1103, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w187, 16], outputs: [w1104, w1105]
+BLACKBOX::RANGE input: w1104, bits: 4
+BLACKBOX::RANGE input: w1105, bits: 4
+ASSERT w1105 = w187 - 16*w1104
+BRILLIG CALL func: 0, predicate: 1, inputs: [w187, 64], outputs: [w1106, w1107]
+BLACKBOX::RANGE input: w1106, bits: 2
+BLACKBOX::RANGE input: w1107, bits: 6
+ASSERT w1107 = w187 - 64*w1106
+ASSERT w1108 = 9*w1106
+BLACKBOX::RANGE input: w1108, bits: 8
+ASSERT w1109 = w1105 + w1108
+BLACKBOX::RANGE input: w1109, bits: 8
+ASSERT w1110 = 16*w1103
+BLACKBOX::RANGE input: w1110, bits: 8
+ASSERT w1111 = w1109 + w1110
+BLACKBOX::RANGE input: w1111, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w188, 16], outputs: [w1112, w1113]
+BLACKBOX::RANGE input: w1112, bits: 4
+BLACKBOX::RANGE input: w1113, bits: 4
+ASSERT w1113 = w188 - 16*w1112
+BRILLIG CALL func: 0, predicate: 1, inputs: [w188, 64], outputs: [w1114, w1115]
+BLACKBOX::RANGE input: w1114, bits: 2
+BLACKBOX::RANGE input: w1115, bits: 6
+ASSERT w1115 = w188 - 64*w1114
+ASSERT w1116 = 9*w1114
+BLACKBOX::RANGE input: w1116, bits: 8
+ASSERT w1117 = w1113 + w1116
+BLACKBOX::RANGE input: w1117, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w189, 16], outputs: [w1118, w1119]
+BLACKBOX::RANGE input: w1118, bits: 4
+BLACKBOX::RANGE input: w1119, bits: 4
+ASSERT w1119 = w189 - 16*w1118
+BRILLIG CALL func: 0, predicate: 1, inputs: [w189, 64], outputs: [w1120, w1121]
+BLACKBOX::RANGE input: w1120, bits: 2
+BLACKBOX::RANGE input: w1121, bits: 6
+ASSERT w1121 = w189 - 64*w1120
+ASSERT w1122 = 9*w1120
+BLACKBOX::RANGE input: w1122, bits: 8
+ASSERT w1123 = w1119 + w1122
+BLACKBOX::RANGE input: w1123, bits: 8
+ASSERT w1124 = 16*w1117
+BLACKBOX::RANGE input: w1124, bits: 8
+ASSERT w1125 = w1123 + w1124
+BLACKBOX::RANGE input: w1125, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w190, 16], outputs: [w1126, w1127]
+BLACKBOX::RANGE input: w1126, bits: 4
+BLACKBOX::RANGE input: w1127, bits: 4
+ASSERT w1127 = w190 - 16*w1126
+BRILLIG CALL func: 0, predicate: 1, inputs: [w190, 64], outputs: [w1128, w1129]
+BLACKBOX::RANGE input: w1128, bits: 2
+BLACKBOX::RANGE input: w1129, bits: 6
+ASSERT w1129 = w190 - 64*w1128
+ASSERT w1130 = 9*w1128
+BLACKBOX::RANGE input: w1130, bits: 8
+ASSERT w1131 = w1127 + w1130
+BLACKBOX::RANGE input: w1131, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w191, 16], outputs: [w1132, w1133]
+BLACKBOX::RANGE input: w1132, bits: 4
+BLACKBOX::RANGE input: w1133, bits: 4
+ASSERT w1133 = w191 - 16*w1132
+BRILLIG CALL func: 0, predicate: 1, inputs: [w191, 64], outputs: [w1134, w1135]
+BLACKBOX::RANGE input: w1134, bits: 2
+BLACKBOX::RANGE input: w1135, bits: 6
+ASSERT w1135 = w191 - 64*w1134
+ASSERT w1136 = 9*w1134
+BLACKBOX::RANGE input: w1136, bits: 8
+ASSERT w1137 = w1133 + w1136
+BLACKBOX::RANGE input: w1137, bits: 8
+ASSERT w1138 = 16*w1131
+BLACKBOX::RANGE input: w1138, bits: 8
+ASSERT w1139 = w1137 + w1138
+BLACKBOX::RANGE input: w1139, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w192, 16], outputs: [w1140, w1141]
+BLACKBOX::RANGE input: w1140, bits: 4
+BLACKBOX::RANGE input: w1141, bits: 4
+ASSERT w1141 = w192 - 16*w1140
+BRILLIG CALL func: 0, predicate: 1, inputs: [w192, 64], outputs: [w1142, w1143]
+BLACKBOX::RANGE input: w1142, bits: 2
+BLACKBOX::RANGE input: w1143, bits: 6
+ASSERT w1143 = w192 - 64*w1142
+ASSERT w1144 = 9*w1142
+BLACKBOX::RANGE input: w1144, bits: 8
+ASSERT w1145 = w1141 + w1144
+BLACKBOX::RANGE input: w1145, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w193, 16], outputs: [w1146, w1147]
+BLACKBOX::RANGE input: w1146, bits: 4
+BLACKBOX::RANGE input: w1147, bits: 4
+ASSERT w1147 = w193 - 16*w1146
+BRILLIG CALL func: 0, predicate: 1, inputs: [w193, 64], outputs: [w1148, w1149]
+BLACKBOX::RANGE input: w1148, bits: 2
+BLACKBOX::RANGE input: w1149, bits: 6
+ASSERT w1149 = w193 - 64*w1148
+ASSERT w1150 = 9*w1148
+BLACKBOX::RANGE input: w1150, bits: 8
+ASSERT w1151 = w1147 + w1150
+BLACKBOX::RANGE input: w1151, bits: 8
+ASSERT w1152 = 16*w1145
+BLACKBOX::RANGE input: w1152, bits: 8
+ASSERT w1153 = w1151 + w1152
+BLACKBOX::RANGE input: w1153, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w194, 16], outputs: [w1154, w1155]
+BLACKBOX::RANGE input: w1154, bits: 4
+BLACKBOX::RANGE input: w1155, bits: 4
+ASSERT w1155 = w194 - 16*w1154
+BRILLIG CALL func: 0, predicate: 1, inputs: [w194, 64], outputs: [w1156, w1157]
+BLACKBOX::RANGE input: w1156, bits: 2
+BLACKBOX::RANGE input: w1157, bits: 6
+ASSERT w1157 = w194 - 64*w1156
+ASSERT w1158 = 9*w1156
+BLACKBOX::RANGE input: w1158, bits: 8
+ASSERT w1159 = w1155 + w1158
+BLACKBOX::RANGE input: w1159, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w195, 16], outputs: [w1160, w1161]
+BLACKBOX::RANGE input: w1160, bits: 4
+BLACKBOX::RANGE input: w1161, bits: 4
+ASSERT w1161 = w195 - 16*w1160
+BRILLIG CALL func: 0, predicate: 1, inputs: [w195, 64], outputs: [w1162, w1163]
+BLACKBOX::RANGE input: w1162, bits: 2
+BLACKBOX::RANGE input: w1163, bits: 6
+ASSERT w1163 = w195 - 64*w1162
+ASSERT w1164 = 9*w1162
+BLACKBOX::RANGE input: w1164, bits: 8
+ASSERT w1165 = w1161 + w1164
+BLACKBOX::RANGE input: w1165, bits: 8
+ASSERT w1166 = 16*w1159
+BLACKBOX::RANGE input: w1166, bits: 8
+ASSERT w1167 = w1165 + w1166
+BLACKBOX::RANGE input: w1167, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w196, 16], outputs: [w1168, w1169]
+BLACKBOX::RANGE input: w1168, bits: 4
+BLACKBOX::RANGE input: w1169, bits: 4
+ASSERT w1169 = w196 - 16*w1168
+BRILLIG CALL func: 0, predicate: 1, inputs: [w196, 64], outputs: [w1170, w1171]
+BLACKBOX::RANGE input: w1170, bits: 2
+BLACKBOX::RANGE input: w1171, bits: 6
+ASSERT w1171 = w196 - 64*w1170
+ASSERT w1172 = 9*w1170
+BLACKBOX::RANGE input: w1172, bits: 8
+ASSERT w1173 = w1169 + w1172
+BLACKBOX::RANGE input: w1173, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w197, 16], outputs: [w1174, w1175]
+BLACKBOX::RANGE input: w1174, bits: 4
+BLACKBOX::RANGE input: w1175, bits: 4
+ASSERT w1175 = w197 - 16*w1174
+BRILLIG CALL func: 0, predicate: 1, inputs: [w197, 64], outputs: [w1176, w1177]
+BLACKBOX::RANGE input: w1176, bits: 2
+BLACKBOX::RANGE input: w1177, bits: 6
+ASSERT w1177 = w197 - 64*w1176
+ASSERT w1178 = 9*w1176
+BLACKBOX::RANGE input: w1178, bits: 8
+ASSERT w1179 = w1175 + w1178
+BLACKBOX::RANGE input: w1179, bits: 8
+ASSERT w1180 = 16*w1173
+BLACKBOX::RANGE input: w1180, bits: 8
+ASSERT w1181 = w1179 + w1180
+BLACKBOX::RANGE input: w1181, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w198, 16], outputs: [w1182, w1183]
+BLACKBOX::RANGE input: w1182, bits: 4
+BLACKBOX::RANGE input: w1183, bits: 4
+ASSERT w1183 = w198 - 16*w1182
+BRILLIG CALL func: 0, predicate: 1, inputs: [w198, 64], outputs: [w1184, w1185]
+BLACKBOX::RANGE input: w1184, bits: 2
+BLACKBOX::RANGE input: w1185, bits: 6
+ASSERT w1185 = w198 - 64*w1184
+ASSERT w1186 = 9*w1184
+BLACKBOX::RANGE input: w1186, bits: 8
+ASSERT w1187 = w1183 + w1186
+BLACKBOX::RANGE input: w1187, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w199, 16], outputs: [w1188, w1189]
+BLACKBOX::RANGE input: w1188, bits: 4
+BLACKBOX::RANGE input: w1189, bits: 4
+ASSERT w1189 = w199 - 16*w1188
+BRILLIG CALL func: 0, predicate: 1, inputs: [w199, 64], outputs: [w1190, w1191]
+BLACKBOX::RANGE input: w1190, bits: 2
+BLACKBOX::RANGE input: w1191, bits: 6
+ASSERT w1191 = w199 - 64*w1190
+ASSERT w1192 = 9*w1190
+BLACKBOX::RANGE input: w1192, bits: 8
+ASSERT w1193 = w1189 + w1192
+BLACKBOX::RANGE input: w1193, bits: 8
+ASSERT w1194 = 16*w1187
+BLACKBOX::RANGE input: w1194, bits: 8
+ASSERT w1195 = w1193 + w1194
+BLACKBOX::RANGE input: w1195, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w200, 16], outputs: [w1196, w1197]
+BLACKBOX::RANGE input: w1196, bits: 4
+BLACKBOX::RANGE input: w1197, bits: 4
+ASSERT w1197 = w200 - 16*w1196
+BRILLIG CALL func: 0, predicate: 1, inputs: [w200, 64], outputs: [w1198, w1199]
+BLACKBOX::RANGE input: w1198, bits: 2
+BLACKBOX::RANGE input: w1199, bits: 6
+ASSERT w1199 = w200 - 64*w1198
+ASSERT w1200 = 9*w1198
+BLACKBOX::RANGE input: w1200, bits: 8
+ASSERT w1201 = w1197 + w1200
+BLACKBOX::RANGE input: w1201, bits: 8
+BRILLIG CALL func: 0, predicate: 1, inputs: [w201, 16], outputs: [w1202, w1203]
+BLACKBOX::RANGE input: w1202, bits: 4
+BLACKBOX::RANGE input: w1203, bits: 4
+ASSERT w1203 = w201 - 16*w1202
+BRILLIG CALL func: 0, predicate: 1, inputs: [w201, 64], outputs: [w1204, w1205]
+BLACKBOX::RANGE input: w1204, bits: 2
+BLACKBOX::RANGE input: w1205, bits: 6
+ASSERT w1205 = w201 - 64*w1204
+ASSERT w1206 = 9*w1204
+BLACKBOX::RANGE input: w1206, bits: 8
+ASSERT w1207 = w1203 + w1206
+BLACKBOX::RANGE input: w1207, bits: 8
+ASSERT w1208 = 16*w1201
+BLACKBOX::RANGE input: w1208, bits: 8
+ASSERT w1209 = w1207 + w1208
+BLACKBOX::RANGE input: w1209, bits: 8
+BLACKBOX::ECDSA_SECP256R1 public_key_x: [w327, w341, w355, w369, w383, w397, w411, w425, w439, w453, w467, w481, w495, w509, w523, w537, w551, w565, w579, w593, w607, w621, w635, w649, w663, w677, w691, w705, w719, w733, w747, w761], public_key_y: [w775, w789, w803, w817, w831, w845, w859, w873, w887, w901, w915, w929, w943, w957, w971, w985, w999, w1013, w1027, w1041, w1055, w1069, w1083, w1097, w1111, w1125, w1139, w1153, w1167, w1181, w1195, w1209], signature: [w218, w219, w220, w221, w222, w223, w224, w225, w226, w227, w228, w229, w230, w231, w232, w233, w234, w235, w236, w237, w238, w239, w240, w241, w242, w243, w244, w245, w246, w247, w248, w249, w250, w251, w252, w253, w254, w255, w256, w257, w258, w259, w260, w261, w262, w263, w264, w265, w266, w267, w268, w269, w270, w271, w272, w273, w274, w275, w276, w277, w278, w279, w280, w281], hashed_message: [w282, w283, w284, w285, w286, w287, w288, w289, w290, w291, w292, w293, w294, w295, w296, w297, w298, w299, w300, w301, w302, w303, w304, w305, w306, w307, w308, w309, w310, w311, w312, w313], predicate: 1, output: w1210
+ASSERT w1210 = 1
+
+unconstrained func 0: directive_integer_quotient
+0: @10 = const u32 2
+1: @11 = const u32 0
+2: @0 = calldata copy [@11; @10]
+3: @2 = field int_div @0, @1
+4: @1 = field mul @2, @1
+5: @1 = field sub @0, @1
+6: @0 = @2
+7: stop @[@11; @10]
+

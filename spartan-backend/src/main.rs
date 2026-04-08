@@ -78,24 +78,30 @@ fn main() {
         .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
         .init();
 
-
-    match cli.circuit_dir {
-        Some(dir) => {
-            tracing::info!("Running circuit from directory {}", dir.display());
-            let circuit = instantiate_circuit_from_dir(&dir);
-            run_proof_and_verification(circuit);
-        }
-        None => {
-            let default_circuits = [
-                "c0000_trivial",
-                "c0001_trivial_with_range",
-                "c0002_trivial_with_strings",
-            ];
-            for name in default_circuits {
-                tracing::info!("Running circuit {name}");
-                let circuit = instantiate_circuit_with_name(name);
-                run_proof_and_verification(circuit);
-            }
-        }
-    }
+    let dir = PathBuf::from(
+        "/Users/clement.humbert/PrivacyPreservingEID/building-circuits/spartan-backend-progress-track/circuits/c0100_holder_binding/"
+    );
+    tracing::info!("Running circuit from directory {}", dir.display());
+    let circuit = instantiate_circuit_from_dir(&dir);
+    run_proof_and_verification(circuit);
+    //
+    // match cli.circuit_dir {
+    //     Some(dir) => {
+    //         tracing::info!("Running circuit from directory {}", dir.display());
+    //         let circuit = instantiate_circuit_from_dir(&dir);
+    //         run_proof_and_verification(circuit);
+    //     }
+    //     None => {
+    //         let default_circuits = [
+    //             "c0000_trivial",
+    //             "c0001_trivial_with_range",
+    //             "c0002_trivial_with_strings",
+    //         ];
+    //         for name in default_circuits {
+    //             tracing::info!("Running circuit {name}");
+    //             let circuit = instantiate_circuit_with_name(name);
+    //             run_proof_and_verification(circuit);
+    //         }
+    //     }
+    // }
 }

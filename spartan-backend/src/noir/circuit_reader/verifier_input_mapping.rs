@@ -32,6 +32,8 @@ pub fn map_verifier_inputs(
     input_map: &Map<String, Value>,
     wiring: &HashMap<String, Vec<Wire>>,
 ) -> Vec<InputWire<CircuitInput>> {
+    println!("{:?}", input_map.keys());
+    println!("{:?}", wiring.keys());
     assert_eq!(input_map.len(), wiring.len(), "Number of inputs mismatch with abi");
     let input_keys: BTreeSet<&str> = input_map.keys().map(String::as_str).collect();
     let wiring_keys: BTreeSet<&str> = wiring.keys().map(String::as_str).collect();

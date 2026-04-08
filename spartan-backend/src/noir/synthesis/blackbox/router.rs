@@ -4,6 +4,7 @@ use acir::FieldElement;
 use bellpepper_core::{ConstraintSystem, LinearCombination, SynthesisError};
 use ff::derive::bitvec::macros::internal::funty::Fundamental;
 use crate::noir::synthesis::allocation_support::{AllocatedWire, WitnessMap};
+use crate::noir::synthesis::blackbox::ecdsa::ECDSAVerifier;
 use crate::noir::synthesis::blackbox::range::{field_into_allocated_bits_le, powers_of_two};
 use crate::types::Scalar;
 
@@ -53,7 +54,19 @@ impl <'a> BlackboxRouter<'a> {
 
                 Ok(())
             },
+            BlackBoxFuncCall::EcdsaSecp256r1 {
+                public_key_x,
+                public_key_y,
+                signature,
+                hashed_message,
+                predicate: _predicate, // used by brillig when evaluating prover's witnesses
+                output
+            } => {
+                let verifier = ECDSAVerifier::new(self.allocation_store);
+                verifier.verify_secp256r1_signature(cs, public_key_x, public_key_y, signature, hashed_message, output)
+            },
             _ => {
+                tracing::error!("Unsupported blackbox function: {}", call);
                 Err(SynthesisError::Unsatisfiable) // waiting for a better error system
             }
         }
