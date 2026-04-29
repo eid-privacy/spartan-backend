@@ -28,13 +28,17 @@ It will:
 - execute and prove the circuit with `noir-t256` and the
   Spartan backend
 
-## Questions
+## Parameter sweep
 
-- It fails if the input size and the number of assertions
-  are bigger than 23, but I have no idea why!
-- The speed with an input size of 23 looks like Spartan is
-  slower than Barretenberg - I hope this will change with
-  bigger circuit sizes...
+The script iterates over all combinations of:
+
+| Parameter | Values |
+|-----------|--------|
+| `NBR_INPUTS_PRIVATE` | 10, 100, 1 000, 10 000, 100 000 |
+| `NBR_ASSERTS` | 10, 100, 1 000, 10 000, 100 000 |
+
+Combinations where `NBR_ASSERTS > NBR_INPUTS_PRIVATE` are automatically
+skipped (the circuit requires `NBR_ASSERTS ≤ NBR_INPUTS_PRIVATE`).
 
 # Work done
 
@@ -52,3 +56,40 @@ My goal was to have an automatic way of using the Prover.toml instead of the
 json files.
 Claude started adding the witness to fill out the full inputs - there might
 be some duplication code in that.
+
+This benchmark has been done on a Apple M2 Max MacBook Pro with 64GB
+of RAM:
+
+```
+The three lines are:
+
+bb.prf - proof time using Barretenberg UltraHonk
+sp.prf - proof time using our simple SPARTAN implementation
+sp.ver - verification time for SPARTAN
+
+The verification time for Barretenberg is a constant 0.02s!
+
++------------+-------+-------+-------+-------+--------+
+| ASRT \ INP |    10 |   100 |  1000 | 10000 | 100000 |
++------------+-------+-------+-------+-------+--------+
+| 10         | 0.10s | 0.10s | 0.17s | 0.39s |  3.62s |
+|            | 0.05s | 0.04s | 0.10s | 0.77s |  9.05s |
+|            | 0.04s | 0.02s | 0.06s | 0.54s |  6.83s |
++------------+-------+-------+-------+-------+--------+
+| 100        |   n/a | 0.10s | 0.17s | 0.39s |  3.70s |
+|            |   n/a | 0.04s | 0.12s | 0.78s |  8.87s |
+|            |   n/a | 0.02s | 0.06s | 0.54s |  6.64s |
++------------+-------+-------+-------+-------+--------+
+| 1000       |   n/a |   n/a | 0.13s | 0.41s |  3.73s |
+|            |   n/a |   n/a | 0.12s | 0.78s |  9.03s |
+|            |   n/a |   n/a | 0.06s | 0.57s |  6.71s |
++------------+-------+-------+-------+-------+--------+
+| 10000      |   n/a |   n/a |   n/a | 0.39s |  3.53s |
+|            |   n/a |   n/a |   n/a | 0.79s |  8.79s |
+|            |   n/a |   n/a |   n/a | 0.56s |  6.66s |
++------------+-------+-------+-------+-------+--------+
+| 100000     |   n/a |   n/a |   n/a |   n/a |  3.91s |
+|            |   n/a |   n/a |   n/a |   n/a |  8.29s |
+|            |   n/a |   n/a |   n/a |   n/a |  6.33s |
++------------+-------+-------+-------+-------+--------+
+```
