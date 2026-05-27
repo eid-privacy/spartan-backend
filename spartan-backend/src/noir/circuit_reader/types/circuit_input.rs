@@ -2,7 +2,7 @@ use acvm::FieldElement;
 use num_bigint::BigUint;
 use crate::noir::scalar_conversion::to_spartan_scalar;
 use crate::Scalar;
-use crate::utils::{biguint_to_scalar};
+use algebra_utils::{biguint_to_scalar};
 
 #[derive(Clone, Copy, Debug)]
 pub enum CircuitInput {

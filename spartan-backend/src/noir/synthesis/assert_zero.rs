@@ -9,7 +9,6 @@ pub(crate) fn handle_assert_zero<CS: ConstraintSystem<Scalar>>(
     cs: &mut CS,
     allocation_store: &WitnessMap<AllocatedWire<Scalar>>,
     expr: &Expression<FieldElement>,
-    constraint_label: &str,
 ) -> Result<(), SynthesisError> {
     // TODO: account for the multiplicands and the constant in Plonk-ish constraints
     let _multiplicands = &expr.mul_terms;
@@ -34,11 +33,14 @@ pub(crate) fn handle_assert_zero<CS: ConstraintSystem<Scalar>>(
             allocated_num.get_variable(),
         );
     }
+
+    lin_comb = lin_comb + (to_spartan_scalar(&constant), CS::one());
+
     cs.enforce(
-        || constraint_label,
-        |lc| lc + &lin_comb + (to_spartan_scalar(&constant), CS::one()),
+        || "enforce linear combination",
+        |lc| lc + &lin_comb,
         |lc| lc + CS::one(),
-        |lc| lc + &LinearCombination::<Scalar>::zero(),
+        |lc| lc,
     );
     
     Ok(())

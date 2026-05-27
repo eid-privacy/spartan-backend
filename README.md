@@ -8,12 +8,13 @@ bytecode are important to track.**
 
 ## Implementation status
 
-| pass | circuit                    | noir commit                              |
-|------|----------------------------|------------------------------------------|
-| ✅    | c0000_trivial              | aac6859426c78b03358de4128a7ae0e68546f31a |
-| ✅    | c0001_trivial_with_range   | aac6859426c78b03358de4128a7ae0e68546f31a |
-| ✅    | c0002_trivial_with_strings | aac6859426c78b03358de4128a7ae0e68546f31a |
-| ✅    | c0003_trivial_with_brillig | aac6859426c78b03358de4128a7ae0e68546f31a |
+| pass | circuit                          | noir commit                              |
+|------|----------------------------------|------------------------------------------|
+| ✅    | c0000_trivial                    | 0c11d1b6d8cef3eeab8a276066d1ae8e4139fed6 |
+| ✅    | c0001_trivial_with_range         | 0c11d1b6d8cef3eeab8a276066d1ae8e4139fed6 |
+| ✅    | c0002_trivial_with_strings       | 0c11d1b6d8cef3eeab8a276066d1ae8e4139fed6 |
+| ✅    | c0003_trivial_with_brillig       | 0c11d1b6d8cef3eeab8a276066d1ae8e4139fed6 |
+| ✅    | c0004_trivial_elliptic_curve_add | 0c11d1b6d8cef3eeab8a276066d1ae8e4139fed6 |
 
 ## Reproducing the results
 
@@ -37,3 +38,9 @@ afaik using vanilla nargo should still result in a circuit we can read for Spart
 3. Build `nargo_cli`
 4. Put it in your path, this README.md assumes it is named "nargo-t256" to distinguish from the original Noir distribution
 5. Build the circuit you're interested in with `nargo-t256 build`
+
+
+### Troubleshooting
+
+* On some Macs it might happen that the `nargo` binary gets killed instantly on invocation.
+  It requires re-signing: `codesign --sign - --force --preserve-metadata=entitlements $(which nargo-t256)`

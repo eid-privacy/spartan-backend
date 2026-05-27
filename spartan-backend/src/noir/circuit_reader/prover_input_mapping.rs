@@ -27,7 +27,7 @@ pub fn read_inputs(
 fn witness_assignments(path: &str) -> HashMap<u32, (Witness, FieldElement)> {
     let mut n = load_witness_from_file(
         &PathBuf::from(path)
-    ).expect("Could not load circuit");
+    ).expect(format!("Could not load circuit at path {}", path).as_str());
     let w = n.pop().unwrap();
     // TODO: support more than a main method
     assert_eq!(w.index, 0);

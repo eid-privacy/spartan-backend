@@ -1,0 +1,7 @@
+[package]
+name = "c0004_trivial_elliptic_curve_add"
+type = "bin"
+authors = [""]
+description = "A circuit with a single elliptic curve addition"
+
+[dependencies]

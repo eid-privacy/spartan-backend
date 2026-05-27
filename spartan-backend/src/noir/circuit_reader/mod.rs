@@ -50,10 +50,7 @@ fn map_opcode_witnesses(opcode: &Opcode<FieldElement>) -> Vec<Witness> {
             witnesses
         }
         Opcode::MemoryOp { block_id: _, op } => {
-            let mut witnesses = expression_witnesses(&op.operation);
-            witnesses.extend(expression_witnesses(&op.index));
-            witnesses.extend(expression_witnesses(&op.value));
-            witnesses
+            vec![op.value, op.index]
         }
         Opcode::MemoryInit { block_id: _, init, block_type: _ } => init.clone(),
         Opcode::BrilligCall { id: _, inputs, outputs, predicate } => {
