@@ -4,6 +4,7 @@ use acir::FieldElement;
 use bellpepper_core::{ConstraintSystem, LinearCombination, SynthesisError};
 use ff::derive::bitvec::macros::internal::funty::Fundamental;
 use crate::noir::synthesis::allocation_support::{AllocatedWire, WitnessMap};
+use crate::noir::synthesis::blackbox::ec_add::handle_ec_add;
 use crate::noir::synthesis::blackbox::range::{field_into_allocated_bits_le, powers_of_two};
 use crate::types::Scalar;
 
@@ -24,7 +25,6 @@ impl <'a> BlackboxRouter<'a> {
         &mut self,
         cs: &mut CS,
         call: &BlackBoxFuncCall<FieldElement>,
-        constraint_label: &str,
     ) -> Result<(), SynthesisError> {
         match call {
             RANGE { input, num_bits } => {
@@ -45,7 +45,7 @@ impl <'a> BlackboxRouter<'a> {
 
                 // truncated bit decomposition must equal variable
                 cs.enforce(
-                    || constraint_label,
+                    || "RANGE lin. comb. equality",
                     |lc| lc + &lin_comb,
                     |lc| lc + CS::one(),
                     |lc| lc + allocated.get_variable()
@@ -53,7 +53,22 @@ impl <'a> BlackboxRouter<'a> {
 
                 Ok(())
             },
+            BlackBoxFuncCall::EmbeddedCurveAdd {
+                input1,
+                input2,
+                predicate: _,
+                outputs
+            } => {
+                handle_ec_add(
+                    self.allocation_store,
+                    &mut cs.namespace(|| "EC ADD"),
+                    input1,
+                    input2,
+                    outputs,
+                )
+            },
             _ => {
+                tracing::error!("Unsupported blackbox function: {}", call);
                 Err(SynthesisError::Unsatisfiable) // waiting for a better error system
             }
         }

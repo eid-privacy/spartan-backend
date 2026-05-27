@@ -7,7 +7,7 @@ pub fn prove<E: Engine, C: SpartanCircuit<E>>(
     prover_circuit: C
 ) -> SpartanSNARK<E> {
     // SETUP
-    let (pk, _) = {
+    let (pk, vk) = {
         let _span = tracing::debug_span!("setup").entered();
         SpartanSNARK::<E>::setup(prover_circuit.clone()).expect("setup failed")
     };
@@ -19,10 +19,11 @@ pub fn prove<E: Engine, C: SpartanCircuit<E>>(
     };
 
     // PROVE
-    let proof = {
+    let (proof, _) = {
         let _span = tracing::debug_span!("prove").entered();
-        SpartanSNARK::<E>::prove(&pk, prover_circuit, &prep_snark, false).expect("prove failed")
+        SpartanSNARK::<E>::prove(&pk, prover_circuit, prep_snark, false).expect("prove failed")
     };
 
+    proof.verify(&vk).expect("Prover's sanity check verification failed");
     proof
 }
