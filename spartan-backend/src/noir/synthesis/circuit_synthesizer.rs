@@ -13,7 +13,6 @@ use ff::Field;
 use noirc_artifacts::program::ProgramArtifact;
 use spartan2::provider::T256HyraxEngine;
 use spartan2::traits::circuit::SpartanCircuit;
-use std::collections::HashMap;
 
 #[derive(Clone)]
 pub struct NoirCircuitSynthesizer {
@@ -54,21 +53,22 @@ impl NoirCircuitSynthesizer {
     where
         CS: ConstraintSystem<Scalar>,
     {
-        let mut allocation_store = WitnessMap::new();
-
         let mut all_the_witnesses_we_like = read_witnesses(&self.program_artifact);
         all_the_witnesses_we_like.sort_by_key(|w| w.witness_index());
 
-        let indexed_inputs: HashMap<u32, InputWire<Scalar>> = self
-            .split_inputs
-            .iter()
-            .map(|wire| (wire.witness.witness_index(), *wire))
-            .collect();
+        let max_index = all_the_witnesses_we_like
+            .last()
+            .map_or(0, |w| w.witness_index());
+
+        let mut allocation_store = WitnessMap::new(max_index);
+
+        let mut indexed_inputs: Vec<Option<InputWire<Scalar>>> = vec![None; max_index as usize + 1];
+        for wire in &self.split_inputs {
+            indexed_inputs[wire.witness.witness_index() as usize] = Some(*wire);
+        }
 
         for witness in all_the_witnesses_we_like {
-            let wire = indexed_inputs
-                .get(&witness.witness_index())
-                .copied()
+            let wire = indexed_inputs[witness.witness_index() as usize]
                 .unwrap_or(InputWire {
                     public: false,
                     witness,
