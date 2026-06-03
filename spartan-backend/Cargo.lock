@@ -669,9 +669,9 @@ checksum = "1e748733b7cbc798e1434b6ac524f0c1ff2ab456fe201501e6497c8417a4fc33"
 
 [[package]]
 name = "cbc"
-version = "0.2.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce2dc9ee5f88d11e0beb842c88b33c8a5cf0d1329c4b19494af42b07dbfe8896"
+checksum = "98db6aeaef0eeef2c1e3ce9a27b739218825dae116076352ac3777076aa22225"
 dependencies = [
  "cipher",
 ]
@@ -731,11 +731,11 @@ dependencies = [
 
 [[package]]
 name = "cipher"
-version = "0.5.2"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8cf2a2c93cd704877c0858356ed03480ff301ee950b43f1cbe4573b088bfa6c"
+checksum = "e34d8227fe1ba289043aeb13792056ff80fd6de1a9f49137a5f499de8e8c78ea"
 dependencies = [
- "crypto-common 0.2.2",
+ "crypto-common 0.2.1",
  "inout",
 ]
 
@@ -1002,9 +1002,9 @@ dependencies = [
 
 [[package]]
 name = "crypto-common"
-version = "0.2.2"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce6e4c961d6cd6c9a86db418387425e8bdeaf05b3c8bc1411e6dca4c252f1453"
+checksum = "77727bb15fa921304124b128af125e7e3b968275d1b108b379190264f4423710"
 dependencies = [
  "getrandom 0.4.2",
  "hybrid-array",
@@ -1107,7 +1107,7 @@ checksum = "4850db49bf08e663084f7fb5c87d202ef91a3907271aff24a94eb97ff039153c"
 dependencies = [
  "block-buffer 0.12.0",
  "const-oid 0.10.2",
- "crypto-common 0.2.2",
+ "crypto-common 0.2.1",
  "ctutils",
 ]
 
@@ -1203,7 +1203,7 @@ checksum = "cda94f31325c4275e9706adecbb6f0650dee2f904c915a98e3d81adaaaa757aa"
 dependencies = [
  "base16ct 1.0.0",
  "crypto-bigint 0.7.2",
- "crypto-common 0.2.2",
+ "crypto-common 0.2.1",
  "digest 0.11.2",
  "hybrid-array",
  "once_cell",
@@ -2703,7 +2703,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b52e6ee42db392378a95622b463c9740631171d1efce43fa445a569c1600cb6"
 dependencies = [
  "crypto-bigint 0.7.2",
- "crypto-common 0.2.2",
+ "crypto-common 0.2.1",
  "rand_core 0.10.0",
  "rustcrypto-ff",
  "subtle",
