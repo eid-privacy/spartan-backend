@@ -1,4 +1,3 @@
-use crate::noir::scalar_conversion::to_spartan_scalar;
 use crate::noir::synthesis::allocated_point::AllocatedPoint;
 use crate::noir::synthesis::allocation_support::{AllocatedWire, WitnessMap};
 use crate::types::Scalar;
@@ -8,6 +7,7 @@ use acir::circuit::opcodes::FunctionInput;
 use acir::native_types::Witness;
 use bellpepper_core::num::AllocatedNum;
 use bellpepper_core::{ConstraintSystem, SynthesisError};
+use crate::noir::synthesis::blackbox::function_input::{allocate_or_get, get_witness_assignment};
 
 type WrappedPoint = Box<[FunctionInput<FieldElement>; 2]>;
 
@@ -23,19 +23,8 @@ pub fn handle_ec_add<CS: ConstraintSystem<Scalar>>(
 
     let sum = p1_allocated.add(&mut *cs, &p2_allocated)?;
 
-    // TODO: dedup with the local one in unwrap_point
-    let get = |input: Witness| -> Result<AllocatedNum<Scalar>, SynthesisError> {
-        allocation_store
-            .get(&input.witness_index())
-            .ok_or(SynthesisError::AssignmentMissing)?
-            .allocation
-            .as_ref()
-            .map(|n| n.clone())
-            .map_err(|_| SynthesisError::AssignmentMissing)
-    };
-
-    let expected_x = get(outputs.0)?;
-    let expected_y = get(outputs.1)?;
+    let expected_x = get_witness_assignment(allocation_store, &outputs.0)?;
+    let expected_y = get_witness_assignment(allocation_store, &outputs.1)?;
     enforce_equal(cs.namespace(|| "ec add: x is correct"), &sum.x, &expected_x);
     enforce_equal(cs.namespace(|| "ec add: y is correct"), &sum.y, &expected_y);
 
@@ -53,29 +42,3 @@ fn unwrap_point<CS: ConstraintSystem<Scalar>>(
         is_infinity: AllocatedNum::alloc(cs, || Ok(Scalar::zero()))?,
     })
 }
-
-fn allocate_or_get<CS: ConstraintSystem<Scalar>>(
-    allocation_store: &WitnessMap<AllocatedWire<Scalar>>,
-    cs: &mut CS,
-    input: &FunctionInput<FieldElement>,
-) -> Result<AllocatedNum<Scalar>, SynthesisError> {
-    let get_witness = |w: &Witness| -> Result<AllocatedNum<Scalar>, SynthesisError> {
-        allocation_store
-            .get(&w.witness_index())
-            .ok_or(SynthesisError::AssignmentMissing)?
-            .allocation
-            .as_ref()
-            .map(|n| n.clone())
-            .map_err(|_| SynthesisError::AssignmentMissing)
-    };
-
-    // Must handle the case when function inputs are not witnesses.
-    // TODO: Constants won't be reused with this method -> might lead to later optimization
-    match input {
-        FunctionInput::Constant(constant) => {
-            AllocatedNum::alloc(cs, || Ok(to_spartan_scalar(&constant)))
-        }
-        FunctionInput::Witness(witness) => get_witness(witness),
-    }
-}
-

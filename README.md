@@ -10,11 +10,12 @@ bytecode are important to track.**
 
 | pass | circuit                          | noir commit                              |
 |------|----------------------------------|------------------------------------------|
-| ✅    | c0000_trivial                    | 0c11d1b6d8cef3eeab8a276066d1ae8e4139fed6 |
-| ✅    | c0001_trivial_with_range         | 0c11d1b6d8cef3eeab8a276066d1ae8e4139fed6 |
-| ✅    | c0002_trivial_with_strings       | 0c11d1b6d8cef3eeab8a276066d1ae8e4139fed6 |
-| ✅    | c0003_trivial_with_brillig       | 0c11d1b6d8cef3eeab8a276066d1ae8e4139fed6 |
-| ✅    | c0004_trivial_elliptic_curve_add | 0c11d1b6d8cef3eeab8a276066d1ae8e4139fed6 |
+| ✅    | c0000_trivial                    | e9a577066f6ef887a3d70c8230d03d180057925c |
+| ✅    | c0001_trivial_with_range         | e9a577066f6ef887a3d70c8230d03d180057925c |
+| ✅    | c0002_trivial_with_strings       | e9a577066f6ef887a3d70c8230d03d180057925c |
+| ✅    | c0003_trivial_with_brillig       | e9a577066f6ef887a3d70c8230d03d180057925c |
+| ✅    | c0004_trivial_elliptic_curve_add | e9a577066f6ef887a3d70c8230d03d180057925c |
+| ✅    | c0005_trivial_msm                | e9a577066f6ef887a3d70c8230d03d180057925c |
 
 ## Reproducing the results
 
