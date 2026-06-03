@@ -163,7 +163,7 @@ impl SpartanCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
                     }
                     tracing::debug!("Handling AssertZero: {:?}", opcode);
                     handle_assert_zero(
-                        &mut cs.namespace(|| format!("Assert Zero {:?}", opcode)),
+                        &mut cs.namespace(|| format!("assert_zero_{}", i)),
                         &allocation_store,
                         expr,
                     )?;
