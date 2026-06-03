@@ -78,6 +78,18 @@ Times in seconds. Rows: ASSERTS; sub-rows per cell: BB prove / Spartan proof / S
 ```
 <!-- BENCHMARK_TABLE_END -->
 
+## Profiling
+
+To find hotspots in the Spartan backend while proving/verifying a circuit, use
+[samply](https://github.com/mstange/samply):
+
+```bash
+./scripts/samply.sh <circuit-match>   # e.g. ./scripts/samply.sh 06
+```
+
+This records a profile and opens a flamegraph in the browser. See
+[SAMPLY.md](SAMPLY.md) for details.
+
 ### Troubleshooting
 
 * On some Macs it might happen that the `nargo` binary gets killed instantly on invocation.

@@ -33,3 +33,10 @@ clap = { version = "4.6.0", features = ["derive"] }
 algebra-utils = { path = "../algebra-utils" }
 bellpepper = "0.4.1"
 
+# Release-grade optimizations plus full debug info so samply can resolve
+# symbols and line numbers in the flamegraph. Used by scripts/samply.sh.
+[profile.profiling]
+inherits = "release"
+debug = true
+strip = false
+
