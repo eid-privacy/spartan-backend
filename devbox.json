@@ -5,6 +5,9 @@
     "time@latest",
     "jq@latest",
     "samply@latest",
+    "python3@latest",
+    "python314Packages.matplotlib",
+    "python314Packages.numpy@latest",
     "github:eid-privacy/flakes#noir-versions.v1_0_0-beta_22",
     "github:eid-privacy/flakes#barretenberg-versions.beta_22",
     "github:eid-privacy/flakes#nargo-t256-versions.t256-v0_22"
@@ -28,7 +31,8 @@
       "nargo-check": "./scripts/nargo_check.sh",
       "build-docs": "cd spartan-backend && cargo doc",
       "stats-table": "python3 scripts/stats_table.py --update-readme README.md",
-      "benchmark": "./scripts/benchmark.sh"
+      "benchmark": "./scripts/benchmark.sh",
+      "plot": "python3 ./scripts/plot_benchmarks.py"
     }
   }
 }
