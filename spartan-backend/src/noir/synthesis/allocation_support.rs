@@ -3,10 +3,40 @@ use bellpepper_core::num::AllocatedNum;
 use bellpepper_core::{ConstraintSystem, SynthesisError};
 use core::fmt;
 use ff::PrimeField;
-use std::collections::HashMap;
 use std::fmt::Formatter;
 
-pub(crate) type WitnessMap<V> = HashMap<u32, V>;
+pub(crate) struct WitnessMap<V> {
+    data: Vec<Option<V>>,
+}
+
+impl<V: fmt::Debug> fmt::Debug for WitnessMap<V> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let mut map = f.debug_map();
+        for (i, v) in self.data.iter().enumerate() {
+            if let Some(v) = v {
+                map.entry(&i, v);
+            }
+        }
+        map.finish()
+    }
+}
+
+impl<V> WitnessMap<V> {
+    pub fn new(max_index: u32) -> Self {
+        let size = max_index as usize + 1;
+        WitnessMap {
+            data: (0..size).map(|_| None).collect(),
+        }
+    }
+
+    pub fn insert(&mut self, idx: u32, value: V) {
+        self.data[idx as usize] = Some(value);
+    }
+
+    pub fn get(&self, idx: &u32) -> Option<&V> {
+        self.data.get(*idx as usize)?.as_ref()
+    }
+}
 
 pub(crate) struct AllocatedWire<V: PrimeField> {
     pub witness: Witness,
