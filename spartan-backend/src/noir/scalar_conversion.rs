@@ -2,6 +2,26 @@ use acir::{AcirField, FieldElement};
 use algebra_utils::hex_to_big;
 use ff::PrimeField;
 use num_bigint::BigUint;
+use std::sync::OnceLock;
+
+fn acir_modulus() -> &'static BigUint {
+    static MOD: OnceLock<BigUint> = OnceLock::new();
+    MOD.get_or_init(|| FieldElement::modulus())
+}
+
+fn half_acir_modulus() -> &'static BigUint {
+    static HALF: OnceLock<BigUint> = OnceLock::new();
+    HALF.get_or_init(|| FieldElement::modulus() / BigUint::from(2u64))
+}
+
+fn biguint_to_scalar<Scalar: PrimeField>(n: &BigUint) -> Scalar {
+    let bytes_le = n.to_bytes_le();
+    let mut repr = Scalar::Repr::default();
+    let out = repr.as_mut();
+    let len = out.len().min(bytes_le.len());
+    out[..len].copy_from_slice(&bytes_le[..len]);
+    Option::from(Scalar::from_repr(repr)).expect("value out of range for scalar field")
+}
 
 /// Convert an ACIR **coefficient/constant** into a Spartan scalar, preserving
 /// signed semantics.
@@ -12,18 +32,14 @@ use num_bigint::BigUint;
 /// `-(p_acir - c)`. This is required because the ACIR field modulus and the
 /// Spartan scalar field modulus are different primes.
 pub(crate) fn to_spartan_scalar<Scalar: PrimeField>(field_element: &FieldElement) -> Scalar {
-    let acir_modulus = FieldElement::modulus();
-    let half_modulus = &acir_modulus / BigUint::from(2u64);
-
     let value = hex_to_big(&field_element.to_hex());
 
-    if value > half_modulus {
+    if value > *half_acir_modulus() {
         // This represents a negative number: -(acir_modulus - value)
-        let abs_value = &acir_modulus - &value;
-        let positive = Scalar::from_str_vartime(&abs_value.to_str_radix(10)).unwrap();
-        positive.neg()
+        let abs_value = acir_modulus() - &value;
+        biguint_to_scalar::<Scalar>(&abs_value).neg()
     } else {
-        Scalar::from_str_vartime(&value.to_str_radix(10)).unwrap()
+        biguint_to_scalar::<Scalar>(&value)
     }
 }
 
