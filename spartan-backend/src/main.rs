@@ -92,6 +92,7 @@ fn main() {
                 "c0002_trivial_with_strings",
                 "c0003_trivial_with_brillig",
                 "c0004_trivial_elliptic_curve_add",
+                "c0005_trivial_msm",
             ];
             for name in default_circuits {
                 tracing::info!("Running circuit {name}");
