@@ -1,0 +1,7 @@
+[package]
+name = "c0005_trivial_msm"
+type = "bin"
+authors = [""]
+description = "A circuit with a single multi scalar multiplication"
+
+[dependencies]
