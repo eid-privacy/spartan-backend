@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """Parse stats.txt and render an ASCII 2D table indexed by INPUT_SIZE x ASSERTS."""
 
+import csv
 import re
 import sys
 from pathlib import Path
 
 STATS_FILE = Path(__file__).parent.parent / "stats.txt"
 
-# Each run is: header line + 5 value lines = 6 lines total.
-HEADER_RE = re.compile(r"INPUT_SIZE:\s*(\d+)\s*--\s*ASSERTS:\s*(\d+)")
+# Metrics displayed in each cell, in order (one sub-row per metric), using the
+# "min" value from the CSV produced by benchmark.sh.
+METRICS = ("prove", "spartan_proof", "spartan_verify")
 
 
 def normalize_time(s: str) -> str:
@@ -17,22 +19,21 @@ def normalize_time(s: str) -> str:
 
 
 def parse(path: Path):
-    lines = [l.rstrip() for l in path.read_text().splitlines() if l.strip()]
+    # CSV format: input_size,asserts,metric,min,max,mean,stddev
+    mins = {}  # (input_size, asserts) -> {metric: min}
+    with path.open(newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            key = (int(row["input_size"]), int(row["asserts"]))
+            mins.setdefault(key, {})[row["metric"]] = row["min"]
+
     runs = []
-    i = 0
-    while i < len(lines):
-        m = HEADER_RE.search(lines[i])
-        if m:
-            input_size = int(m.group(1))
-            asserts = int(m.group(2))
-            values = lines[i + 1 : i + 6]  # 5 value lines
-            val2 = normalize_time(values[1])   # 2nd value (0-indexed: index 1)
-            val4 = normalize_time(values[3])   # 4th value (0-indexed: index 3)
-            val5 = normalize_time(values[4])   # 5th value (0-indexed: index 4)
-            runs.append((input_size, asserts, val2, val4, val5))
-            i += 6
-        else:
-            i += 1
+    for (input_size, asserts), metrics in mins.items():
+        vals = tuple(
+            normalize_time(metrics[m]) if m in metrics else "n/a"
+            for m in METRICS
+        )
+        runs.append((input_size, asserts, *vals))
     return runs
 
 
