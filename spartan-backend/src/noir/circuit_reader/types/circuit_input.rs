@@ -1,6 +1,6 @@
 use acvm::FieldElement;
 use num_bigint::BigUint;
-use crate::noir::scalar_conversion::to_spartan_scalar;
+use crate::noir::scalar_conversion::to_spartan_scalar_value;
 use crate::Scalar;
 use algebra_utils::{biguint_to_scalar};
 
@@ -16,7 +16,7 @@ impl CircuitInput {
     pub(crate) fn to_scalar(self) -> Option<Scalar> {
         match self {
             CircuitInput::Byte(b) => Some(biguint_to_scalar(&BigUint::from(b))),
-            CircuitInput::FieldElement(field) => Some(to_spartan_scalar(&field)),
+            CircuitInput::FieldElement(field) => Some(to_spartan_scalar_value(&field)),
             CircuitInput::Number(number) => Some(biguint_to_scalar(&BigUint::from(number))),
             CircuitInput::Missing => None,
         }

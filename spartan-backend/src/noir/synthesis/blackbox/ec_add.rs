@@ -18,8 +18,8 @@ pub fn handle_ec_add<CS: ConstraintSystem<Scalar>>(
     p2: &WrappedPoint,
     outputs: &(Witness, Witness),
 ) -> Result<(), SynthesisError> {
-    let p1_allocated = unwrap_point(allocation_store, &mut *cs, p1)?;
-    let p2_allocated = unwrap_point(allocation_store, &mut *cs, p2)?;
+    let p1_allocated = unwrap_point(allocation_store, &mut *cs, p1, "p1")?;
+    let p2_allocated = unwrap_point(allocation_store, &mut *cs, p2, "p2")?;
 
     let sum = p1_allocated.add(&mut *cs, &p2_allocated)?;
 
@@ -35,10 +35,11 @@ fn unwrap_point<CS: ConstraintSystem<Scalar>>(
     allocation_store: &WitnessMap<AllocatedWire<Scalar>>,
     cs: &mut CS,
     point: &WrappedPoint,
+    label: &str,
 ) -> Result<AllocatedPoint<Scalar>, SynthesisError> {
     Ok(AllocatedPoint {
         x: allocate_or_get(allocation_store, &mut *cs, &point[0])?,
         y: allocate_or_get(allocation_store, &mut *cs, &point[1])?,
-        is_infinity: AllocatedNum::alloc(cs, || Ok(Scalar::zero()))?,
+        is_infinity: AllocatedNum::alloc(cs.namespace(|| format!("{label} is_infinity")), || Ok(Scalar::zero()))?,
     })
 }

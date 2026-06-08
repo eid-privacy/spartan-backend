@@ -1,0 +1,14 @@
+pub global REVOCATION_LIST_IDS: u32 = 1024;
+pub global CREDENTIAL_LEN_FIRST: u32 = 32;
+pub global CREDENTIAL_POS_FIRST: u32 = 0;
+pub global CREDENTIAL_LEN_LAST: u32 = 32;
+pub global CREDENTIAL_POS_LAST: u32 = 32;
+pub global CREDENTIAL_LEN_DOB: u32 = 10;
+pub global CREDENTIAL_POS_DOB: u32 = 64;
+pub global CREDENTIAL_LEN_DEVICE_PUB_X: u32 = 64;
+pub global CREDENTIAL_POS_DEVICE_PUB_X: u32 = 74;
+pub global CREDENTIAL_LEN_DEVICE_PUB_Y: u32 = 64;
+pub global CREDENTIAL_POS_DEVICE_PUB_Y: u32 = 138;
+pub global CREDENTIAL_LEN_CRED_ID: u32 = 16;
+pub global CREDENTIAL_POS_CRED_ID: u32 = 202;
+pub global CREDENTIAL_LEN: u32 = 218;
