@@ -1,0 +1,5 @@
+[package]
+name = "eid"
+type = "lib"
+
+[dependencies]

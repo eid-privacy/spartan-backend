@@ -8,6 +8,7 @@ pub mod types;
 
 use std::env;
 use std::path::PathBuf;
+use acir::{AcirField, FieldElement};
 use spartan2::spartan::SpartanSNARK;
 use tracing::info_span;
 use clap::Parser;
@@ -93,6 +94,7 @@ fn main() {
                 "c0003_trivial_with_brillig",
                 "c0004_trivial_elliptic_curve_add",
                 "c0005_trivial_msm",
+                "c0100_holder_binding_crescent_style",
             ];
             for name in default_circuits {
                 tracing::info!("Running circuit {name}");
