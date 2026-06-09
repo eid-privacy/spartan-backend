@@ -31,9 +31,10 @@ bytecode are important to track.**
 
 ### (Optional) Setup nargo
 
-This is only required if you need to compile/re-compile circuits.
-Even then, with our current implementation surface,
-afaik using vanilla nargo should still result in a circuit we can read for Spartan.
+This is required if you need to compile/re-compile/execute circuits.
+* `nargo build` needs to produce an ACIR in which coefficients and constants are embedded into T-256
+* `nargo execute` needs to use the T-256 Blackbox Solver to compute intermediate and output witnesses and those need
+  to then be embedded in the T-256 field.
 
 1. Download our fork of Noir: https://github.com/eid-privacy/noir
 2. Checkout the "noir commit" indicated in the table
