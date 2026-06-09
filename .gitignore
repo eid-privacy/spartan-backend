@@ -1,3 +1,5 @@
 .idea/
 CLAUDE.md
 stats.txt
+target
+circuits/c0003_benchmark/src/const.nr

@@ -5,8 +5,8 @@ RT=$DIR/time_real.sh
 
 STEPS_INPUT_SIZES="10 100 1000 10000 100000"
 STEPS_ASSERTS="10 100 1000 10000 100000"
-#STEPS_INPUT_SIZES="10000"
-#STEPS_ASSERTS="10000"
+# STEPS_INPUT_SIZES="10000"
+# STEPS_ASSERTS="10000"
 CIRCUIT=c0003_benchmark
 BENCHMARK_DIR="$PWD/circuits/$CIRCUIT"
 BENCHMARK_CONSTS="$BENCHMARK_DIR/src/const.nr"
@@ -56,13 +56,13 @@ for input_size in $STEPS_INPUT_SIZES; do
         echo "Verifying proof"
         $RT bb verify -p $BENCHMARK_PROOF/proof -k $BENCHMARK_PROOF/vk -i $BENCHMARK_PROOF/public_inputs
 
-        ( cd $BENCHMARK_DIR && nargo-t256 execute --force )
-        SPARTAN_OUTPUT=$(cd $SPARTAN_DIR && NO_COLOR=1 cargo run --release -- -v $BENCHMARK_DIR 2>&1)
+        ( cd $BENCHMARK_DIR && nargo-t256 compile --force && nargo-t256 execute --force )
+        SPARTAN_OUTPUT=$(cd "$SPARTAN_DIR" && NO_COLOR=1 cargo run --release -- -v "$BENCHMARK_DIR" 2>&1) || { echo "$SPARTAN_OUTPUT"; exit $?; }
         NORMALIZED=$(echo "$SPARTAN_OUTPUT" | sed 's/µs/us/g')
         PROOF_BUSY=$(echo "$NORMALIZED" | grep 'proof_creation: spartan_backend: close' | grep -oE 'time\.busy=[^ ]+' | sed 's/time\.busy=//')
         VERIFY_BUSY=$(echo "$NORMALIZED" | grep 'verification: spartan_backend: close' | grep -oE 'time\.busy=[^ ]+' | sed 's/time\.busy=//')
-        echo "$(to_seconds "$PROOF_BUSY")s" >> stats.txt
-        echo "$(to_seconds "$VERIFY_BUSY")s" >> stats.txt
+        echo "$(to_seconds "$PROOF_BUSY")" >> stats.txt
+        echo "$(to_seconds "$VERIFY_BUSY")" >> stats.txt
         echo "The vanilla noir and Barretenberg speed in seconds, followed by spartan proof and verify - Creating vk :: Proving :: Verifying :"
         cat stats.txt
     done
