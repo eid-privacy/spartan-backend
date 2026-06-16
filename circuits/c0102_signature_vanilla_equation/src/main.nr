@@ -3,17 +3,24 @@ use eid::field_utils::{array_to_field};
 use std::field::t256::{T256Scalar, T256Point, t256_msm, t256_ec_add};
 use sha256::sha256_var;
 
+pub global G: T256Point = T256Point {
+    x: 0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296,
+    y: 0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5,
+};
+
 fn main(
     // Private inputs
     credential_string: str<constants::CREDENTIAL_LEN>,
     // issuer_signature: [u8; 64],
-    pubkey_issuer_x: [u8; 32],
-    pubkey_issuer_y: [u8; 32],
-    trg_x: Field,
-    trg_y: Field,
+    pubkey_issuer_x: pub [u8; 32],
+    pubkey_issuer_y: pub [u8; 32],
     R_x: [u8; 32],
     R_y: [u8; 32],
-    z: Field,
+    s_inv: Field,
+    t: Field,
+    ts_inv: Field,
+    rs_inv: Field,
+
     // Public input
     // com_trg_x: pub [u8; 32], //FieldElement ?
     // com_trg_y: pub [u8; 32], //FieldElement ?
@@ -22,13 +29,17 @@ fn main(
     // TODO: prove that coms == com(private inputs)
 
     let R = T256Point { x: array_to_field(R_x), y: array_to_field(R_y) };
-    let trG = T256Point { x: trg_x, y: trg_y };
     let Q = T256Point { x: array_to_field(pubkey_issuer_x), y: array_to_field(pubkey_issuer_y) };
 
-    // ZKAttest equation: zR - tr^(-1)G = Q
-    // We express it as zR = Q + tr^(-1)G
-    let zR = t256_msm([R], [T256Scalar { hi: 0, lo: z}]);
-    let rhs = t256_ec_add(Q, trG);
+    // ts_inv = t * s_inv  mod  P-256 scalar order, precomputed off-circuit
+    // because the multiplication cannot be carried out in the native field
+    // without modular reduction. Binding ts_inv / rs_inv to t / s_inv / R.x
+    // must therefore be done with a non-native arithmetic gadget (TODO).
+
+    // Verification equation: R = ts^(-1)G + rs^(-1)Q
+    let tsG = t256_msm([G], [T256Scalar { hi: 0, lo: ts_inv }]);
+    let rsQ = t256_msm([Q], [T256Scalar { hi: 0, lo: rs_inv }]);
+    let rhs = t256_ec_add(tsG, rsQ);
 
     // Step 1: Calculate the credential hash
     // TODO: impl. this in spartan backend
@@ -43,6 +54,6 @@ fn main(
     //    credential_hash,
     // );
 
-    assert(zR.x == rhs.x);
-    assert(zR.y == rhs.y);
+    assert(R.x == rhs.x);
+    assert(R.y == rhs.y);
 }

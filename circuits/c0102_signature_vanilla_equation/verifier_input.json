@@ -2,9 +2,10 @@
   "credential_string": null,
   "pubkey_issuer_x": null,
   "pubkey_issuer_y": null,
-  "trg_x": null,
-  "trg_y": null,
   "R_x": null,
   "R_y": null,
-  "z": null
+  "s_inv": null,
+  "t": null,
+  "ts_inv": null,
+  "rs_inv": null
 }

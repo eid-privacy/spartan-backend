@@ -24,8 +24,9 @@ struct ProverToml {
     pubkey_issuer_y: Vec<u8>,
 }
 
-/// Convert a field element to big-endian bytes.
-/// `ff_to_big` returns a BigUint from the LE repr; `to_bytes_be` normalises it for output.
+/// Convert a field element to a 32-byte big-endian representation.
+/// `ff_to_big` returns a `BigUint` from the little-endian repr; `to_bytes_be`
+/// normalises it, and we left-pad to 32 bytes.
 fn ff_to_be<FF: halo2curves::ff::PrimeField>(f: &FF) -> FieldRepr {
     let bytes = ff_to_big(f).to_bytes_be();
     let mut out = [0u8; 32];
@@ -43,13 +44,48 @@ fn fmt_field(label: &str, bytes: &FieldRepr) -> String {
     format!("{label} = \"0x{hex}\"\n")
 }
 
+/// Strip previously computed fields from the TOML content, handling both
+/// single-line (`key = [1, 2, ...]`) and multi-line (`key = [\n  1,\n  ...\n]`)
+/// array values.
+fn strip_precomputed_fields(content: &str) -> String {
+    let precomputed_keys = ["R_x =", "R_y =", "s_inv =", "t ="];
+    let mut result: Vec<&str> = Vec::new();
+    let mut in_multiline_array = false;
+
+    for line in content.lines() {
+        if in_multiline_array {
+            // Keep skipping until the closing bracket of the multiline array
+            if line.trim_start().starts_with(']') || line.contains(']') {
+                in_multiline_array = false;
+            }
+            continue;
+        }
+
+        let trimmed = line.trim_start();
+        let is_precomputed = precomputed_keys.iter().any(|key| trimmed.starts_with(key));
+
+        if is_precomputed {
+            // If the opening bracket is on this line but no closing bracket,
+            // the value spans multiple lines.
+            if trimmed.contains('[') && !trimmed.contains(']') {
+                in_multiline_array = true;
+            }
+            continue;
+        }
+
+        result.push(line);
+    }
+
+    result.join("\n")
+}
+
 fn main() {
-    let toml_path = PathBuf::from("../circuits/c0101_signature_pok_zkattest_style/Prover.toml");
+    let toml_path = PathBuf::from("../circuits/c0102_signature_vanilla_equation/Prover.toml");
 
     let content = fs::read_to_string(&toml_path).expect("cannot read Prover.toml");
     let prover: ProverToml = toml::from_str(&content).expect("cannot parse Prover.toml");
 
-    // credential_hash = SHA-256(credential_string as bytes)
+    // t = SHA-256(credential_string bytes) interpreted as a P-256 scalar
     let credential_hash: FieldRepr = Sha256::digest(prover.credential_string.as_bytes()).into();
 
     assert_eq!(
@@ -64,7 +100,7 @@ fn main() {
 
     let r = big_to_ff::<Fq>(&BigUint::from_bytes_be(&r_bytes));
     let s = big_to_ff::<Fq>(&BigUint::from_bytes_be(&s_bytes));
-    let h = big_to_ff::<Fq>(&BigUint::from_bytes_be(&credential_hash));
+    let t = big_to_ff::<Fq>(&BigUint::from_bytes_be(&credential_hash));
 
     let Q = Secp256r1Affine::from_xy(
         big_to_ff::<Fp>(&BigUint::from_bytes_be(&pubkey_x)),
@@ -74,36 +110,27 @@ fn main() {
 
     let G = GE::generator();
 
-    let r_inv = r.invert().unwrap();
     let s_inv = s.invert().unwrap();
 
-    // z = s · r⁻¹  (ZKAttest equation scalar)
-    let z = s * r_inv;
+    // Vanilla ECDSA recovery: R = t·s⁻¹·G + r·s⁻¹·Q
+    let R = (G * (t * s_inv) + Q * (r * s_inv)).to_affine();
 
-    // R = h · s⁻¹ · G + r · s⁻¹ · Q  (ECDSA recovered-R point)
-    let R = (G * (h * s_inv) + Q * (r * s_inv)).to_affine();
-
-    // Sanity check: R.x should equal r for a valid signature
+    // Sanity check: R.x must equal r for a valid signature
     assert_eq!(
         ff_to_be::<Fp>(&R.x),
         r_bytes,
         "ECDSA signature invalid: R.x != r"
     );
 
-    // tr⁻¹G = h · r⁻¹ · G
-    let tr1g = (G * (h * r_inv)).to_affine();
-
-    let mut out = content;
+    let mut out = strip_precomputed_fields(&content);
     if !out.ends_with('\n') {
         out.push('\n');
     }
     out.push('\n');
-    // z (scalar) and tr⁻¹G coordinates are FieldElement in the circuit; R is [u8; 32]
-    out.push_str(&fmt_field("z", &ff_to_be::<Fq>(&z)));
     out.push_str(&fmt_array("R_x", &ff_to_be::<Fp>(&R.x)));
     out.push_str(&fmt_array("R_y", &ff_to_be::<Fp>(&R.y)));
-    out.push_str(&fmt_field("trg_x", &ff_to_be::<Fp>(&tr1g.x)));
-    out.push_str(&fmt_field("trg_y", &ff_to_be::<Fp>(&tr1g.y)));
+    out.push_str(&fmt_field("s_inv", &ff_to_be::<Fq>(&s_inv)));
+    out.push_str(&fmt_field("t", &ff_to_be::<Fq>(&t)));
 
     print!("{out}");
 }
