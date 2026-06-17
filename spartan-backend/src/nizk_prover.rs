@@ -1,11 +1,9 @@
 use spartan2::spartan::SpartanSNARK;
-use spartan2::traits::circuit::SpartanCircuit;
 use spartan2::traits::Engine;
+use spartan2::traits::circuit::SpartanCircuit;
 use spartan2::traits::snark::R1CSSNARKTrait;
 
-pub fn prove<E: Engine, C: SpartanCircuit<E>>(
-    prover_circuit: C
-) -> SpartanSNARK<E> {
+pub fn prove<E: Engine, C: SpartanCircuit<E>>(prover_circuit: C) -> SpartanSNARK<E> {
     // SETUP
     let (pk, vk) = {
         let _span = tracing::debug_span!("setup").entered();
@@ -15,7 +13,8 @@ pub fn prove<E: Engine, C: SpartanCircuit<E>>(
     // PREPARE
     let prep_snark = {
         let _span = tracing::debug_span!("prep_prove").entered();
-        SpartanSNARK::<E>::prep_prove(&pk, prover_circuit.clone(), false).expect("prep_prove failed")
+        SpartanSNARK::<E>::prep_prove(&pk, prover_circuit.clone(), false)
+            .expect("prep_prove failed")
     };
 
     // PROVE
@@ -24,6 +23,8 @@ pub fn prove<E: Engine, C: SpartanCircuit<E>>(
         SpartanSNARK::<E>::prove(&pk, prover_circuit, prep_snark, false).expect("prove failed")
     };
 
-    proof.verify(&vk).expect("Prover's sanity check verification failed");
+    proof
+        .verify(&vk)
+        .expect("Prover's sanity check verification failed");
     proof
 }

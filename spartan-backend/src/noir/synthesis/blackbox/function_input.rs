@@ -1,13 +1,13 @@
 // Helpers around FunctionInput<_> from Noir
 
-use acir::circuit::opcodes::FunctionInput;
-use acir::FieldElement;
-use acir::native_types::Witness;
-use bellpepper_core::{ConstraintSystem, SynthesisError};
-use bellpepper_core::num::AllocatedNum;
 use crate::noir::scalar_conversion::to_spartan_scalar;
 use crate::noir::synthesis::allocation_support::{AllocatedWire, WitnessMap};
 use crate::types::Scalar;
+use acir::FieldElement;
+use acir::circuit::opcodes::FunctionInput;
+use acir::native_types::Witness;
+use bellpepper_core::num::AllocatedNum;
+use bellpepper_core::{ConstraintSystem, SynthesisError};
 
 pub fn allocate_or_get<CS: ConstraintSystem<Scalar>>(
     allocation_store: &WitnessMap<AllocatedWire<Scalar>>,
@@ -26,7 +26,7 @@ pub fn allocate_or_get<CS: ConstraintSystem<Scalar>>(
 
 pub fn get_witness_assignment(
     allocation_store: &WitnessMap<AllocatedWire<Scalar>>,
-    input: &Witness
+    input: &Witness,
 ) -> Result<AllocatedNum<Scalar>, SynthesisError> {
     allocation_store
         .get(&input.witness_index())

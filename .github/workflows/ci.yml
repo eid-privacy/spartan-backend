@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jetify-com/devbox-install-action@v0.13.0
+        with:
+          project-path: .
+          enable-cache: 'true'   # caches the Nix store between runs (separate from the binary cache)
+          extra-nix-config: |
+            extra-substituters = https://eid-privacy.cachix.org
+            extra-trusted-public-keys = eid-privacy.cachix.org-1:lxRzvjcWd/A6Wew1tq0IK6OIMVWNJKUTy4s7EKb6C2A=
+
+      - name: Cache Cargo registry and build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: spartan-backend
+
+      - name: Check Rust formatting
+        run: devbox run fmt-check
+
+      - name: Run circuits
+        run: devbox run start

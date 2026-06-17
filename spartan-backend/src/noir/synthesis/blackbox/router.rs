@@ -89,4 +89,3 @@ impl<'a> BlackboxRouter<'a> {
         }
     }
 }
-

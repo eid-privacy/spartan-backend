@@ -9,7 +9,11 @@ pub struct InputWire<V> {
 
 impl<V> InputWire<V> {
     pub fn new(public: bool, witness: Witness, value: V) -> Self {
-        Self { witness, value, public }
+        Self {
+            witness,
+            value,
+            public,
+        }
     }
 
     pub fn clone_with_value<W>(&self, value: W) -> InputWire<W> {
