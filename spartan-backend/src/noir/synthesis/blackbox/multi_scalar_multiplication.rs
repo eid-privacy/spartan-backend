@@ -30,7 +30,9 @@ pub fn handle_msm<CS: ConstraintSystem<Scalar>>(
     let point = AllocatedPoint {
         x: allocate_or_get(allocation_store, &mut *cs, &points[0])?,
         y: allocate_or_get(allocation_store, &mut *cs, &points[1])?,
-        is_infinity: AllocatedNum::alloc(cs.namespace(|| "point is_infinity"), || Ok(Scalar::zero()))?,
+        is_infinity: AllocatedNum::alloc(cs.namespace(|| "point is_infinity"), || {
+            Ok(Scalar::zero())
+        })?,
     };
 
     let scalar = allocate_or_get(
@@ -56,5 +58,3 @@ pub fn handle_msm<CS: ConstraintSystem<Scalar>>(
 
     Ok(())
 }
-
-

@@ -1,5 +1,5 @@
-use bellpepper_core::{ConstraintSystem, SynthesisError};
 use bellpepper_core::num::AllocatedNum;
+use bellpepper_core::{ConstraintSystem, SynthesisError};
 use ff::{PrimeField, PrimeFieldBits};
 
 // this is copied over from bellpepper_core gadgets/boolean.rs except for the "take" in the last
@@ -49,12 +49,12 @@ where
         .take(bit_size)
         .map(|b| optional_boolean_to_ff(b))
         .enumerate()
-        .map(|(i, b)|
+        .map(|(i, b)| {
             AllocatedNum::alloc(
                 cs.namespace(|| format!("bit {} of {}", i, witness_index)),
-                || optional_ff_to_result(b)
+                || optional_ff_to_result(b),
             )
-        )
+        })
         .collect::<Result<Vec<_>, SynthesisError>>()?;
 
     Ok(bits)
@@ -62,14 +62,16 @@ where
 
 fn optional_boolean_to_ff<Scalar: PrimeField>(boolean: Option<bool>) -> Option<Scalar> {
     match boolean {
-       Some(b) =>  Some(if b { Scalar::ONE } else { Scalar::ZERO }),
-       None => None,
+        Some(b) => Some(if b { Scalar::ONE } else { Scalar::ZERO }),
+        None => None,
     }
 }
 
-fn optional_ff_to_result<Scalar: PrimeField>(maybe_e: Option<Scalar>) -> Result<Scalar, SynthesisError> {
+fn optional_ff_to_result<Scalar: PrimeField>(
+    maybe_e: Option<Scalar>,
+) -> Result<Scalar, SynthesisError> {
     match maybe_e {
-       Some(e) => Ok(e),
+        Some(e) => Ok(e),
         None => Err(SynthesisError::AssignmentMissing),
     }
 }

@@ -1,18 +1,19 @@
 use spartan2::errors::SpartanError;
 use spartan2::spartan::SpartanSNARK;
-use spartan2::traits::circuit::SpartanCircuit;
 use spartan2::traits::Engine;
+use spartan2::traits::circuit::SpartanCircuit;
 use spartan2::traits::snark::R1CSSNARKTrait;
 
 pub fn verify<E: Engine, C: SpartanCircuit<E>>(
     verifier_circuit: C,
-    proof: SpartanSNARK<E>
+    proof: SpartanSNARK<E>,
 ) -> Result<Vec<E::Scalar>, SpartanError> {
-    let expected_public_values = verifier_circuit
-        .public_values()
-        .map_err(|e| SpartanError::ProofVerifyError {
-            reason: format!("Could not extract expected public values: {e}"),
-        })?;
+    let expected_public_values =
+        verifier_circuit
+            .public_values()
+            .map_err(|e| SpartanError::ProofVerifyError {
+                reason: format!("Could not extract expected public values: {e}"),
+            })?;
 
     let (_, vk) = {
         let _span = tracing::debug_span!("verifier_setup").entered();

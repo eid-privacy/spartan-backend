@@ -12,14 +12,16 @@
   },
   "shell": {
     "init_hook": [
-      "rustup default stable",
-      "( cd spartan-backend && cargo fetch )"
+      "rustup default stable"
     ],
     "scripts": {
+      "fetch": "( cd spartan-backend && cargo fetch )",
       "ls": "ls && pwd",
       "build": "cd spartan-backend && cargo build --release",
       "start": "cd spartan-backend && cargo run",
       "test": "cd spartan-backend && cargo test -- --show-output",
+      "fmt-check": "cd spartan-backend && cargo fmt --check",
+      "nargo-check": "for dir in circuits/c0*/; do (cd \"$dir\" && nargo-t256 execute); done && git diff --exit-code",
       "build-docs": "cd spartan-backend && cargo doc",
       "benchmark": "./scripts/benchmark.sh"
     }

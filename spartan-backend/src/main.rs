@@ -1,23 +1,23 @@
-mod utils;
-mod trivial_circuit;
+mod circuit_instance;
 mod nizk_prover;
 mod nizk_verifier;
 pub mod noir;
-mod circuit_instance;
+mod trivial_circuit;
 pub mod types;
+mod utils;
 
-use std::env;
-use std::path::PathBuf;
-use acir::{AcirField, FieldElement};
-use spartan2::spartan::SpartanSNARK;
-use tracing::info_span;
-use clap::Parser;
+use crate::circuit_instance::{instantiate_circuit_from_dir, instantiate_circuit_with_name};
 use crate::nizk_prover::prove;
 use crate::nizk_verifier::verify;
-use crate::noir::synthesis::circuit_synthesizer::NoirCircuitSynthesizer;
-use crate::circuit_instance::{instantiate_circuit_from_dir, instantiate_circuit_with_name};
 use crate::noir::circuit::CircuitParameters;
+use crate::noir::synthesis::circuit_synthesizer::NoirCircuitSynthesizer;
 use crate::types::{E, Scalar};
+use acir::{AcirField, FieldElement};
+use clap::Parser;
+use spartan2::spartan::SpartanSNARK;
+use std::env;
+use std::path::PathBuf;
+use tracing::info_span;
 
 /// Spartan2 backend for Noir circuits — prove and verify.
 #[derive(Parser)]
@@ -78,7 +78,6 @@ fn main() {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
         .init();
-
 
     match cli.circuit_dir {
         Some(dir) => {

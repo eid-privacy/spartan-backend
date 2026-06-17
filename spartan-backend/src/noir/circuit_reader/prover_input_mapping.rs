@@ -1,18 +1,15 @@
-use std::collections::HashMap;
-use std::path::PathBuf;
+use crate::noir::circuit_reader::named_parameters_mapping::map_wires;
+use crate::noir::circuit_reader::types::circuit_input::CircuitInput;
+use crate::noir::circuit_reader::types::input_wire::InputWire;
+use crate::noir::circuit_reader::types::wire::Wire;
 use acir::FieldElement;
 use acir::native_types::Witness;
 use noir_artifact_cli::fs::witness::load_witness_from_file;
 use noirc_artifacts::program::ProgramArtifact;
-use crate::noir::circuit_reader::types::circuit_input::CircuitInput;
-use crate::noir::circuit_reader::named_parameters_mapping::map_wires;
-use crate::noir::circuit_reader::types::input_wire::InputWire;
-use crate::noir::circuit_reader::types::wire::Wire;
+use std::collections::HashMap;
+use std::path::PathBuf;
 
-pub fn read_inputs(
-    program: &ProgramArtifact,
-    path: &str,
-) -> Vec<InputWire<CircuitInput>> {
+pub fn read_inputs(program: &ProgramArtifact, path: &str) -> Vec<InputWire<CircuitInput>> {
     // required to figure out if a wire is public or private input
     let wires_mapping = map_wires(
         &program.abi.parameters,
@@ -25,17 +22,15 @@ pub fn read_inputs(
 }
 
 fn witness_assignments(path: &str) -> HashMap<u32, (Witness, FieldElement)> {
-    let mut n = load_witness_from_file(
-        &PathBuf::from(path)
-    ).expect(format!("Could not load circuit at path {}", path).as_str());
+    let mut n = load_witness_from_file(&PathBuf::from(path))
+        .expect(format!("Could not load circuit at path {}", path).as_str());
     let w = n.pop().unwrap();
     // TODO: support more than a main method
     assert_eq!(w.index, 0);
 
-    w.witness.into_iter()
-        .map(|(w, field_element)|
-            (w.0, (w, field_element))
-        )
+    w.witness
+        .into_iter()
+        .map(|(w, field_element)| (w.0, (w, field_element)))
         .collect()
 }
 
@@ -47,20 +42,28 @@ pub fn map_inputs(
     // - Reads how many wires a parameter uses
     // - Read the value from the input file and split it in the correct number of wires
     // - Wraps that in a CircuitInput and matches it with the corresponding wire for later allocation
-    let flat_wires: HashMap<u32, Wire> = wiring.iter().flat_map(
-        |(_, wire_mapping)|
-            wire_mapping.iter().map(|w| (w.witness.witness_index(), *w)).collect::<Vec<(u32, Wire)>>()
-    ).collect();
+    let flat_wires: HashMap<u32, Wire> = wiring
+        .iter()
+        .flat_map(|(_, wire_mapping)| {
+            wire_mapping
+                .iter()
+                .map(|w| (w.witness.witness_index(), *w))
+                .collect::<Vec<(u32, Wire)>>()
+        })
+        .collect();
 
-    let wires = witness_value_assignments.iter().map(
-        |(w_id, (w, f))| {
+    let wires = witness_value_assignments
+        .iter()
+        .map(|(w_id, (w, f))| {
             let wire = match flat_wires.get(w_id) {
                 Some(Wire { public, witness }) => Wire::new(*public, *witness),
-                None => Wire { public: false, witness: *w }
+                None => Wire {
+                    public: false,
+                    witness: *w,
+                },
             };
             wire.assign(CircuitInput::FieldElement(*f))
-        }
-    )
+        })
         .collect();
 
     wires

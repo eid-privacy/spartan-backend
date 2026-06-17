@@ -1,9 +1,9 @@
-use acir::FieldElement;
-use acir::native_types::Expression;
-use bellpepper_core::{ConstraintSystem, LinearCombination, SynthesisError};
 use crate::noir::scalar_conversion::to_spartan_scalar;
 use crate::noir::synthesis::allocation_support::{AllocatedWire, WitnessMap};
 use crate::types::Scalar;
+use acir::FieldElement;
+use acir::native_types::Expression;
+use bellpepper_core::{ConstraintSystem, LinearCombination, SynthesisError};
 
 pub(crate) fn handle_assert_zero<CS: ConstraintSystem<Scalar>>(
     cs: &mut CS,
@@ -23,15 +23,17 @@ pub(crate) fn handle_assert_zero<CS: ConstraintSystem<Scalar>>(
             .get(&witness.witness_index())
             .ok_or_else(|| SynthesisError::AssignmentMissing)?;
 
-        let allocated_num = &allocated.allocation.as_ref()
+        let allocated_num = &allocated
+            .allocation
+            .as_ref()
             .map_err(|_| SynthesisError::AssignmentMissing)?;
 
         lin_comb = lin_comb
             + (
-            to_spartan_scalar(field_element),
-            // TODO: manage unallocated witnesses later (if it becomes relevant)
-            allocated_num.get_variable(),
-        );
+                to_spartan_scalar(field_element),
+                // TODO: manage unallocated witnesses later (if it becomes relevant)
+                allocated_num.get_variable(),
+            );
     }
 
     lin_comb = lin_comb + (to_spartan_scalar(&constant), CS::one());
@@ -42,6 +44,6 @@ pub(crate) fn handle_assert_zero<CS: ConstraintSystem<Scalar>>(
         |lc| lc + CS::one(),
         |lc| lc,
     );
-    
+
     Ok(())
 }

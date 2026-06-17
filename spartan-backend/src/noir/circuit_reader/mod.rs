@@ -1,14 +1,14 @@
-use std::fs;
-use acir::circuit::Opcode;
 use acir::FieldElement;
+use acir::circuit::Opcode;
 use acir::native_types::Witness;
 use noirc_artifacts::program::ProgramArtifact;
 use serde_json::Error as JsonError;
+use std::fs;
 
-pub mod prover_input_mapping;
-pub mod verifier_input_mapping;
 mod named_parameters_mapping;
+pub mod prover_input_mapping;
 pub mod types;
+pub mod verifier_input_mapping;
 
 pub fn read_noir_circuit(file: &str) -> Result<ProgramArtifact, JsonError> {
     let json_str = fs::read_to_string(file).map_err(JsonError::io)?;
@@ -17,9 +17,7 @@ pub fn read_noir_circuit(file: &str) -> Result<ProgramArtifact, JsonError> {
 }
 
 /// Scans a circuit's bytecode to list all references to witnesses
-pub fn read_witnesses(
-    program: &ProgramArtifact,
-) -> Vec<Witness> {
+pub fn read_witnesses(program: &ProgramArtifact) -> Vec<Witness> {
     let mut seen_ids = std::collections::HashSet::<u32>::new();
 
     program
@@ -52,8 +50,17 @@ fn map_opcode_witnesses(opcode: &Opcode<FieldElement>) -> Vec<Witness> {
         Opcode::MemoryOp { block_id: _, op } => {
             vec![op.value, op.index]
         }
-        Opcode::MemoryInit { block_id: _, init, block_type: _ } => init.clone(),
-        Opcode::BrilligCall { id: _, inputs, outputs, predicate } => {
+        Opcode::MemoryInit {
+            block_id: _,
+            init,
+            block_type: _,
+        } => init.clone(),
+        Opcode::BrilligCall {
+            id: _,
+            inputs,
+            outputs,
+            predicate,
+        } => {
             let mut witnesses = Vec::new();
 
             for input in inputs {
@@ -84,7 +91,12 @@ fn map_opcode_witnesses(opcode: &Opcode<FieldElement>) -> Vec<Witness> {
             witnesses.extend(expression_witnesses(predicate));
             witnesses
         }
-        Opcode::Call { id: _, inputs, outputs, predicate } => {
+        Opcode::Call {
+            id: _,
+            inputs,
+            outputs,
+            predicate,
+        } => {
             let mut witnesses = inputs.clone();
             witnesses.extend(outputs.iter().copied());
             witnesses.extend(expression_witnesses(predicate));

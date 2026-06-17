@@ -1,7 +1,7 @@
 use acir::{AcirField, FieldElement};
+use algebra_utils::hex_to_big;
 use ff::PrimeField;
 use num_bigint::BigUint;
-use algebra_utils::hex_to_big;
 
 /// Convert an ACIR **coefficient/constant** into a Spartan scalar, preserving
 /// signed semantics.
