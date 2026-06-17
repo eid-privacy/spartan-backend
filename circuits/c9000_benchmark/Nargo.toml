@@ -1,5 +1,5 @@
 [package]
-name = "c0003_benchmark"
+name = "c9000_benchmark"
 type = "bin"
 authors = [""]
 description = "Benchmarking Ultrahonk against Spartan"
