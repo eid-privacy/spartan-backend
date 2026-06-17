@@ -4,7 +4,7 @@ This is the first step to have some benchmarks and compare
 noir / barretenberg with their UltraHonk prover backend to
 the shiny new Spartan backend.
 
-The benchmark in [./circuits/c0003_benchmark/src/main.nr] allows
+The benchmark in [./circuits/c9000_benchmark/src/main.nr] allows
 us to check a simple benchmark with two parameters:
 - private input size
 - number of assertions
