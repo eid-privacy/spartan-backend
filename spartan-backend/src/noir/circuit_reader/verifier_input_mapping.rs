@@ -1,17 +1,14 @@
-use std::collections::{BTreeSet, HashMap};
-use std::fs;
-use noirc_artifacts::program::ProgramArtifact;
-use serde_json::{Error, Map, Value};
-use crate::noir::circuit_reader::types::circuit_input::CircuitInput;
 use crate::noir::circuit_reader::named_parameters_mapping::map_wires;
+use crate::noir::circuit_reader::types::circuit_input::CircuitInput;
 use crate::noir::circuit_reader::types::input_wire::InputWire;
 use crate::noir::circuit_reader::types::wire::Wire;
+use noirc_artifacts::program::ProgramArtifact;
+use serde_json::{Error, Map, Value};
+use std::collections::{BTreeSet, HashMap};
+use std::fs;
 
-pub fn read_verifier_inputs(
-    program: &ProgramArtifact,
-    path: &str,
-) -> Vec<InputWire<CircuitInput>> {
-    let wires_mapping= map_wires(
+pub fn read_verifier_inputs(program: &ProgramArtifact, path: &str) -> Vec<InputWire<CircuitInput>> {
+    let wires_mapping = map_wires(
         &program.abi.parameters,
         // assume a single function for now
         &program.bytecode.functions.first().unwrap(),
@@ -32,7 +29,11 @@ pub fn map_verifier_inputs(
     input_map: &Map<String, Value>,
     wiring: &HashMap<String, Vec<Wire>>,
 ) -> Vec<InputWire<CircuitInput>> {
-    assert_eq!(input_map.len(), wiring.len(), "Number of inputs mismatch with abi");
+    assert_eq!(
+        input_map.len(),
+        wiring.len(),
+        "Number of inputs mismatch with abi"
+    );
     let input_keys: BTreeSet<&str> = input_map.keys().map(String::as_str).collect();
     let wiring_keys: BTreeSet<&str> = wiring.keys().map(String::as_str).collect();
     assert_eq!(input_keys, wiring_keys, "input keys and wiring keys differ");
@@ -50,11 +51,21 @@ pub fn map_verifier_inputs(
                 let mut as_bytes = s.as_bytes().to_vec();
                 as_bytes.resize(*arity, 0u8);
                 as_bytes.iter().map(|v| CircuitInput::Byte(*v)).collect()
-            },
+            }
             Value::Number(n) => {
                 assert_eq!(1, *arity, "Unexpected arity for number input.");
                 vec![CircuitInput::Number(n.as_u64().unwrap())]
-            },
+            }
+            Value::Array(arr) => {
+                assert_eq!(arr.len(), *arity, "Array length mismatch for input '{k}'");
+                arr.iter()
+                    .map(|v| {
+                        CircuitInput::Byte(
+                            v.as_u64().expect("Array elements must be byte values") as u8
+                        )
+                    })
+                    .collect()
+            }
             Value::Null => vec![CircuitInput::Missing; *arity],
             _ => panic!("panik"),
         };
@@ -62,7 +73,8 @@ pub fn map_verifier_inputs(
         // zip each input with their respective wire
         new_mapping.insert(
             k.to_string(),
-            split_input.into_iter()
+            split_input
+                .into_iter()
                 .zip(wire_mapping)
                 .map(|(byte, wire)| wire.assign(byte))
                 .collect::<Vec<InputWire<CircuitInput>>>(),

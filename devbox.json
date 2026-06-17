@@ -5,7 +5,7 @@
     "time@latest",
     "github:eid-privacy/flakes#noir-versions.v1_0_0-beta_18",
     "github:eid-privacy/flakes#barretenberg-versions.beta_18",
-    "github:eid-privacy/flakes#nargo-t256-versions.commit_0c11d1"
+    "github:eid-privacy/flakes#nargo-t256-versions.t256-v0_1"
   ],
   "env": {
     "PROJECT_DIR": "$PWD"
