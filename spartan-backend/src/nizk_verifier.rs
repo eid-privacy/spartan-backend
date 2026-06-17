@@ -8,14 +8,30 @@ pub fn verify<E: Engine, C: SpartanCircuit<E>>(
     verifier_circuit: C,
     proof: SpartanSNARK<E>
 ) -> Result<Vec<E::Scalar>, SpartanError> {
+    let expected_public_values = verifier_circuit
+        .public_values()
+        .map_err(|e| SpartanError::ProofVerifyError {
+            reason: format!("Could not extract expected public values: {e}"),
+        })?;
+
     let (_, vk) = {
         let _span = tracing::debug_span!("verifier_setup").entered();
         SpartanSNARK::<E>::setup(verifier_circuit)?
     };
 
-    let verification_result = {
+    let public_values = {
         let _span = tracing::debug_span!("verify").entered();
         proof.verify(&vk)
-    };
-    verification_result
+    }?;
+
+    if public_values != expected_public_values {
+        return Err(SpartanError::ProofVerifyError {
+            reason: format!(
+                "Public inputs mismatch: proof claims {:?}, verifier expects {:?}",
+                public_values, expected_public_values
+            ),
+        });
+    }
+
+    Ok(public_values)
 }
