@@ -14,7 +14,7 @@ jobs:
       - uses: jetify-com/devbox-install-action@v0.13.0
         with:
           project-path: .
-          enable-cache: 'true'   # caches the Nix store between runs (separate from the binary cache)
+          enable-cache: "true" # caches the Nix store between runs (separate from the binary cache)
           extra-nix-config: |
             extra-substituters = https://eid-privacy.cachix.org
             extra-trusted-public-keys = eid-privacy.cachix.org-1:lxRzvjcWd/A6Wew1tq0IK6OIMVWNJKUTy4s7EKb6C2A=
