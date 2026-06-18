@@ -5,7 +5,7 @@
     "time@latest",
     "jq@latest",
     "samply@latest",
-    "python3@latest",
+    "python@3.14",
     "python314Packages.matplotlib",
     "python314Packages.numpy@latest",
     "github:eid-privacy/flakes#noir-versions.v1_0_0-beta_22",
