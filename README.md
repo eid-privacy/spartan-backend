@@ -10,13 +10,13 @@ bytecode are important to track.**
 
 | pass | circuit                             | noir commit                              |
 |------|-------------------------------------|------------------------------------------|
-| ✅    | c0000_trivial                       | e9a577066f6ef887a3d70c8230d03d180057925c |
-| ✅    | c0001_trivial_with_range            | e9a577066f6ef887a3d70c8230d03d180057925c |
-| ✅    | c0002_trivial_with_strings          | e9a577066f6ef887a3d70c8230d03d180057925c |
-| ✅    | c0003_trivial_with_brillig          | e9a577066f6ef887a3d70c8230d03d180057925c |
-| ✅    | c0004_trivial_elliptic_curve_add    | e9a577066f6ef887a3d70c8230d03d180057925c |
-| ✅    | c0005_trivial_msm                   | e9a577066f6ef887a3d70c8230d03d180057925c |
-| ✅    | c0100_holder_binding_crescent_style | e9a577066f6ef887a3d70c8230d03d180057925c |
+| ✅    | c0000_trivial                       | 4af10fc2fd8ec9b4ff61b8bc7c550e28f3bc6107 |
+| ✅    | c0001_trivial_with_range            | 4af10fc2fd8ec9b4ff61b8bc7c550e28f3bc6107 |
+| ✅    | c0002_trivial_with_strings          | 4af10fc2fd8ec9b4ff61b8bc7c550e28f3bc6107 |
+| ✅    | c0003_trivial_with_brillig          | 4af10fc2fd8ec9b4ff61b8bc7c550e28f3bc6107 |
+| ✅    | c0004_trivial_elliptic_curve_add    | 4af10fc2fd8ec9b4ff61b8bc7c550e28f3bc6107 |
+| ✅    | c0005_trivial_msm                   | 4af10fc2fd8ec9b4ff61b8bc7c550e28f3bc6107 |
+| ✅    | c0100_holder_binding_crescent_style | 4af10fc2fd8ec9b4ff61b8bc7c550e28f3bc6107 |
 
 ## Reproducing the results
 
@@ -32,16 +32,16 @@ bytecode are important to track.**
 ### (Optional) Setup nargo
 
 This is required if you need to compile/re-compile/execute circuits.
+
 * `nargo build` needs to produce an ACIR in which coefficients and constants are embedded into T-256
 * `nargo execute` needs to use the T-256 Blackbox Solver to compute intermediate and output witnesses and those need
   to then be embedded in the T-256 field.
 
-1. Download our fork of Noir: https://github.com/eid-privacy/noir
+1. Download our fork of Noir: <https://github.com/eid-privacy/noir>
 2. Checkout the "noir commit" indicated in the table
 3. Build `nargo_cli`
 4. Put it in your path, this README.md assumes it is named "nargo-t256" to distinguish from the original Noir distribution
 5. Build the circuit you're interested in with `nargo-t256 build`
-
 
 ### Troubleshooting
 
