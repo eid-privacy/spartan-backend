@@ -31,7 +31,7 @@ where
 {
     /// Allocates a new point on the curve using coordinates provided by
     /// `coords`. If coords = None, it allocates the default infinity point
-    pub fn alloc<CS>(
+    pub fn _alloc<CS>(
         mut cs: CS,
         coords: Option<(Scalar, Scalar, bool)>,
     ) -> Result<Self, SynthesisError>
@@ -61,7 +61,10 @@ where
         Ok(AllocatedPoint { x, y, is_infinity })
     }
 
-    pub fn inputize<CS: ConstraintSystem<Scalar>>(&self, mut cs: CS) -> Result<(), SynthesisError> {
+    pub fn _inputize<CS: ConstraintSystem<Scalar>>(
+        &self,
+        mut cs: CS,
+    ) -> Result<(), SynthesisError> {
         self.x.inputize(cs.namespace(|| "x"))?;
         self.y.inputize(cs.namespace(|| "y"))?;
         self.is_infinity.inputize(cs.namespace(|| "is_infinity"))?;

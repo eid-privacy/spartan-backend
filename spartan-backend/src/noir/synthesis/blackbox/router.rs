@@ -6,7 +6,6 @@ use crate::types::Scalar;
 use acir::FieldElement;
 use acir::circuit::opcodes::BlackBoxFuncCall;
 use acir::circuit::opcodes::BlackBoxFuncCall::RANGE;
-use acir::native_types::Witness;
 use bellpepper_core::{ConstraintSystem, LinearCombination, SynthesisError};
 use ff::derive::bitvec::macros::internal::funty::Fundamental;
 
@@ -73,7 +72,7 @@ impl<'a> BlackboxRouter<'a> {
             BlackBoxFuncCall::MultiScalarMul {
                 points,
                 scalars,
-                predicate,
+                predicate: _,
                 outputs,
             } => handle_msm(
                 self.allocation_store,

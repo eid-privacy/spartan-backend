@@ -12,7 +12,6 @@ use crate::nizk_verifier::verify;
 use crate::noir::circuit::CircuitParameters;
 use crate::noir::synthesis::circuit_synthesizer::NoirCircuitSynthesizer;
 use crate::types::{E, Scalar};
-use acir::{AcirField, FieldElement};
 use clap::Parser;
 use spartan2::spartan::SpartanSNARK;
 use std::env;
