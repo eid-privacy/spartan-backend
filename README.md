@@ -43,6 +43,38 @@ This is required if you need to compile/re-compile/execute circuits.
 4. Put it in your path, this README.md assumes it is named "nargo-t256" to distinguish from the original Noir distribution
 5. Build the circuit you're interested in with `nargo-t256 build`
 
+## Benchmarks
+
+Times in seconds. Rows: ASSERTS; sub-rows per cell: BB prove / Spartan proof / Spartan verify. Columns: INPUT_SIZE.
+
+<!-- BENCHMARK_TABLE_START -->
+```
++------------+-------+-------+-------+-------+--------+
+| ASRT \ INP |    10 |   100 |  1000 | 10000 | 100000 |
++------------+-------+-------+-------+-------+--------+
+| 10         | 0.10s | 0.11s | 0.15s | 0.44s |  3.18s |
+|            | 0.06s | 0.07s | 0.12s | 0.55s |  5.22s |
+|            | 0.04s | 0.04s | 0.07s | 0.31s |  2.45s |
++------------+-------+-------+-------+-------+--------+
+| 100        |   n/a | 0.10s | 0.15s | 0.44s |  2.88s |
+|            |   n/a | 0.07s | 0.12s | 0.53s |  4.43s |
+|            |   n/a | 0.04s | 0.07s | 0.30s |  2.33s |
++------------+-------+-------+-------+-------+--------+
+| 1000       |   n/a |   n/a | 0.15s | 0.45s |  2.88s |
+|            |   n/a |   n/a | 0.11s | 0.55s |  4.39s |
+|            |   n/a |   n/a | 0.07s | 0.31s |  2.40s |
++------------+-------+-------+-------+-------+--------+
+| 10000      |   n/a |   n/a |   n/a | 0.44s |  3.07s |
+|            |   n/a |   n/a |   n/a | 0.53s |  4.71s |
+|            |   n/a |   n/a |   n/a | 0.31s |  2.39s |
++------------+-------+-------+-------+-------+--------+
+| 100000     |   n/a |   n/a |   n/a |   n/a |  3.17s |
+|            |   n/a |   n/a |   n/a |   n/a |  4.83s |
+|            |   n/a |   n/a |   n/a |   n/a |  2.47s |
++------------+-------+-------+-------+-------+--------+
+```
+<!-- BENCHMARK_TABLE_END -->
+
 ### Troubleshooting
 
 * On some Macs it might happen that the `nargo` binary gets killed instantly on invocation.

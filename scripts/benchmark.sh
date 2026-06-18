@@ -67,3 +67,5 @@ for input_size in $STEPS_INPUT_SIZES; do
         cat stats.txt
     done
 done
+
+python3 "$DIR/stats_table.py" --update-readme "$DIR/../README.md"
