@@ -95,12 +95,31 @@ def render_table(runs):
 
 
 def main():
-    path = Path(sys.argv[1]) if len(sys.argv) > 1 else STATS_FILE
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("stats_file", nargs="?", default=None)
+    parser.add_argument("--update-readme", metavar="README", help="Inject table into README between marker comments")
+    args = parser.parse_args()
+
+    path = Path(args.stats_file) if args.stats_file else STATS_FILE
     runs = parse(path)
     if not runs:
         print("No runs found.", file=sys.stderr)
         sys.exit(1)
-    print(render_table(runs))
+    table = render_table(runs)
+
+    if args.update_readme:
+        readme = Path(args.update_readme)
+        content = readme.read_text()
+        new_content = re.sub(
+            r"<!-- BENCHMARK_TABLE_START -->.*?<!-- BENCHMARK_TABLE_END -->",
+            f"<!-- BENCHMARK_TABLE_START -->\n```\n{table}\n```\n<!-- BENCHMARK_TABLE_END -->",
+            content,
+            flags=re.DOTALL,
+        )
+        readme.write_text(new_content)
+    else:
+        print(table)
 
 
 if __name__ == "__main__":
