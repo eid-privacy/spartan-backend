@@ -4,25 +4,32 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-acir = { git = "https://github.com/eid-privacy/noir", rev = "e9a577066f6ef887a3d70c8230d03d180057925c", features = ["t256"] }
+acir = { git = "https://github.com/eid-privacy/noir", rev = "4af10fc2fd8ec9b4ff61b8bc7c550e28f3bc6107", features = [
+  "t256",
+] }
 #acir = { path = "../../noir/acvm-repo/acir", features = ["t256"] }
-acvm = { git = "https://github.com/eid-privacy/noir", rev = "e9a577066f6ef887a3d70c8230d03d180057925c", features = ["t256"] }
+acvm = { git = "https://github.com/eid-privacy/noir", rev = "4af10fc2fd8ec9b4ff61b8bc7c550e28f3bc6107", features = [
+  "t256",
+] }
 #acvm = { path = "../../noir/acvm-repo/acvm", features = ["t256"] }
 bellpepper-core = "0.4.0"
 ff = "0.13.1"
-noirc_abi = { git = "https://github.com/eid-privacy/noir", rev = "e9a577066f6ef887a3d70c8230d03d180057925c", features = ["t256"] }
+noirc_abi = { git = "https://github.com/eid-privacy/noir", rev = "4af10fc2fd8ec9b4ff61b8bc7c550e28f3bc6107", features = [
+  "t256",
+] }
 #noirc_abi = { path = "../../noir/tooling/noirc_abi", features = ["t256"] }
-noirc_artifacts = { git = "https://github.com/eid-privacy/noir", rev = "e9a577066f6ef887a3d70c8230d03d180057925c" }
+noirc_artifacts = { git = "https://github.com/eid-privacy/noir", rev = "4af10fc2fd8ec9b4ff61b8bc7c550e28f3bc6107" }
 #noirc_artifacts = { path = "../../noir/tooling/noirc_artifacts" }
-noir_artifact_cli = {  git = "https://github.com/eid-privacy/noir", rev = "e9a577066f6ef887a3d70c8230d03d180057925c" }
+noir_artifact_cli = { git = "https://github.com/eid-privacy/noir", rev = "4af10fc2fd8ec9b4ff61b8bc7c550e28f3bc6107" }
 #noir_artifact_cli = { path = "../../noir/tooling/artifact_cli" }
-num-bigint = {version="0.4.3", features = ["rand"]}
+num-bigint = { version = "0.4.3", features = ["rand"] }
 num-traits = "0.2.14"
 serde_json = { version = "1.0", features = ["unbounded_depth"] }
-spartan2 = { version = "0.9.0", default-features = false}
+spartan2 = { version = "0.9.0", default-features = false }
 #spartan2 = { path = "../../Spartan2", default-features = false}
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
 clap = { version = "4.6.0", features = ["derive"] }
 algebra-utils = { path = "../algebra-utils" }
 bellpepper = "0.4.1"
+
