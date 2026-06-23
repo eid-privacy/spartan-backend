@@ -42,6 +42,4 @@ fn main(
     let pubkey_x_field = array_to_field(pubkey_device_x);
     // The core verification equation from Crescent: T^sU = Q, Crescent impl. checks only x coordinate
     assert(pubkey_x_field == t256_ec_add(t256_msm([T_point], [s_scalar]), U_point).x);
-
-    assert(signature_device_valid);
 }

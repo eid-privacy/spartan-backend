@@ -48,7 +48,9 @@ fn fmt_field(label: &str, bytes: &FieldRepr) -> String {
 /// single-line (`key = [1, 2, ...]`) and multi-line (`key = [\n  1,\n  ...\n]`)
 /// array values.
 fn strip_precomputed_fields(content: &str) -> String {
-    let precomputed_keys = ["R_x =", "R_y =", "s_inv =", "t ="];
+    let precomputed_keys = [
+        "R_x =", "R_y =", "s_inv =", "t =", "ts_inv =", "rs_inv =",
+    ];
     let mut result: Vec<&str> = Vec::new();
     let mut in_multiline_array = false;
 
@@ -130,7 +132,6 @@ fn main() {
     out.push_str(&fmt_array("R_x", &ff_to_be::<Fp>(&R.x)));
     out.push_str(&fmt_array("R_y", &ff_to_be::<Fp>(&R.y)));
     out.push_str(&fmt_field("s_inv", &ff_to_be::<Fq>(&s_inv)));
-    out.push_str(&fmt_field("t", &ff_to_be::<Fq>(&t)));
 
     print!("{out}");
 }

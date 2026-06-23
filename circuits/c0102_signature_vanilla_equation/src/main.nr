@@ -17,42 +17,29 @@ fn main(
     R_x: [u8; 32],
     R_y: [u8; 32],
     s_inv: Field,
-    t: Field,
-    ts_inv: Field,
-    rs_inv: Field,
-
-    // Public input
-    // com_trg_x: pub [u8; 32], //FieldElement ?
-    // com_trg_y: pub [u8; 32], //FieldElement ?
-    // com_zrs_inv: pub [u8; 32],
 ) {
-    // TODO: prove that coms == com(private inputs)
 
     let R = T256Point { x: array_to_field(R_x), y: array_to_field(R_y) };
     let Q = T256Point { x: array_to_field(pubkey_issuer_x), y: array_to_field(pubkey_issuer_y) };
 
-    // ts_inv = t * s_inv  mod  P-256 scalar order, precomputed off-circuit
-    // because the multiplication cannot be carried out in the native field
-    // without modular reduction. Binding ts_inv / rs_inv to t / s_inv / R.x
-    // must therefore be done with a non-native arithmetic gadget (TODO).
+    // Step 1: Calculate the credential hash (scalar t)
+    let credential_hash: [u8; 32] =
+        sha256_var(credential_string.as_bytes(), constants::CREDENTIAL_LEN).into();
+    let t = T256Scalar { hi: 0, lo: array_to_field(credential_hash) };
 
-    // Verification equation: R = ts^(-1)G + rs^(-1)Q
-    let tsG = t256_msm([G], [T256Scalar { hi: 0, lo: ts_inv }]);
-    let rsQ = t256_msm([Q], [T256Scalar { hi: 0, lo: rs_inv }]);
+    // Step 2: Compute s⁻¹G and s⁻¹Q in-circuit (s_inv is the only precomputed scalar)
+    let s_inv_scalar = T256Scalar { hi: 0, lo: s_inv };
+    let sG = t256_msm([G], [s_inv_scalar]);
+    let sQ = t256_msm([Q], [s_inv_scalar]);
+
+    // Step 3: Compute ts⁻¹G = t · (s⁻¹G) and rs⁻¹Q = r · (s⁻¹Q) in-circuit,
+    // where r = R.x (mod the P-256 scalar order, here reused as a scalar).
+    let tsG = t256_msm([sG], [t]);
+    let r = T256Scalar { hi: 0, lo: R.x };
+    let rsQ = t256_msm([sQ], [r]);
+
+    // Verification equation: R = ts⁻¹G + rs⁻¹Q
     let rhs = t256_ec_add(tsG, rsQ);
-
-    // Step 1: Calculate the credential hash
-    // TODO: impl. this in spartan backend
-//    let credential_hash: [u8; 32] =
-//        sha256_var(credential_string.as_bytes(), constants::CREDENTIAL_LEN).into();
-
-    // Step 2: Verify ECDSA signature on the credential hash
-    // let signature_valid = std::ecdsa_secp256r1::verify_signature(
-    //     pubkey_issuer_x,
-    //     pubkey_issuer_y,
-    //     issuer_signature,
-    //    credential_hash,
-    // );
 
     assert(R.x == rhs.x);
     assert(R.y == rhs.y);
