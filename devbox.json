@@ -3,6 +3,7 @@
     "rustup@latest",
     "libiconv@latest",
     "time@latest",
+    "jq@latest",
     "github:eid-privacy/flakes#noir-versions.v1_0_0-beta_22",
     "github:eid-privacy/flakes#barretenberg-versions.beta_22",
     "github:eid-privacy/flakes#nargo-t256-versions.t256-v0_22"
@@ -25,7 +26,7 @@
       "start": "cd spartan-backend && RUST_LOG=info cargo run",
       "test": "cd spartan-backend && cargo test -- --show-output",
       "fmt-check": "cd spartan-backend && cargo fmt --check",
-      "nargo-check": "for dir in circuits/c0*/; do (cd \"$dir\" && nargo-t256 execute); done && git diff --exit-code",
+      "nargo-check": "./scripts/nargo_check.sh",
       "build-docs": "cd spartan-backend && cargo doc",
       "stats-table": "python3 scripts/stats_table.py --update-readme README.md",
       "benchmark": "./scripts/benchmark.sh"

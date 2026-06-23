@@ -27,5 +27,8 @@ jobs:
       - name: Check Rust formatting
         run: devbox run fmt-check
 
+      - name: Check circuits
+        run: devbox run nargo-check
+
       - name: Run circuits
         run: devbox run start
