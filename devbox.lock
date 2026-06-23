@@ -9,9 +9,9 @@
       "last_modified": "2026-06-18T07:04:49Z",
       "resolved": "github:eid-privacy/flakes/3c73309ebe2e4c372835fddd80ab7f41c7b8b213?lastModified=1781766289&narHash=sha256-0XmAMLdsztWkwEG2PfJnlPiHItFQBpbKcaYONZJcDmk%3D#barretenberg-versions.beta_22"
     },
-    "github:eid-privacy/flakes#nargo-t256-versions.t256-v0_2": {
-      "last_modified": "2026-06-18T07:04:49Z",
-      "resolved": "github:eid-privacy/flakes/3c73309ebe2e4c372835fddd80ab7f41c7b8b213?lastModified=1781766289&narHash=sha256-0XmAMLdsztWkwEG2PfJnlPiHItFQBpbKcaYONZJcDmk%3D#nargo-t256-versions.t256-v0_2"
+    "github:eid-privacy/flakes#nargo-t256-versions.t256-v0_22": {
+      "last_modified": "2026-06-23T09:35:15Z",
+      "resolved": "github:eid-privacy/flakes/d955febabb676a5368b318f202f529f567e56457?lastModified=1782207315&narHash=sha256-lMpiedWJ%2B2x5RN2ziz4F8GFP6F%2FD%2B4GR4aiyYyeUNfM%3D#nargo-t256-versions.t256-v0_22"
     },
     "github:eid-privacy/flakes#noir-versions.v1_0_0-beta_22": {
       "last_modified": "2026-06-18T07:04:49Z",

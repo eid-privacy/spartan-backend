@@ -79,3 +79,20 @@ Times in seconds. Rows: ASSERTS; sub-rows per cell: BB prove / Spartan proof / S
 
 * On some Macs it might happen that the `nargo` binary gets killed instantly on invocation.
   It requires re-signing: `codesign --sign - --force --preserve-metadata=entitlements $(which nargo-t256)`
+
+# Using devbox
+
+If you want to use devbox for this repo, make sure to have the following 
+lines in your `/etc/nix/nix.conf`:
+
+```
+experimental-features = nix-command flakes
+sandbox = relaxed
+filter-syscalls = false
+extra-substituters = https://eid-privacy.cachix.org
+extra-trusted-public-keys = eid-privacy.cachix.org-1:lxRzvjcWd/A6Wew1tq0IK6OIMVWNJKUTy4s7EKb6C2A=
+```
+
+this will allow to download the nargo-t256 binaries from cachix and also help
+running it in a docker environment.
+ 
