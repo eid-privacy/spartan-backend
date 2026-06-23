@@ -4,8 +4,5 @@
   "pubkey_issuer_y": null,
   "R_x": null,
   "R_y": null,
-  "s_inv": null,
-  "t": null,
-  "ts_inv": null,
-  "rs_inv": null
+  "s_inv": null
 }

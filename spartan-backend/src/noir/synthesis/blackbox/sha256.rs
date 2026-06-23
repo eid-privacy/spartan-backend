@@ -26,10 +26,8 @@ pub fn handle_sha256_compression<CS: ConstraintSystem<Scalar>>(
             &mut cs.namespace(|| format!("input word {i}")),
             fi,
         )?;
-        let bits_be = decompose_u32_be(
-            cs.namespace(|| format!("input word {i} bits")),
-            &allocated,
-        )?;
+        let bits_be =
+            decompose_u32_be(cs.namespace(|| format!("input word {i} bits")), &allocated)?;
         input_bits.extend(bits_be);
     }
 
@@ -40,10 +38,7 @@ pub fn handle_sha256_compression<CS: ConstraintSystem<Scalar>>(
             &mut cs.namespace(|| format!("hash word {i}")),
             fi,
         )?;
-        let bits_be = decompose_u32_be(
-            cs.namespace(|| format!("hash word {i} bits")),
-            &allocated,
-        )?;
+        let bits_be = decompose_u32_be(cs.namespace(|| format!("hash word {i} bits")), &allocated)?;
         current_hash.push(UInt32::from_bits_be(&bits_be));
     }
 
