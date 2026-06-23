@@ -10,13 +10,16 @@ bytecode are important to track.**
 
 | pass | circuit                             | noir commit                              |
 |------|-------------------------------------|------------------------------------------|
-| ✅    | c0000_trivial                       | 4af10fc2fd8ec9b4ff61b8bc7c550e28f3bc6107 |
-| ✅    | c0001_trivial_with_range            | 4af10fc2fd8ec9b4ff61b8bc7c550e28f3bc6107 |
-| ✅    | c0002_trivial_with_strings          | 4af10fc2fd8ec9b4ff61b8bc7c550e28f3bc6107 |
-| ✅    | c0003_trivial_with_brillig          | 4af10fc2fd8ec9b4ff61b8bc7c550e28f3bc6107 |
-| ✅    | c0004_trivial_elliptic_curve_add    | 4af10fc2fd8ec9b4ff61b8bc7c550e28f3bc6107 |
-| ✅    | c0005_trivial_msm                   | 4af10fc2fd8ec9b4ff61b8bc7c550e28f3bc6107 |
-| ✅    | c0100_holder_binding_crescent_style | 4af10fc2fd8ec9b4ff61b8bc7c550e28f3bc6107 |
+| ✅    | c0000_trivial                       | t256-v0.22 |
+| ✅    | c0001_trivial_with_range            | t256-v0.22|
+| ✅    | c0002_trivial_with_strings          | t256-v0.22|
+| ✅    | c0003_trivial_with_brillig          | t256-v0.22|
+| ✅    | c0004_trivial_elliptic_curve_add    | t256-v0.22|
+| ✅    | c0005_trivial_msm                   | t256-v0.22|
+| ✅    | c0006_sha256 | t256-v0.22|
+| ✅    | c0100_holder_binding_crescent_style | t256-v0.22|
+| ✅    | c0101_signature_pok_zkattest_style | t256-v0.22|
+| ✅    | c0102_signature_vanilla_equation | t256-v0.22|
 
 ## Reproducing the results
 
@@ -82,7 +85,7 @@ Times in seconds. Rows: ASSERTS; sub-rows per cell: BB prove / Spartan proof / S
 
 # Using devbox
 
-If you want to use devbox for this repo, make sure to have the following 
+If you want to use devbox for this repo, make sure to have the following
 lines in your `/etc/nix/nix.conf`:
 
 ```
@@ -95,4 +98,3 @@ extra-trusted-public-keys = eid-privacy.cachix.org-1:lxRzvjcWd/A6Wew1tq0IK6OIMVW
 
 this will allow to download the nargo-t256 binaries from cachix and also help
 running it in a docker environment.
- 
