@@ -2,6 +2,7 @@ use crate::noir::synthesis::allocation_support::{AllocatedWire, WitnessMap};
 use crate::noir::synthesis::blackbox::ec_add::handle_ec_add;
 use crate::noir::synthesis::blackbox::multi_scalar_multiplication::handle_msm;
 use crate::noir::synthesis::blackbox::range::{field_into_allocated_bits_le, powers_of_two};
+use crate::noir::synthesis::blackbox::sha256::handle_sha256_compression;
 use crate::types::Scalar;
 use acir::FieldElement;
 use acir::circuit::opcodes::BlackBoxFuncCall;
@@ -79,6 +80,17 @@ impl<'a> BlackboxRouter<'a> {
                 &mut cs.namespace(|| "MSM"),
                 points,
                 scalars,
+                outputs,
+            ),
+            BlackBoxFuncCall::Sha256Compression {
+                inputs,
+                hash_values,
+                outputs,
+            } => handle_sha256_compression(
+                self.allocation_store,
+                &mut cs.namespace(|| "SHA256 COMPRESSION"),
+                inputs,
+                hash_values,
                 outputs,
             ),
             _ => {
