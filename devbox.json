@@ -5,10 +5,14 @@
     "time@latest",
     "github:eid-privacy/flakes#noir-versions.v1_0_0-beta_22",
     "github:eid-privacy/flakes#barretenberg-versions.beta_22",
-    "github:eid-privacy/flakes#nargo-t256-versions.t256-v0_2"
+    "github:eid-privacy/flakes#nargo-t256-versions.t256-v0_22"
   ],
   "env": {
     "PROJECT_DIR": "$PWD"
+  },
+  "nixConfig": {
+    "extra-substituters": "https://eid-privacy.cachix.org",
+    "extra-trusted-public-keys": "eid-privacy.cachix.org-1:lxRzvjcWd/A6Wew1tq0IK6OIMVWNJKUTy4s7EKb6C2A="
   },
   "shell": {
     "init_hook": [
