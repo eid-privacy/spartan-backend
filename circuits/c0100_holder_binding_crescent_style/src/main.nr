@@ -43,11 +43,5 @@ fn main(
     // The core verification equation from Crescent: T^sU = Q, Crescent impl. checks only x coordinate
     assert(pubkey_x_field == t256_ec_add(t256_msm([T_point], [s_scalar]), U_point).x);
 
-//    let signature_device_valid = std::ecdsa_secp256r1::verify_signature(
-//        pubkey_device_x,
-//        pubkey_device_y,
-//        signature_device,
-//        challenge_hash,
-//    );
-//    assert(signature_device_valid);
+    assert(signature_device_valid);
 }

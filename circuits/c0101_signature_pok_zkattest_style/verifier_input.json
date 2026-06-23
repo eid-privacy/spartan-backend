@@ -2,8 +2,8 @@
   "credential_string": null,
   "pubkey_issuer_x": null,
   "pubkey_issuer_y": null,
-  "trg_x": null,
-  "trg_y": null,
+  "rg_x": null,
+  "rg_y": null,
   "R_x": null,
   "R_y": null,
   "z": null
