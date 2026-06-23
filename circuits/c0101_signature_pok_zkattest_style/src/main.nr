@@ -9,39 +9,29 @@ fn main(
     // issuer_signature: [u8; 64],
     pubkey_issuer_x: [u8; 32],
     pubkey_issuer_y: [u8; 32],
-    trg_x: Field,
-    trg_y: Field,
+    rg_x: Field,
+    rg_y: Field,
     R_x: [u8; 32],
     R_y: [u8; 32],
     z: Field,
-    // Public input
-    // com_trg_x: pub [u8; 32], //FieldElement ?
-    // com_trg_y: pub [u8; 32], //FieldElement ?
-    // com_zrs_inv: pub [u8; 32],
 ) {
-    // TODO: prove that coms == com(private inputs)
 
     let R = T256Point { x: array_to_field(R_x), y: array_to_field(R_y) };
-    let trG = T256Point { x: trg_x, y: trg_y };
+    let rG = T256Point { x: rg_x, y: rg_y };
     let Q = T256Point { x: array_to_field(pubkey_issuer_x), y: array_to_field(pubkey_issuer_y) };
 
-    // ZKAttest equation: zR - tr^(-1)G = Q
-    // We express it as zR = Q + tr^(-1)G
+    // Step 1: Calculate the credential hash (scalar t)
+    let credential_hash: [u8; 32] =
+        sha256_var(credential_string.as_bytes(), constants::CREDENTIAL_LEN).into();
+    let t = T256Scalar { hi: 0, lo: array_to_field(credential_hash) };
+
+    // Step 2: Compute tr⁻¹G = t · (r⁻¹G) in-circuit
+    let trG = t256_msm([rG], [t]);
+
+    // ZKAttest equation: zR - tr⁻¹G = Q
+    // We express it as zR = Q + tr⁻¹G
     let zR = t256_msm([R], [T256Scalar { hi: 0, lo: z}]);
     let rhs = t256_ec_add(Q, trG);
-
-    // Step 1: Calculate the credential hash
-    // TODO: impl. this in spartan backend
-//    let credential_hash: [u8; 32] =
-//        sha256_var(credential_string.as_bytes(), constants::CREDENTIAL_LEN).into();
-
-    // Step 2: Verify ECDSA signature on the credential hash
-    // let signature_valid = std::ecdsa_secp256r1::verify_signature(
-    //     pubkey_issuer_x,
-    //     pubkey_issuer_y,
-    //     issuer_signature,
-    //    credential_hash,
-    // );
 
     assert(zR.x == rhs.x);
     assert(zR.y == rhs.y);

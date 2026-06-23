@@ -90,20 +90,20 @@ fn main() {
         "ECDSA signature invalid: R.x != r"
     );
 
-    // tr⁻¹G = h · r⁻¹ · G
-    let tr1g = (G * (h * r_inv)).to_affine();
+    // r⁻¹G = r⁻¹ · G  (t = credential hash is multiplied in-circuit)
+    let r1g = (G * r_inv).to_affine();
 
     let mut out = content;
     if !out.ends_with('\n') {
         out.push('\n');
     }
     out.push('\n');
-    // z (scalar) and tr⁻¹G coordinates are FieldElement in the circuit; R is [u8; 32]
+    // z (scalar) and r⁻¹G coordinates are FieldElement in the circuit; R is [u8; 32]
     out.push_str(&fmt_field("z", &ff_to_be::<Fq>(&z)));
     out.push_str(&fmt_array("R_x", &ff_to_be::<Fp>(&R.x)));
     out.push_str(&fmt_array("R_y", &ff_to_be::<Fp>(&R.y)));
-    out.push_str(&fmt_field("trg_x", &ff_to_be::<Fp>(&tr1g.x)));
-    out.push_str(&fmt_field("trg_y", &ff_to_be::<Fp>(&tr1g.y)));
+    out.push_str(&fmt_field("rg_x", &ff_to_be::<Fp>(&r1g.x)));
+    out.push_str(&fmt_field("rg_y", &ff_to_be::<Fp>(&r1g.y)));
 
     print!("{out}");
 }
