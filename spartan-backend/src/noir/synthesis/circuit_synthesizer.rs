@@ -5,6 +5,7 @@ use crate::noir::synthesis::allocation_support::{
 };
 use crate::noir::synthesis::assert_zero::handle_assert_zero;
 use crate::noir::synthesis::blackbox::router::BlackboxRouter;
+use crate::noir::synthesis::memory::{MemoryStore, handle_memory_init, handle_memory_op};
 use crate::types::Scalar;
 use acir::circuit::Opcode;
 use bellpepper_core::num::AllocatedNum;
@@ -22,7 +23,7 @@ pub struct NoirCircuitSynthesizer {
 }
 
 impl NoirCircuitSynthesizer {
-    pub(crate) fn new(
+    pub fn new(
         program_artifact: ProgramArtifact,
         split_inputs: Vec<InputWire<Option<Scalar>>>,
     ) -> Self {
@@ -138,9 +139,17 @@ impl SpartanCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
         let allocation_store = self.build_allocation_store(cs)?;
         tracing::debug!("Allocation map: {:?}", allocation_store);
         let mut blackbox_router = BlackboxRouter::new(&allocation_store);
+        let mut memory_store = MemoryStore::new();
 
         // at this point we have the correct mapping from wire to allocated variable and can
         // compute the constraints from the opcodes.
+        let mut count_assert = 0usize;
+        let mut count_assert_with_mul = 0usize;
+        let mut count_mem_init = 0usize;
+        let mut count_mem_read = 0usize;
+        let mut count_mem_write = 0usize;
+        let mut total_mem_cells_touched = 0usize;
+        let mut total_init_cells = 0usize;
         for (i, opcode) in self.program_artifact.bytecode.functions[0]
             .opcodes
             .iter()
@@ -149,6 +158,10 @@ impl SpartanCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
             tracing::debug!("Processing opcode {}", opcode);
             match opcode {
                 Opcode::AssertZero(expr) => {
+                    count_assert += 1;
+                    if !expr.mul_terms.is_empty() {
+                        count_assert_with_mul += 1;
+                    }
                     tracing::debug!("Handling AssertZero: {:?}", opcode);
                     handle_assert_zero(
                         &mut cs.namespace(|| format!("Assert Zero {:?}", opcode)),
@@ -163,14 +176,62 @@ impl SpartanCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
                         call,
                     )?;
                 }
+                Opcode::MemoryInit {
+                    block_id,
+                    init,
+                    block_type,
+                } => {
+                    count_mem_init += 1;
+                    total_init_cells += init.len();
+                    tracing::debug!("Handling MemoryInit for block {}", block_id);
+                    handle_memory_init(
+                        &mut memory_store,
+                        &allocation_store,
+                        *block_id,
+                        init,
+                        block_type,
+                    )?;
+                }
+                Opcode::MemoryOp { block_id, op, .. } => {
+                    let len = memory_store.block_len(*block_id).unwrap_or(0);
+                    total_mem_cells_touched += len;
+                    match op.operation {
+                        acir::circuit::opcodes::MemOpKind::Read => {
+                            count_mem_read += 1;
+                        }
+                        acir::circuit::opcodes::MemOpKind::Write => {
+                            count_mem_write += 1;
+                        }
+                    }
+                    tracing::debug!("Handling MemoryOp on block {}", block_id);
+                    handle_memory_op(
+                        &mut cs.namespace(|| format!("memory op {}", i)),
+                        &mut memory_store,
+                        &allocation_store,
+                        *block_id,
+                        op,
+                    )?;
+                }
                 Opcode::BrilligCall { .. } => {
                     tracing::debug!("Skipping Brillig call {:?}.", opcode);
                 }
-                _ => {
-                    return Err(SynthesisError::Unsatisfiable); // waiting for a better error system
+                Opcode::Call { .. } => {
+                    tracing::error!("Unsupported opcode Call at index {i}: {:?}", opcode);
+                    return Err(SynthesisError::Unsatisfiable);
                 }
             }
         }
+
+        tracing::info!(
+            "OPCODE STATS: assert={} (with_mul={}), mem_init={} (init_cells={}), mem_reads={}, mem_writes={}, touched_cells={}",
+            count_assert,
+            count_assert_with_mul,
+            count_mem_init,
+            total_init_cells,
+            count_mem_read,
+            count_mem_write,
+            total_mem_cells_touched,
+        );
 
         Ok(vec![])
     }

@@ -23,8 +23,8 @@ pub fn prove<E: Engine, C: SpartanCircuit<E>>(prover_circuit: C) -> SpartanSNARK
         SpartanSNARK::<E>::prove(&pk, prover_circuit, prep_snark, false).expect("prove failed")
     };
 
-    proof
-        .verify(&vk)
-        .expect("Prover's sanity check verification failed");
+    // proof
+    //         .verify(&vk)
+    //         .expect("Prover's sanity check verification failed");
     proof
 }

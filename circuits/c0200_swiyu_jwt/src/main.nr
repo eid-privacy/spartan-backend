@@ -1,0 +1,394 @@
+use noir_base64::{BASE64_URL_DECODER, BASE64_URL_ENCODER};
+use sha256::sha256_var;
+
+use eid::fast_base64::encode_url_into;
+use eid::field_utils::{array_to_field, split_point};
+use std::field::t256::{T256Point, T256Scalar, t256_msm, t256_ec_add};
+
+mod constants;
+use constants::{
+    COORD_BASE64_LEN, DISCLOSURE_MAX_LEN, DOB_CLAIM_NAME, DOB_SALT_MAX_LEN, DOB_VALUE_MAX_LEN,
+    MIN_AGE_YEARS, PAYLOAD_MAX_LEN,
+};
+
+pub global G: T256Point = T256Point {
+    x: 0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296,
+    y: 0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5,
+};
+
+global ENCODED_PAYLOAD_MAX_LEN: u32 = ((PAYLOAD_MAX_LEN + 2) / 3) * 4;
+
+global ENCODED_HEADER_LEN: u32 = 36;
+// base64url({"typ":"JWT","alg":"ES256"})
+global ENCODED_HEADER: [u8; ENCODED_HEADER_LEN] = [
+    101, 121, 74, 48, 101, 88, 65, 105, 79, 105, 74, 75, 86, 49, 81, 105, 76, 67, 74, 104, 98, 71,
+    99, 105, 79, 105, 74, 70, 85, 122, 73, 49, 78, 105, 74, 57,
+];
+
+global SIGNING_INPUT_MAX_LEN: u32 = ENCODED_HEADER_LEN + 1 + ENCODED_PAYLOAD_MAX_LEN;
+
+global ASCII_DOT: u8 = 46;
+global ASCII_X: u8 = 120; // 'x'
+global ASCII_Y: u8 = 121; // 'y'
+
+fn build_dob_disclosure<let S: u32, let V: u32>(
+    salt: BoundedVec<u8, S>,
+    value: BoundedVec<u8, V>,
+) -> BoundedVec<u8, DISCLOSURE_MAX_LEN> {
+    // Builds: ["salt","birth_date","value"]
+    let mut disclosure: BoundedVec<u8, DISCLOSURE_MAX_LEN> = BoundedVec::new();
+    disclosure.extend_from_array("[\"".as_bytes());
+    disclosure.extend_from_bounded_vec(salt);
+    disclosure.extend_from_array("\",\"".as_bytes());
+    disclosure.extend_from_array(DOB_CLAIM_NAME);
+    disclosure.extend_from_array("\",\"".as_bytes());
+    disclosure.extend_from_bounded_vec(value);
+    disclosure.extend_from_array("\"]".as_bytes());
+    disclosure
+}
+
+fn extract_coord_for_key<let N: u32>(
+    payload_storage: [u8; N],
+    key_offset: u32,
+    key_ascii: u8,
+) -> [u8; COORD_BASE64_LEN] {
+    // Expects the JSON pattern "k":"<43 base64url chars> where k is key_ascii
+    let expected_prefix: [u8; 5] = [34, key_ascii, 34, 58, 34];
+    for i in 0..5 {
+        assert(payload_storage[key_offset + i] == expected_prefix[i], "Key not found");
+    }
+
+    let mut coord_bytes: [u8; COORD_BASE64_LEN] = [0; COORD_BASE64_LEN];
+    for i in 0..COORD_BASE64_LEN {
+        coord_bytes[i] = payload_storage[key_offset + 5 + i];
+    }
+    coord_bytes
+}
+
+fn birth_date_as_int(value: BoundedVec<u8, DOB_VALUE_MAX_LEN>) -> u32 {
+    // YYYY-MM-DD: dashes at indices 4 and 7 are skipped
+    let d = value.storage();
+    (d[0] as u32 - 48) * 10_000_000
+        + (d[1] as u32 - 48) * 1_000_000
+        + (d[2] as u32 - 48) * 100_000
+        + (d[3] as u32 - 48) * 10_000
+        + (d[5] as u32 - 48) * 1_000
+        + (d[6] as u32 - 48) * 100
+        + (d[8] as u32 - 48) * 10
+        + (d[9] as u32 - 48)
+}
+
+fn is_at_least_25_years_old(birth_date: u32, now_date: u32) -> bool {
+    now_date >= birth_date + MIN_AGE_YEARS * 10_000
+}
+
+fn main(
+    // Private inputs
+    payload: BoundedVec<u8, PAYLOAD_MAX_LEN>,
+    dob_salt: BoundedVec<u8, DOB_SALT_MAX_LEN>,
+    dob_value: BoundedVec<u8, DOB_VALUE_MAX_LEN>,
+    dob_sd_offset: u32,
+    x_offset: u32,
+    y_offset: u32,
+    device_signature: [u8; 64],
+    // JWT/issuer ECDSA precompute (c0102 "vanilla equation" style):
+    // R_jwt and s_inv_jwt s.t. R_jwt = t·s⁻¹·G + r·s⁻¹·Q_iss where
+    // t = sha256(signing_input), r = R_jwt.x, s = jwt_signature[32..].
+    // Kept private: t is derived from the private payload in-circuit, and the
+    // equation itself is the soundness check (cf. c0102).
+    R_jwt_x: [u8; 32],
+    R_jwt_y: [u8; 32],
+    s_inv_jwt: Field,
+    // Public inputs
+    issuer_pub_x: pub [u8; 32],
+    issuer_pub_y: pub [u8; 32],
+    now_date: pub u32,
+    challenge_nonce: pub [u8; 32],
+    // Device ECDSA precompute (c0100 "Crescent" style):
+    // T_dev = R_dev·r⁻¹, U_dev = -e·r⁻¹·G with e = challenge_nonce,
+    // r = device_signature[..32], s = device_signature[32..].
+    // These MUST be public: the verifier validates (R_dev, T_dev, U_dev) is
+    // consistent with the public challenge_nonce off-circuit; the in-circuit
+    // equation only binds device_pub.x to (T·s + U).x.
+    R_dev_x: pub [u8; 32],
+    R_dev_y: pub [u8; 32],
+    T_dev_x: pub [u8; 32],
+    T_dev_y: pub [u8; 32],
+    U_dev_x: pub [u8; 32],
+    U_dev_y: pub [u8; 32],
+) {
+    // Constructing the signing input directly into a fixed-size buffer.
+    //
+    // We bypass `BASE64_URL_ENCODER::encode_var` and `BoundedVec::extend_from_*`
+    // here because (a) the noir_base64 encoder relies on a 192-cell ASCII
+    // alphabet lookup that costs ~400 R1CS aux per output character (and we
+    // emit ~2.7k chars for a 2 KB payload), and (b) `BoundedVec` push
+    // operations themselves emit dynamic-index memory ops. Both are
+    // unnecessary here: every input byte is at a compile-time-known offset.
+    //
+    // See `eid::fast_base64` for the lookup-free encoder used below.
+    let mut signing_input_storage: [u8; SIGNING_INPUT_MAX_LEN] = [0; SIGNING_INPUT_MAX_LEN];
+    for i in 0..ENCODED_HEADER_LEN {
+        signing_input_storage[i] = ENCODED_HEADER[i];
+    }
+    signing_input_storage[ENCODED_HEADER_LEN] = ASCII_DOT;
+    let payload_storage = payload.storage();
+    let payload_len = payload.len();
+    let encoded_payload_len: u32 = encode_url_into(
+        payload_storage,
+        payload_len,
+        &mut signing_input_storage,
+        ENCODED_HEADER_LEN + 1,
+    );
+    let signing_input_len: u32 = ENCODED_HEADER_LEN + 1 + encoded_payload_len;
+
+    // ECDSA verification of the issuer JWT signature (c0102 "vanilla equation").
+    // We assert that R_jwt = t·s⁻¹·G + r·s⁻¹·Q_iss with r := R_jwt.x. Equivalent to
+    // standard ECDSA: it binds R_jwt.x to the signature root, given the prover
+    // commits to R_jwt and s_inv off-circuit.
+    let signing_digest: [u8; 32] =
+        sha256_var(signing_input_storage, signing_input_len);
+    let t_jwt = T256Scalar { hi: 0, lo: array_to_field(signing_digest) };
+    let R_jwt = T256Point { x: array_to_field(R_jwt_x), y: array_to_field(R_jwt_y) };
+    let Q_iss = T256Point { x: array_to_field(issuer_pub_x), y: array_to_field(issuer_pub_y) };
+    let s_inv_scalar_jwt = T256Scalar { hi: 0, lo: s_inv_jwt };
+    let sG_jwt = t256_msm([G], [s_inv_scalar_jwt]);
+    let sQ_jwt = t256_msm([Q_iss], [s_inv_scalar_jwt]);
+    let tsG_jwt = t256_msm([sG_jwt], [t_jwt]);
+    let r_jwt_scalar = T256Scalar { hi: 0, lo: R_jwt.x };
+    let rsQ_jwt = t256_msm([sQ_jwt], [r_jwt_scalar]);
+    let rhs_jwt = t256_ec_add(tsG_jwt, rsQ_jwt);
+    assert(R_jwt.x == rhs_jwt.x, "Invalid JWT signature (x)");
+    assert(R_jwt.y == rhs_jwt.y, "Invalid JWT signature (y)");
+
+    let dob_disclosure = build_dob_disclosure(dob_salt, dob_value);
+    let encoded_disclosure = BASE64_URL_ENCODER::encode_var(dob_disclosure);
+
+    let expected_digest: [u8; COORD_BASE64_LEN] = BASE64_URL_ENCODER::encode(sha256_var(
+        encoded_disclosure.storage(),
+        encoded_disclosure.len(),
+    ));
+
+    for i in 0..COORD_BASE64_LEN {
+        assert(
+            payload_storage[dob_sd_offset + i] == expected_digest[i],
+            "DOB disclosure digest mismatch",
+        );
+    }
+    assert(
+        is_at_least_25_years_old(birth_date_as_int(dob_value), now_date),
+        "User must be 25 or older",
+    );
+
+    let device_key_x_bytes = extract_coord_for_key(payload_storage, x_offset, ASCII_X);
+    let device_key_y_bytes = extract_coord_for_key(payload_storage, y_offset, ASCII_Y);
+
+    let device_pub_x: [u8; 32] = BASE64_URL_DECODER::decode(device_key_x_bytes);
+    let device_pub_y: [u8; 32] = BASE64_URL_DECODER::decode(device_key_y_bytes);
+
+    // ECDSA verification of the device signature on challenge_nonce (c0100
+    // "Crescent" style). The device pubkey is derived in-circuit from the
+    // private payload, so we keep s in-circuit (split from device_signature)
+    // and only precompute T_dev = R·r⁻¹ and U_dev = -e·r⁻¹·G. The .x check
+    // binds the equation to the device pubkey derived above; the .y inputs are
+    // used to ensure T_dev and U_dev are well-formed points consumed by
+    // t256_msm / t256_ec_add.
+    //
+    // Safety: the unconstrained split_point only reinterprets the already
+    // constrained device_signature bytes; the equation below is what enforces
+    // soundness.
+    let s_dev_scalar = unsafe {
+        let (_, s) = split_point(device_signature);
+        T256Scalar { lo: s, hi: 0 }
+    };
+    let T_dev = T256Point { x: array_to_field(T_dev_x), y: array_to_field(T_dev_y) };
+    let U_dev = T256Point { x: array_to_field(U_dev_x), y: array_to_field(U_dev_y) };
+    let device_pub_x_field = array_to_field(device_pub_x);
+    assert(
+        device_pub_x_field == t256_ec_add(t256_msm([T_dev], [s_dev_scalar]), U_dev).x,
+        "Invalid device signature on challenge nonce",
+    );
+}
+
+#[test]
+fn test_sdjwt_verification() {
+    let payload_bytes: [u8; 1911] = [
+        123, 34, 95, 115, 100, 34, 58, 91, 34, 48, 66, 99, 84, 118, 86, 71, 101, 78, 45, 86, 78,
+        109, 84, 112, 89, 85, 54, 51, 57, 84, 87, 77, 103, 88, 49, 107, 114, 68, 108, 120, 109, 87,
+        87, 81, 102, 121, 117, 69, 121, 68, 90, 119, 34, 44, 34, 49, 48, 49, 80, 50, 117, 55, 104,
+        83, 90, 113, 54, 110, 89, 85, 52, 49, 73, 104, 122, 84, 79, 118, 107, 110, 49, 45, 76, 107,
+        104, 87, 55, 77, 121, 50, 75, 84, 82, 65, 53, 114, 97, 77, 34, 44, 34, 49, 79, 106, 106, 81,
+        50, 97, 116, 75, 100, 57, 52, 111, 120, 85, 100, 95, 108, 105, 122, 70, 76, 74, 51, 65, 90,
+        86, 121, 89, 101, 50, 55, 69, 85, 89, 104, 52, 109, 110, 54, 52, 55, 103, 34, 44, 34, 50,
+        105, 57, 81, 119, 71, 106, 99, 113, 82, 118, 122, 83, 118, 102, 99, 73, 72, 49, 88, 87, 117,
+        85, 51, 77, 122, 119, 101, 113, 68, 55, 114, 73, 110, 52, 101, 73, 110, 77, 84, 70, 113,
+        103, 34, 44, 34, 54, 49, 105, 45, 121, 109, 74, 116, 81, 110, 87, 107, 49, 111, 101, 104,
+        120, 99, 72, 108, 101, 57, 97, 108, 106, 69, 57, 84, 120, 69, 118, 108, 80, 50, 85, 111, 51,
+        108, 73, 100, 45, 70, 81, 34, 44, 34, 66, 90, 119, 98, 70, 77, 116, 77, 68, 56, 89, 116, 97,
+        75, 116, 117, 98, 120, 110, 82, 83, 85, 95, 73, 90, 78, 80, 106, 102, 87, 109, 106, 45, 122,
+        75, 75, 109, 121, 49, 76, 95, 55, 69, 34, 44, 34, 70, 69, 113, 56, 97, 112, 71, 55, 108,
+        122, 100, 55, 69, 105, 87, 51, 100, 95, 71, 54, 51, 86, 87, 119, 103, 122, 67, 67, 113, 78,
+        108, 54, 57, 99, 66, 113, 99, 105, 103, 89, 109, 69, 56, 34, 44, 34, 70, 98, 110, 49, 122,
+        95, 84, 105, 54, 102, 82, 100, 101, 102, 77, 51, 82, 119, 82, 101, 110, 70, 79, 66, 100, 51,
+        72, 86, 111, 110, 70, 99, 56, 81, 76, 80, 122, 74, 48, 53, 90, 67, 107, 34, 44, 34, 73, 52,
+        103, 106, 114, 95, 105, 122, 68, 45, 79, 121, 112, 84, 84, 110, 98, 70, 51, 104, 65, 56, 84,
+        99, 67, 67, 97, 113, 95, 55, 77, 99, 116, 97, 118, 120, 50, 113, 103, 122, 104, 107, 56, 34,
+        44, 34, 75, 107, 80, 100, 76, 49, 103, 50, 54, 103, 79, 99, 116, 57, 70, 116, 109, 105, 112,
+        98, 75, 107, 118, 73, 45, 74, 66, 85, 119, 105, 81, 67, 57, 77, 70, 115, 84, 57, 118, 56,
+        73, 114, 107, 34, 44, 34, 76, 50, 68, 77, 116, 50, 115, 81, 105, 54, 116, 84, 54, 80, 51,
+        74, 105, 84, 54, 66, 73, 73, 113, 78, 49, 122, 51, 56, 76, 117, 77, 116, 78, 118, 117, 52,
+        109, 110, 70, 57, 107, 81, 69, 34, 44, 34, 78, 121, 107, 88, 101, 72, 65, 50, 108, 107, 69,
+        67, 86, 115, 67, 76, 82, 83, 101, 79, 71, 122, 69, 98, 86, 120, 54, 81, 51, 84, 75, 105,
+        102, 89, 119, 106, 51, 121, 85, 80, 101, 66, 89, 34, 44, 34, 79, 108, 57, 65, 117, 54, 74,
+        86, 57, 110, 85, 122, 87, 112, 122, 75, 76, 116, 103, 114, 110, 49, 110, 106, 116, 87, 120,
+        99, 109, 109, 74, 45, 95, 86, 83, 98, 99, 122, 74, 122, 51, 57, 48, 34, 44, 34, 80, 73, 111,
+        116, 85, 53, 69, 100, 51, 89, 114, 86, 84, 80, 100, 50, 99, 87, 49, 95, 78, 101, 76, 49, 76,
+        95, 122, 55, 107, 84, 68, 109, 88, 74, 68, 95, 101, 103, 72, 71, 66, 79, 85, 34, 44, 34,
+        100, 75, 65, 112, 79, 85, 80, 70, 110, 56, 108, 51, 55, 101, 108, 113, 110, 111, 82, 119,
+        102, 106, 57, 70, 105, 114, 95, 117, 90, 67, 113, 103, 120, 72, 53, 119, 105, 87, 76, 115,
+        120, 53, 107, 34, 44, 34, 104, 65, 89, 65, 118, 70, 111, 85, 109, 102, 107, 99, 55, 67, 109,
+        65, 106, 53, 115, 70, 117, 79, 74, 80, 86, 104, 86, 81, 67, 100, 65, 106, 76, 82, 56, 89,
+        45, 49, 72, 72, 100, 109, 69, 34, 44, 34, 105, 112, 75, 107, 70, 97, 80, 87, 101, 84, 121,
+        74, 83, 102, 120, 98, 88, 48, 88, 104, 71, 90, 115, 86, 68, 119, 55, 72, 50, 120, 95, 95,
+        84, 107, 101, 90, 107, 49, 89, 69, 48, 52, 103, 34, 44, 34, 111, 50, 121, 45, 99, 85, 67,
+        114, 98, 84, 89, 108, 101, 89, 117, 115, 113, 102, 99, 69, 100, 56, 109, 49, 66, 97, 103,
+        78, 55, 114, 90, 67, 111, 88, 69, 74, 95, 110, 120, 105, 109, 111, 89, 34, 44, 34, 111, 89,
+        78, 88, 77, 67, 55, 66, 114, 66, 112, 84, 54, 45, 79, 119, 72, 106, 107, 119, 70, 83, 75,
+        119, 77, 77, 72, 106, 48, 98, 108, 120, 83, 76, 105, 116, 112, 79, 110, 84, 83, 110, 103,
+        34, 44, 34, 112, 110, 74, 107, 85, 116, 67, 68, 70, 87, 90, 51, 102, 74, 56, 121, 68, 97,
+        98, 120, 89, 107, 55, 48, 76, 68, 71, 106, 97, 84, 115, 100, 79, 66, 105, 114, 65, 54, 67,
+        56, 74, 65, 81, 34, 44, 34, 121, 87, 66, 56, 48, 72, 99, 121, 55, 55, 114, 116, 83, 85, 116,
+        119, 45, 120, 76, 56, 66, 78, 122, 75, 50, 99, 66, 99, 110, 56, 109, 72, 69, 111, 116, 97,
+        87, 115, 75, 85, 109, 70, 115, 34, 44, 34, 121, 108, 114, 118, 119, 101, 122, 99, 89, 117,
+        89, 55, 112, 109, 88, 107, 73, 84, 90, 99, 48, 107, 115, 67, 83, 114, 56, 95, 51, 110, 107,
+        71, 69, 87, 77, 109, 86, 120, 45, 65, 105, 86, 85, 34, 44, 34, 122, 110, 72, 72, 65, 89, 52,
+        95, 65, 48, 51, 109, 95, 70, 85, 114, 72, 83, 104, 70, 105, 122, 99, 109, 90, 107, 71, 45,
+        113, 45, 87, 113, 89, 97, 119, 87, 113, 49, 54, 112, 70, 75, 52, 34, 93, 44, 34, 118, 99,
+        116, 95, 109, 101, 116, 97, 100, 97, 116, 97, 95, 117, 114, 105, 35, 105, 110, 116, 101,
+        103, 114, 105, 116, 121, 34, 58, 34, 115, 104, 97, 50, 53, 54, 45, 66, 121, 114, 78, 43, 82,
+        70, 110, 119, 67, 112, 48, 98, 53, 65, 88, 86, 111, 73, 52, 112, 65, 98, 78, 104, 122, 89,
+        72, 108, 109, 112, 103, 70, 66, 114, 69, 77, 81, 81, 82, 78, 110, 48, 61, 34, 44, 34, 118,
+        99, 116, 95, 109, 101, 116, 97, 100, 97, 116, 97, 95, 117, 114, 105, 34, 58, 34, 104, 116,
+        116, 112, 115, 58, 47, 47, 98, 99, 115, 46, 97, 100, 109, 105, 110, 46, 99, 104, 47, 98, 99,
+        115, 45, 119, 101, 98, 47, 109, 101, 116, 97, 100, 97, 116, 97, 47, 98, 101, 116, 97, 105,
+        100, 45, 115, 100, 106, 119, 116, 47, 118, 99, 116, 47, 50, 48, 50, 54, 48, 49, 50, 56, 49,
+        50, 53, 55, 51, 57, 34, 44, 34, 118, 99, 116, 34, 58, 34, 98, 101, 116, 97, 105, 100, 45,
+        115, 100, 106, 119, 116, 34, 44, 34, 95, 115, 100, 95, 97, 108, 103, 34, 58, 34, 115, 104,
+        97, 45, 50, 53, 54, 34, 44, 34, 105, 115, 115, 34, 58, 34, 100, 105, 100, 58, 116, 100, 119,
+        58, 81, 109, 80, 69, 90, 80, 104, 68, 70, 82, 52, 110, 69, 89, 83, 70, 75, 53, 98, 77, 110,
+        118, 69, 67, 113, 100, 112, 102, 49, 116, 80, 84, 80, 74, 117, 87, 115, 57, 81, 114, 77,
+        106, 67, 117, 109, 119, 58, 105, 100, 101, 110, 116, 105, 102, 105, 101, 114, 45, 114, 101,
+        103, 46, 116, 114, 117, 115, 116, 45, 105, 110, 102, 114, 97, 46, 115, 119, 105, 121, 117,
+        45, 105, 110, 116, 46, 97, 100, 109, 105, 110, 46, 99, 104, 58, 97, 112, 105, 58, 118, 49,
+        58, 100, 105, 100, 58, 57, 97, 53, 53, 53, 57, 102, 48, 45, 98, 56, 49, 99, 45, 52, 51, 54,
+        56, 45, 97, 49, 55, 48, 45, 101, 55, 98, 52, 97, 101, 52, 50, 52, 53, 50, 55, 34, 44, 34,
+        99, 110, 102, 34, 58, 123, 34, 107, 116, 121, 34, 58, 34, 69, 67, 34, 44, 34, 99, 114, 118,
+        34, 58, 34, 80, 45, 50, 53, 54, 34, 44, 34, 120, 34, 58, 34, 52, 67, 104, 95, 83, 66, 68,
+        99, 86, 83, 72, 105, 112, 76, 101, 80, 85, 66, 112, 56, 121, 53, 82, 72, 49, 56, 86, 79,
+        108, 105, 114, 86, 82, 116, 79, 116, 45, 116, 66, 45, 89, 95, 89, 34, 44, 34, 121, 34, 58,
+        34, 101, 80, 104, 54, 80, 68, 88, 81, 50, 99, 98, 109, 53, 51, 87, 54, 97, 76, 56, 51, 50,
+        88, 114, 56, 76, 72, 53, 80, 45, 98, 83, 99, 112, 112, 113, 45, 53, 101, 77, 73, 108, 48,
+        65, 34, 44, 34, 106, 119, 107, 34, 58, 123, 34, 107, 116, 121, 34, 58, 34, 69, 67, 34, 44,
+        34, 99, 114, 118, 34, 58, 34, 80, 45, 50, 53, 54, 34, 44, 34, 120, 34, 58, 34, 52, 67, 104,
+        95, 83, 66, 68, 99, 86, 83, 72, 105, 112, 76, 101, 80, 85, 66, 112, 56, 121, 53, 82, 72, 49,
+        56, 86, 79, 108, 105, 114, 86, 82, 116, 79, 116, 45, 116, 66, 45, 89, 95, 89, 34, 44, 34,
+        121, 34, 58, 34, 101, 80, 104, 54, 80, 68, 88, 81, 50, 99, 98, 109, 53, 51, 87, 54, 97, 76,
+        56, 51, 50, 88, 114, 56, 76, 72, 53, 80, 45, 98, 83, 99, 112, 112, 113, 45, 53, 101, 77, 73,
+        108, 48, 65, 34, 125, 125, 44, 34, 105, 97, 116, 34, 58, 49, 55, 55, 49, 51, 51, 52, 56, 55,
+        54, 44, 34, 115, 116, 97, 116, 117, 115, 34, 58, 123, 34, 115, 116, 97, 116, 117, 115, 95,
+        108, 105, 115, 116, 34, 58, 123, 34, 116, 121, 112, 101, 34, 58, 34, 83, 119, 105, 115, 115,
+        84, 111, 107, 101, 110, 83, 116, 97, 116, 117, 115, 76, 105, 115, 116, 45, 49, 46, 48, 34,
+        44, 34, 105, 100, 120, 34, 58, 55, 52, 54, 48, 44, 34, 117, 114, 105, 34, 58, 34, 104, 116,
+        116, 112, 115, 58, 47, 47, 115, 116, 97, 116, 117, 115, 45, 114, 101, 103, 46, 116, 114,
+        117, 115, 116, 45, 105, 110, 102, 114, 97, 46, 115, 119, 105, 121, 117, 45, 105, 110, 116,
+        46, 97, 100, 109, 105, 110, 46, 99, 104, 47, 97, 112, 105, 47, 118, 49, 47, 115, 116, 97,
+        116, 117, 115, 108, 105, 115, 116, 47, 48, 48, 100, 55, 97, 98, 102, 50, 45, 49, 101, 101,
+        52, 45, 52, 99, 100, 54, 45, 98, 52, 100, 97, 45, 53, 48, 51, 57, 51, 52, 53, 97, 49, 102,
+        55, 102, 46, 106, 119, 116, 34, 125, 125, 125,
+    ];
+    let payload = BoundedVec::from(payload_bytes);
+
+    let jwt_signature: [u8; 64] = [
+        82, 167, 142, 232, 243, 244, 96, 192, 182, 189, 134, 114, 213, 6, 23, 250, 149, 115, 36,
+        108, 134, 64, 181, 54, 198, 32, 32, 61, 22, 247, 75, 57, 22, 52, 75, 176, 213, 235, 232,
+        125, 113, 246, 55, 111, 237, 201, 118, 180, 226, 253, 47, 153, 23, 116, 236, 39, 163, 48,
+        152, 12, 23, 135, 50, 249,
+    ];
+    // Suppress unused warning until preprocessor-derived precompute values are
+    // plugged into this test vector. The real signature material is consumed
+    // off-circuit by the preprocessor; the circuit only sees R_jwt/s_inv_jwt
+    // and R_dev/T_dev/U_dev (precomputed).
+    let _ = jwt_signature;
+    let issuer_x: [u8; 32] = [
+        0xa7, 0x58, 0xf2, 0x69, 0xca, 0x2d, 0x2b, 0xde, 0xc4, 0x93, 0x1a, 0xf6, 0x0a, 0x5f, 0xaa,
+        0xea, 0x9f, 0x45, 0x3a, 0x84, 0xbb, 0x43, 0x9b, 0x43, 0x00, 0xcb, 0xd6, 0x33, 0xd8, 0x4a,
+        0xe9, 0xee,
+    ];
+    let issuer_y: [u8; 32] = [
+        0xc7, 0x80, 0x52, 0xde, 0x32, 0x22, 0x5e, 0xc2, 0x1f, 0xdd, 0xd3, 0xe2, 0xd2, 0x5d, 0xcc,
+        0x94, 0x09, 0xdd, 0xf3, 0xf8, 0x69, 0xea, 0x35, 0x7f, 0x68, 0xe8, 0xd7, 0x9e, 0xb0, 0xa8,
+        0xed, 0x20,
+    ];
+    let dob_salt_bytes: [u8; 22] = [
+        83, 48, 75, 86, 101, 113, 77, 104, 102, 69, 104, 55, 107, 104, 90, 120, 110, 48, 102, 82,
+        119, 119,
+    ];
+    let dob_salt = BoundedVec::<u8, DOB_SALT_MAX_LEN>::from(dob_salt_bytes);
+
+    let dob_value_bytes: [u8; 10] = [49, 57, 56, 56, 45, 48, 54, 45, 49, 57]; // 1988-06-19
+    let dob_value = BoundedVec::<u8, DOB_VALUE_MAX_LEN>::from(dob_value_bytes);
+
+    let now_date: u32 = 20240101;
+
+    let challenge_nonce: [u8; 32] = [
+        207, 158, 213, 45, 0, 176, 56, 230, 100, 221, 242, 129, 246, 31, 52, 192, 7, 253, 22, 114,
+        14, 225, 7, 56, 108, 69, 200, 143, 81, 206, 187, 5,
+    ];
+
+    let device_signature: [u8; 64] = [
+        159, 191, 146, 6, 209, 21, 91, 71, 63, 80, 53, 163, 105, 85, 83, 33, 43, 51, 38, 20, 14, 41,
+        120, 144, 184, 49, 222, 111, 124, 235, 213, 56, 55, 4, 56, 223, 125, 106, 68, 205, 38, 65,
+        127, 200, 246, 83, 93, 178, 171, 203, 116, 47, 218, 16, 222, 189, 3, 137, 112, 7, 164, 68,
+        55, 104,
+    ];
+
+    // Placeholder precompute values; real ones to be plugged in after running
+    // the c0200_preprocessing crate against this circuit's Prover.toml.
+    let zero32: [u8; 32] = [0; 32];
+
+    main(
+        payload,
+        dob_salt,
+        dob_value,
+        745,
+        1471,
+        1521,
+        device_signature,
+        zero32, // R_jwt_x
+        zero32, // R_jwt_y
+        0,      // s_inv_jwt
+        issuer_x,
+        issuer_y,
+        now_date,
+        challenge_nonce,
+        zero32, // R_dev_x
+        zero32, // R_dev_y
+        zero32, // T_dev_x
+        zero32, // T_dev_y
+        zero32, // U_dev_x
+        zero32, // U_dev_y
+    )
+}
+
+#[test]
+fn test_age_gate_exactly_25_on_birthday() {
+    assert(is_at_least_25_years_old(19880619, 20130619), "Expected user to be 25 on birthday");
+}
+
+#[test]
+fn test_age_gate_one_day_before_25_fails() {
+    assert(
+        !is_at_least_25_years_old(19880619, 20130618),
+        "Expected user to be under 25 one day before birthday",
+    );
+}
