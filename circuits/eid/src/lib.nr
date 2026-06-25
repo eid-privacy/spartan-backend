@@ -1,5 +1,6 @@
 pub mod constants;
 pub mod field_utils;
+pub mod fast_base64;
 
 pub global REVOCATION_LIST_LENGTH_WO_SIG: u32 = 8 + 8 + constants::REVOCATION_LIST_IDS / 8;
 pub global REVOCATION_LIST_LENGTH: u32 = REVOCATION_LIST_LENGTH_WO_SIG + 64;

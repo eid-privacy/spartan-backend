@@ -1,3 +1,12 @@
+mod circuit_instance;
+mod nizk_prover;
+mod nizk_verifier;
+pub mod noir;
+mod trivial_circuit;
+pub mod types;
+mod utils;
+
+use crate::types::Scalar;
 use clap::Parser;
 use spartan_backend::{
     instantiate_circuit_from_dir, instantiate_circuit_with_name, run_proof_and_verification,

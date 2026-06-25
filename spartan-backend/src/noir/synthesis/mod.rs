@@ -4,3 +4,4 @@ pub mod assert_zero;
 mod blackbox;
 pub mod circuit_synthesizer;
 mod constraints_utils;
+mod memory;
