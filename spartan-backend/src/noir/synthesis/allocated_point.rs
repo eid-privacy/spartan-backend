@@ -9,11 +9,20 @@ use crate::noir::synthesis::constraints_utils::{
 };
 use bellpepper::gadgets::Assignment;
 use bellpepper_core::{
-    ConstraintSystem, SynthesisError,
+    ConstraintSystem, LinearCombination, SynthesisError,
     boolean::{AllocatedBit, Boolean},
     num::AllocatedNum,
 };
 use ff::{PrimeField, PrimeFieldBits};
+
+/// Extracts the `AllocatedBit` from a `Boolean`. `AllocatedNum::to_bits_le`
+/// only ever yields `Boolean::Is`, so the other variants are unreachable here.
+fn as_bit(b: &Boolean) -> &AllocatedBit {
+    match b {
+        Boolean::Is(bit) => bit,
+        _ => unreachable!("to_bits_le only produces Boolean::Is"),
+    }
+}
 
 /// `AllocatedPoint` provides an elliptic curve abstraction inside a circuit.
 #[derive(Clone)]
@@ -528,64 +537,161 @@ where
     }
 
     /// Scalar multiplication `s * base` for a base point whose coordinates are
-    /// circuit CONSTANTS. All `2^i * base` are precomputed natively, so there
-    /// are no in-circuit doublings. Semantics match [`scalar_mul`]: `s` is
-    /// interpreted as its full integer value (not reduced modulo the group
-    /// order), and the result is the point at infinity `(0, 0, 1)` iff
-    /// `s * base` is the identity.
+    /// circuit CONSTANTS, using width-2 windows. All `2^i * base` are
+    /// precomputed natively, so there are no in-circuit doublings. Semantics
+    /// match [`scalar_mul`]: `s` is interpreted as its full integer value (not
+    /// reduced modulo the group order), and the result is the point at infinity
+    /// `(0, 0, 1)` iff `s * base` is the identity.
     ///
     /// Requires `base.y != 0` (checked by the dispatcher in `handle_msm`).
+    ///
+    /// The scalar bits are grouped into 2-bit windows. Window `j` (bits
+    /// `b0, b1`, value `v_j = b0 + 2*b1`) contributes the constant point
+    /// `v_j * 2^{2j} * base`. To keep the incomplete-addition law valid (no
+    /// operand ever hits the identity or shares an x-coordinate with the
+    /// accumulator) each window's 4-entry table is offset by a distinct
+    /// nothing-up-my-sleeve point `K_j = 2^j * Z`, so table entry `d` is
+    /// `T_j[d] = d * 2^{2j} * base + K_j`. Selecting among the four constant
+    /// table points is a multilinear function of `(b0, b1)`:
+    ///
+    /// ```text
+    ///   T = T0 + b0*(T1-T0) + b1*(T2-T0) + b0*b1*(T3-T1-T2+T0)
+    /// ```
+    ///
+    /// so it collapses to a single linear combination plus one bit-product
+    /// (`b0*b1`) per window, added to the accumulator with no doublings. The
+    /// total offset `sum_j K_j` is removed at the end with one complete
+    /// addition.
+    ///
+    /// A shared offset (`K_j = Z` for all `j`) would be unsound: an all-zero
+    /// first window makes the accumulator equal the next window's table entry
+    /// `0`, a degenerate incomplete add. Distinct `K_j` make every such
+    /// collision imply a discrete-log relation between `Z` and `base`.
+    ///
+    /// The width is fixed at 2 (the constraint-per-bit optimum: 2 constraints
+    /// per scalar bit). The generic width-`w` reference implementation lives in
+    /// the test module and is proven equivalent to this one for `w = 2`.
     pub fn scalar_mul_fixed_base<CS: ConstraintSystem<Scalar>>(
         mut cs: CS,
         base: &ConstantPoint<Scalar>,
         s: &AllocatedNum<Scalar>,
     ) -> Result<Self, SynthesisError> {
         let bits = s.to_bits_le(cs.namespace(|| "scalar_bits"))?;
+        let nbits = bits.len();
+        assert!(
+            nbits % 2 == 0,
+            "fixed-base w=2 requires an even scalar bit-length, got {nbits}"
+        );
+        let num_windows = nbits / 2;
 
-        // Native precomputation. This depends only on the constant base, so the
-        // prover and verifier shape passes build identical tables.
+        // Native precomputation (depends only on the constant base, so the
+        // prover and verifier shape passes build identical tables).
         let b = base.recover_b();
         let z = ConstantPoint::derive_offset(b, base);
-        let mut powers = Vec::with_capacity(bits.len());
-        let mut cur = *base;
-        for _ in 0..bits.len() {
-            powers.push(cur);
-            cur = cur.double();
+        // D_j = 2^{2j} * base, K_j = 2^j * Z.
+        let mut d_pows = Vec::with_capacity(num_windows);
+        let mut k_offsets = Vec::with_capacity(num_windows);
+        {
+            let mut d = *base;
+            let mut k = z;
+            for _ in 0..num_windows {
+                d_pows.push(d);
+                k_offsets.push(k);
+                d = d.double().double(); // *2^2
+                k = k.double();
+            }
+        }
+        // K_total = sum_j K_j = (2^num_windows - 1) * Z.
+        let mut k_total = k_offsets[0];
+        for k in &k_offsets[1..] {
+            k_total = k_total.add(k);
         }
 
-        // Seed the accumulator with the offset Z. Z has unknown discrete log
-        // w.r.t. `base`, so the incomplete-addition degeneracies (acc equal to
-        // +/- 2^i*base) are unreachable without first computing that log.
-        let mut acc = AllocatedPointNonInfinity::new(
-            alloc_constant(cs.namespace(|| "offset x"), z.x)?,
-            alloc_constant(cs.namespace(|| "offset y"), z.y)?,
-        );
+        let mut acc: Option<AllocatedPointNonInfinity<Scalar>> = None;
+        for j in 0..num_windows {
+            let b0 = as_bit(&bits[2 * j]);
+            let b1 = as_bit(&bits[2 * j + 1]);
 
-        // Double-and-add with no doubling: each 2^i*base is a constant.
-        // Invariant: after bit i, acc = Z + (s mod 2^{i+1}) * base, never infinity.
-        for (i, bit) in bits.iter().enumerate() {
-            let t =
-                acc.add_incomplete_constant(cs.namespace(|| format!("fixed add {i}")), &powers[i])?;
-            acc = AllocatedPointNonInfinity::conditionally_select(
-                cs.namespace(|| format!("fixed select {i}")),
-                &t,
-                &acc,
-                bit,
-            )?;
+            // Constant 4-entry table T_j[d] = d * D_j + K_j.
+            let t0 = k_offsets[j];
+            let t1 = t0.add(&d_pows[j]);
+            let t2 = t1.add(&d_pows[j]);
+            let t3 = t2.add(&d_pows[j]);
+
+            // The single bit-product a 2-bit window needs.
+            let p = AllocatedBit::and(cs.namespace(|| format!("window {j} b0b1")), b0, b1)?;
+
+            // Multilinear selection collapsed to one linear combination:
+            //   T = T0 + b0*(T1-T0) + b1*(T2-T0) + b0b1*(T3-T1-T2+T0).
+            let mut x_lc = LinearCombination::<Scalar>::zero();
+            let mut y_lc = LinearCombination::<Scalar>::zero();
+            x_lc = x_lc + (t0.x, CS::one()) + (t1.x - t0.x, b0.get_variable());
+            y_lc = y_lc + (t0.y, CS::one()) + (t1.y - t0.y, b0.get_variable());
+            x_lc = x_lc + (t2.x - t0.x, b1.get_variable());
+            y_lc = y_lc + (t2.y - t0.y, b1.get_variable());
+            x_lc = x_lc + (t3.x - t1.x - t2.x + t0.x, p.get_variable());
+            y_lc = y_lc + (t3.y - t1.y - t2.y + t0.y, p.get_variable());
+
+            // Native selected value for the witness closures (None in a shape
+            // pass, where the closures are never evaluated).
+            let selected = match (b0.get_value(), b1.get_value()) {
+                (Some(v0), Some(v1)) => {
+                    let t = [t0, t1, t2, t3][usize::from(v0) + 2 * usize::from(v1)];
+                    Some((t.x, t.y))
+                }
+                _ => None,
+            };
+
+            acc = Some(match acc {
+                None => {
+                    // First window seeds the accumulator directly from the LC.
+                    let ax = AllocatedNum::alloc(cs.namespace(|| "seed x"), || {
+                        selected
+                            .map(|v| v.0)
+                            .ok_or(SynthesisError::AssignmentMissing)
+                    })?;
+                    let ay = AllocatedNum::alloc(cs.namespace(|| "seed y"), || {
+                        selected
+                            .map(|v| v.1)
+                            .ok_or(SynthesisError::AssignmentMissing)
+                    })?;
+                    cs.enforce(
+                        || "seed x matches selection",
+                        |lc| lc + ax.get_variable(),
+                        |lc| lc + CS::one(),
+                        |lc| lc + &x_lc,
+                    );
+                    cs.enforce(
+                        || "seed y matches selection",
+                        |lc| lc + ay.get_variable(),
+                        |lc| lc + CS::one(),
+                        |lc| lc + &y_lc,
+                    );
+                    AllocatedPointNonInfinity::new(ax, ay)
+                }
+                Some(prev) => prev.add_incomplete_lc(
+                    cs.namespace(|| format!("window {j} add")),
+                    &x_lc,
+                    &y_lc,
+                    selected,
+                )?,
+            });
         }
 
-        // Remove the offset with one complete addition of the constant -Z. The
-        // complete law yields infinity when s == 0 (mod the group order), which
-        // matches `scalar_mul`'s output for that case.
+        let acc = acc.expect("at least one window");
+
+        // Remove the accumulated offset with one complete addition of the
+        // constant -K_total. The complete law yields infinity when
+        // s == 0 (mod the group order), matching `scalar_mul` for that case.
         let zero = alloc_zero(cs.namespace(|| "zero"))?;
-        let neg_z = z.negate();
-        let minus_z = AllocatedPoint {
-            x: alloc_constant(cs.namespace(|| "minus offset x"), neg_z.x)?,
-            y: alloc_constant(cs.namespace(|| "minus offset y"), neg_z.y)?,
+        let neg_k = k_total.negate();
+        let minus_k = AllocatedPoint {
+            x: alloc_constant(cs.namespace(|| "minus offset x"), neg_k.x)?,
+            y: alloc_constant(cs.namespace(|| "minus offset y"), neg_k.y)?,
             is_infinity: zero.clone(),
         };
         let acc_point = acc.to_allocated_point(&zero)?;
-        acc_point.add(cs.namespace(|| "subtract offset"), &minus_z)
+        acc_point.add(cs.namespace(|| "subtract offset"), &minus_k)
     }
 
     /// If condition outputs a otherwise outputs b
@@ -774,45 +880,49 @@ impl<Scalar: PrimeField + PrimeFieldBits> AllocatedPointNonInfinity<Scalar> {
         Ok(Self { x, y })
     }
 
-    /// Adds a CONSTANT point `other` to this point using the incomplete
-    /// addition law. The constant coordinates enter the linear combinations as
-    /// coefficients on `CS::one()`, so nothing is allocated for them. Assumes
-    /// `self != +/- other`.
-    pub fn add_incomplete_constant<CS>(
+    /// Adds a point supplied as linear combinations (over already-constrained
+    /// selector variables and constants) to this point using the incomplete
+    /// addition law. `other_value` holds the native `(x, y)` of that point and
+    /// is used only in the witness closures. Assumes `self != +/- other`.
+    pub fn add_incomplete_lc<CS>(
         &self,
         mut cs: CS,
-        other: &ConstantPoint<Scalar>,
+        other_x_lc: &LinearCombination<Scalar>,
+        other_y_lc: &LinearCombination<Scalar>,
+        other_value: Option<(Scalar, Scalar)>,
     ) -> Result<Self, SynthesisError>
     where
         CS: ConstraintSystem<Scalar>,
     {
         // lambda = (other.y - self.y) / (other.x - self.x)
         let lambda = AllocatedNum::alloc(cs.namespace(|| "lambda"), || {
+            let (ox, oy) = other_value.ok_or(SynthesisError::AssignmentMissing)?;
             let x1 = *self.x.get_value().get()?;
-            if other.x == x1 {
+            if ox == x1 {
                 Ok(Scalar::ONE)
             } else {
-                Ok((other.y - *self.y.get_value().get()?) * (other.x - x1).invert().unwrap())
+                Ok((oy - *self.y.get_value().get()?) * (ox - x1).invert().unwrap())
             }
         })?;
         cs.enforce(
             || "Check that lambda is computed correctly",
             |lc| lc + lambda.get_variable(),
-            |lc| lc + (other.x, CS::one()) - self.x.get_variable(),
-            |lc| lc + (other.y, CS::one()) - self.y.get_variable(),
+            |lc| lc + other_x_lc - self.x.get_variable(),
+            |lc| lc + other_y_lc - self.y.get_variable(),
         );
 
         // x = lambda^2 - self.x - other.x
         let x = AllocatedNum::alloc(cs.namespace(|| "x"), || {
+            let (ox, _) = other_value.ok_or(SynthesisError::AssignmentMissing)?;
             Ok(*lambda.get_value().get()? * lambda.get_value().get()?
                 - *self.x.get_value().get()?
-                - other.x)
+                - ox)
         })?;
         cs.enforce(
             || "check that x is correct",
             |lc| lc + lambda.get_variable(),
             |lc| lc + lambda.get_variable(),
-            |lc| lc + x.get_variable() + self.x.get_variable() + (other.x, CS::one()),
+            |lc| lc + x.get_variable() + self.x.get_variable() + other_x_lc,
         );
 
         // y = lambda * (self.x - x) - self.y
@@ -911,6 +1021,187 @@ mod tests {
     use bellpepper_core::test_cs::TestConstraintSystem;
     use ff::Field;
 
+    /// Generic width-`w` fixed-base scalar multiplication. This is the original
+    /// (pre-specialization) implementation, kept verbatim as an equivalence
+    /// oracle for the production `scalar_mul_fixed_base` (which is
+    /// hardcoded to `w = 2`). See the module history / the plan for context.
+    fn scalar_mul_fixed_base_windowed_generic<CS: ConstraintSystem<Scalar>>(
+        mut cs: CS,
+        base: &ConstantPoint<Scalar>,
+        s: &AllocatedNum<Scalar>,
+        w: usize,
+    ) -> Result<AllocatedPoint<Scalar>, SynthesisError> {
+        assert!(w >= 1, "window width must be at least 1");
+        let bits = s.to_bits_le(cs.namespace(|| "scalar_bits"))?;
+        let nbits = bits.len();
+        let num_windows = nbits.div_ceil(w);
+
+        // Native precomputation (depends only on the constant base, so the
+        // prover and verifier shape passes build identical tables).
+        let b = base.recover_b();
+        let z = ConstantPoint::derive_offset(b, base);
+        // D_j = 2^{j*w} * base, K_j = 2^j * Z.
+        let mut d_pows = Vec::with_capacity(num_windows);
+        let mut k_offsets = Vec::with_capacity(num_windows);
+        {
+            let mut d = *base;
+            let mut k = z;
+            for _ in 0..num_windows {
+                d_pows.push(d);
+                k_offsets.push(k);
+                for _ in 0..w {
+                    d = d.double();
+                }
+                k = k.double();
+            }
+        }
+        // K_total = sum_j K_j = (2^num_windows - 1) * Z.
+        let mut k_total = k_offsets[0];
+        for k in &k_offsets[1..] {
+            k_total = k_total.add(k);
+        }
+
+        let mut acc: Option<AllocatedPointNonInfinity<Scalar>> = None;
+        for j in 0..num_windows {
+            let start = j * w;
+            let wj = core::cmp::min(w, nbits - start);
+            let table_size = 1usize << wj;
+
+            // Table T_j[d] = d * D_j + K_j.
+            let mut table = Vec::with_capacity(table_size);
+            table.push(k_offsets[j]);
+            for d in 1..table_size {
+                table.push(table[d - 1].add(&d_pows[j]));
+            }
+
+            let wbits: Vec<&AllocatedBit> = (0..wj).map(|k| as_bit(&bits[start + k])).collect();
+
+            // Bit-product variables for masks with popcount >= 2, built in
+            // increasing mask order so `rest` (mask with its lowest set bit
+            // cleared, always < mask) is available first.
+            let mut prod: Vec<Option<AllocatedBit>> = (0..table_size).map(|_| None).collect();
+            for mask in 1..table_size {
+                if mask.count_ones() >= 2 {
+                    let lb = mask.trailing_zeros() as usize;
+                    let rest = mask & !(1usize << lb);
+                    let a = if rest.count_ones() == 1 {
+                        wbits[rest.trailing_zeros() as usize].clone()
+                    } else {
+                        prod[rest]
+                            .clone()
+                            .expect("lower-popcount product built first")
+                    };
+                    let p = AllocatedBit::and(
+                        cs.namespace(|| format!("window {j} product {mask}")),
+                        &a,
+                        wbits[lb],
+                    )?;
+                    prod[mask] = Some(p);
+                }
+            }
+
+            // Selection linear combinations via multilinear (Möbius) inversion:
+            // coeff for mask m is sum_{sub subset of m} (-1)^{|m|-|sub|} T_j[sub].
+            let mut x_lc = LinearCombination::<Scalar>::zero();
+            let mut y_lc = LinearCombination::<Scalar>::zero();
+            for m in 0..table_size {
+                let (mut cx, mut cy) = (Scalar::ZERO, Scalar::ZERO);
+                let mut sub = m;
+                loop {
+                    let even = (m.count_ones() - sub.count_ones()) % 2 == 0;
+                    if even {
+                        cx += table[sub].x;
+                        cy += table[sub].y;
+                    } else {
+                        cx -= table[sub].x;
+                        cy -= table[sub].y;
+                    }
+                    if sub == 0 {
+                        break;
+                    }
+                    sub = (sub - 1) & m;
+                }
+                let var = if m == 0 {
+                    CS::one()
+                } else if m.count_ones() == 1 {
+                    wbits[m.trailing_zeros() as usize].get_variable()
+                } else {
+                    prod[m].as_ref().unwrap().get_variable()
+                };
+                x_lc = x_lc + (cx, var);
+                y_lc = y_lc + (cy, var);
+            }
+
+            // Native selected value for the witness closures (None in a shape
+            // pass, where the closures are never evaluated).
+            let selected = {
+                let mut d = 0usize;
+                let mut known = true;
+                for k in 0..wj {
+                    match wbits[k].get_value() {
+                        Some(true) => d |= 1usize << k,
+                        Some(false) => {}
+                        None => {
+                            known = false;
+                            break;
+                        }
+                    }
+                }
+                known.then(|| (table[d].x, table[d].y))
+            };
+
+            acc = Some(match acc {
+                None => {
+                    // First window seeds the accumulator directly from the LC.
+                    let ax = AllocatedNum::alloc(cs.namespace(|| "seed x"), || {
+                        selected
+                            .map(|v| v.0)
+                            .ok_or(SynthesisError::AssignmentMissing)
+                    })?;
+                    let ay = AllocatedNum::alloc(cs.namespace(|| "seed y"), || {
+                        selected
+                            .map(|v| v.1)
+                            .ok_or(SynthesisError::AssignmentMissing)
+                    })?;
+                    cs.enforce(
+                        || "seed x matches selection",
+                        |lc| lc + ax.get_variable(),
+                        |lc| lc + CS::one(),
+                        |lc| lc + &x_lc,
+                    );
+                    cs.enforce(
+                        || "seed y matches selection",
+                        |lc| lc + ay.get_variable(),
+                        |lc| lc + CS::one(),
+                        |lc| lc + &y_lc,
+                    );
+                    AllocatedPointNonInfinity::new(ax, ay)
+                }
+                Some(prev) => prev.add_incomplete_lc(
+                    cs.namespace(|| format!("window {j} add")),
+                    &x_lc,
+                    &y_lc,
+                    selected,
+                )?,
+            });
+        }
+
+        let acc = acc.expect("at least one window");
+
+        // Remove the accumulated offset with one complete addition of the
+        // constant -K_total. The complete law yields infinity when
+        // s == 0 (mod the group order), matching `scalar_mul` for that case.
+        let zero = alloc_zero(cs.namespace(|| "zero"))?;
+        let neg_k = k_total.negate();
+        let minus_k = AllocatedPoint {
+            x: alloc_constant(cs.namespace(|| "minus offset x"), neg_k.x)?,
+            y: alloc_constant(cs.namespace(|| "minus offset y"), neg_k.y)?,
+            is_infinity: zero.clone(),
+        };
+        let acc_point = acc.to_allocated_point(&zero)?;
+        acc_point.add(cs.namespace(|| "subtract offset"), &minus_k)
+    }
+
     fn generator() -> ConstantPoint<Scalar> {
         ConstantPoint::new(
             hex_to_ff("6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296"),
@@ -1000,7 +1291,11 @@ mod tests {
             n,
             n + Scalar::ONE,
             hex_to_ff("8000000000000000000000000000000000000000000000000000000000000000"),
-            Scalar::from(0x1230_u64), // low nibble zero
+            Scalar::from(0x1230_u64),                // low nibble zero
+            Scalar::from(256_u64),                   // 2^8 (window boundary)
+            Scalar::from(0xffff_ffff_ffff_ffff_u64), // run of set bits
+            Scalar::from(0x5555_5555_u64),           // alternating windows
+            hex_to_ff("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00"), // low byte zero
         ]
     }
 
@@ -1059,5 +1354,131 @@ mod tests {
             fixed < variable,
             "fixed-base ({fixed}) not cheaper than variable-base ({variable})"
         );
+    }
+
+    #[test]
+    fn fixed_base_window_sweep() {
+        let g = generator();
+        let sample = [
+            Scalar::ZERO,
+            Scalar::ONE,
+            Scalar::from(0xdead_beef_u64),
+            hex_to_ff("123456789abcdef0fedcba9876543210deadbeefcafebabe0123456789abcdef"),
+        ];
+        let mut counts: Vec<(usize, usize)> = Vec::new();
+        for w in 1..=4usize {
+            for &s in &sample {
+                let mut cs = TestConstraintSystem::<Scalar>::new();
+                let s_alloc = AllocatedNum::alloc(cs.namespace(|| "s"), || Ok(s)).unwrap();
+                let res =
+                    scalar_mul_fixed_base_windowed_generic(cs.namespace(|| "mul"), &g, &s_alloc, w)
+                        .unwrap();
+                assert!(cs.is_satisfied(), "unsatisfied w={w} s={s:?}");
+                match native_mul(&g, &s) {
+                    Some(p) => {
+                        assert_eq!(res.x.get_value().unwrap(), p.x, "w={w} s={s:?}");
+                        assert_eq!(res.y.get_value().unwrap(), p.y, "w={w} s={s:?}");
+                    }
+                    None => assert_eq!(res.is_infinity.get_value().unwrap(), Scalar::ONE),
+                }
+            }
+            // Measure with a fixed representative scalar.
+            let mut cs = TestConstraintSystem::<Scalar>::new();
+            let s_alloc =
+                AllocatedNum::alloc(cs.namespace(|| "s"), || Ok(Scalar::from(0xdead_beef_u64)))
+                    .unwrap();
+            scalar_mul_fixed_base_windowed_generic(cs.namespace(|| "mul"), &g, &s_alloc, w)
+                .unwrap();
+            counts.push((w, cs.num_constraints()));
+        }
+        println!("window-width constraint counts: {counts:?}");
+        let w2 = counts.iter().find(|(w, _)| *w == 2).unwrap().1;
+        assert!(w2 <= 850, "w=2 count {w2} over budget");
+        assert!(
+            counts.iter().all(|(_, c)| w2 <= *c),
+            "w=2 is not the minimum: {counts:?}"
+        );
+    }
+
+    /// The specialized production gadget and the generic reference at `w = 2`
+    /// must produce identical result points on every representative scalar.
+    #[test]
+    fn optimized_matches_generic_w2() {
+        let g = generator();
+        for s in test_scalars() {
+            // Production (w=2-specialized) path.
+            let (cs_opt, res_opt) = run_fixed(&g, s);
+            // Generic reference forced to w=2.
+            let mut cs_gen = TestConstraintSystem::<Scalar>::new();
+            let s_alloc = AllocatedNum::alloc(cs_gen.namespace(|| "s"), || Ok(s)).unwrap();
+            let res_gen =
+                scalar_mul_fixed_base_windowed_generic(cs_gen.namespace(|| "mul"), &g, &s_alloc, 2)
+                    .unwrap();
+
+            assert!(cs_opt.is_satisfied(), "optimized unsatisfied s={s:?}");
+            assert!(cs_gen.is_satisfied(), "generic unsatisfied s={s:?}");
+            assert_eq!(res_opt.x.get_value(), res_gen.x.get_value(), "x s={s:?}");
+            assert_eq!(res_opt.y.get_value(), res_gen.y.get_value(), "y s={s:?}");
+            assert_eq!(
+                res_opt.is_infinity.get_value(),
+                res_gen.is_infinity.get_value(),
+                "is_infinity s={s:?}"
+            );
+        }
+    }
+
+    /// The specialization must emit the *same* R1CS as the generic w=2 path, not
+    /// merely the same result: identical constraint count proves the w=2
+    /// rewrite is cost-preserving.
+    #[test]
+    fn optimized_constraint_count_matches_generic_w2() {
+        let g = generator();
+        let s = Scalar::from(0xdead_beef_u64);
+
+        let (cs_opt, _) = run_fixed(&g, s);
+
+        let mut cs_gen = TestConstraintSystem::<Scalar>::new();
+        let s_alloc = AllocatedNum::alloc(cs_gen.namespace(|| "s"), || Ok(s)).unwrap();
+        scalar_mul_fixed_base_windowed_generic(cs_gen.namespace(|| "mul"), &g, &s_alloc, 2)
+            .unwrap();
+
+        assert_eq!(
+            cs_opt.num_constraints(),
+            cs_gen.num_constraints(),
+            "optimized w=2 constraint count differs from generic w=2"
+        );
+    }
+
+    /// Inspectable check of the 2-bit multilinear selection formula
+    ///   T = T0 + b0*(T1-T0) + b1*(T2-T0) + b0*b1*(T3-T1-T2+T0)
+    /// against a ground-truth table lookup for all four `(b0, b1)` patterns.
+    /// A wrong coefficient in the production `x_lc`/`y_lc` would break this.
+    #[test]
+    fn optimized_selection_exhaustive() {
+        let g = generator();
+        let z = ConstantPoint::derive_offset(g.recover_b(), &g);
+        // A window table T[d] = d * base + Z (first window: D_0 = base, K_0 = Z).
+        let t0 = z;
+        let t1 = t0.add(&g);
+        let t2 = t1.add(&g);
+        let t3 = t2.add(&g);
+        let t = [t0, t1, t2, t3];
+
+        for d in 0..4usize {
+            let b0 = Scalar::from((d & 1) as u64);
+            let b1 = Scalar::from(((d >> 1) & 1) as u64);
+
+            let sel_x = t0.x
+                + b0 * (t1.x - t0.x)
+                + b1 * (t2.x - t0.x)
+                + b0 * b1 * (t3.x - t1.x - t2.x + t0.x);
+            let sel_y = t0.y
+                + b0 * (t1.y - t0.y)
+                + b1 * (t2.y - t0.y)
+                + b0 * b1 * (t3.y - t1.y - t2.y + t0.y);
+
+            assert_eq!(sel_x, t[d].x, "x selection wrong for d={d}");
+            assert_eq!(sel_y, t[d].y, "y selection wrong for d={d}");
+        }
     }
 }
