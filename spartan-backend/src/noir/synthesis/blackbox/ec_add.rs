@@ -1,12 +1,12 @@
 use crate::noir::synthesis::allocated_point::AllocatedPoint;
 use crate::noir::synthesis::allocation_support::{AllocatedWire, WitnessMap};
 use crate::noir::synthesis::blackbox::function_input::{allocate_or_get, get_witness_assignment};
+use crate::noir::synthesis::constraints_utils::alloc_zero;
 use crate::types::Scalar;
 use crate::utils::enforce_equal;
 use acir::FieldElement;
 use acir::circuit::opcodes::FunctionInput;
 use acir::native_types::Witness;
-use bellpepper_core::num::AllocatedNum;
 use bellpepper_core::{ConstraintSystem, SynthesisError};
 
 type WrappedPoint = Box<[FunctionInput<FieldElement>; 2]>;
@@ -37,11 +37,19 @@ fn unwrap_point<CS: ConstraintSystem<Scalar>>(
     point: &WrappedPoint,
     label: &str,
 ) -> Result<AllocatedPoint<Scalar>, SynthesisError> {
+    let x = allocate_or_get(
+        allocation_store,
+        &mut cs.namespace(|| format!("{label} x")),
+        &point[0],
+    )?;
+    let y = allocate_or_get(
+        allocation_store,
+        &mut cs.namespace(|| format!("{label} y")),
+        &point[1],
+    )?;
     Ok(AllocatedPoint {
-        x: allocate_or_get(allocation_store, &mut *cs, &point[0])?,
-        y: allocate_or_get(allocation_store, &mut *cs, &point[1])?,
-        is_infinity: AllocatedNum::alloc(cs.namespace(|| format!("{label} is_infinity")), || {
-            Ok(Scalar::zero())
-        })?,
+        x,
+        y,
+        is_infinity: alloc_zero(cs.namespace(|| format!("{label} is_infinity")))?,
     })
 }
