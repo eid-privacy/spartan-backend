@@ -62,9 +62,6 @@ impl<F: PrimeField> ConstantPoint<F> {
     /// this is unreachable without knowing the discrete log of the offset
     /// point, so a panic here signals a construction bug rather than a
     /// runtime-reachable input.
-    // Used by the windowed gadget (Stage B) and the test reference; not yet
-    // referenced by the per-bit gadget.
-    #[allow(dead_code)]
     pub fn add(&self, other: &Self) -> Self {
         let dx = other.x - self.x;
         assert!(
