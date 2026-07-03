@@ -6,8 +6,8 @@ N=5  # Number of times each benchmark is run; stats are computed over all N runs
 
 STEPS_INPUT_SIZES="10 100 1000 10000 100000"
 #STEPS_ASSERTS="10 100 1000 10000 100000"
-# STEPS_INPUT_SIZES="10000"
-STEPS_ASSERTS="10000"
+# STEPS_INPUT_SIZES="100000"
+# STEPS_ASSERTS="100000"
 CIRCUIT=c9000_benchmark
 BENCHMARK_DIR="$PWD/circuits/$CIRCUIT"
 BENCHMARK_CONSTS="$BENCHMARK_DIR/src/const.nr"
@@ -68,7 +68,11 @@ rm -rf "$BENCHMARK_PROOF" "$BENCHMARK_TARGET" stats.txt
 echo "input_size,asserts,metric,min,max,mean,stddev" > stats.txt
 
 for input_size in $STEPS_INPUT_SIZES; do
-    for asserts in $STEPS_ASSERTS; do
+    ASSERTS="$STEPS_ASSERTS"
+    if [ -z "$ASSERTS" ]; then
+        ASSERTS="$input_size"
+    fi
+    for asserts in $ASSERTS; do
         [[ $asserts -gt $input_size ]] && continue
         echo "INPUT_SIZE: $input_size -- ASSERTS: $asserts"
         echo "pub global NBR_INPUTS_PRIVATE: u32 = $input_size;" > $BENCHMARK_CONSTS
