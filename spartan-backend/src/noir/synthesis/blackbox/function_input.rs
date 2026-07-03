@@ -18,10 +18,12 @@ pub fn allocate_or_get<CS: ConstraintSystem<Scalar>>(
     match input {
         // Constrain the allocated variable to equal the constant value; allocating
         // it unconstrained would let a malicious prover assign anything.
-        FunctionInput::Constant(constant) => crate::noir::synthesis::constraints_utils::alloc_constant(
-            cs.namespace(|| "constant input"),
-            to_spartan_scalar(constant),
-        ),
+        FunctionInput::Constant(constant) => {
+            crate::noir::synthesis::constraints_utils::alloc_constant(
+                cs.namespace(|| "constant input"),
+                to_spartan_scalar(constant),
+            )
+        }
         FunctionInput::Witness(witness) => get_witness_assignment(allocation_store, witness),
     }
 }
