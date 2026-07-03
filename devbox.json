@@ -5,6 +5,9 @@
     "time@latest",
     "jq@latest",
     "samply@latest",
+    "python@3.14",
+    "python314Packages.matplotlib",
+    "python314Packages.numpy@latest",
     "github:eid-privacy/flakes#noir-versions.v1_0_0-beta_22",
     "github:eid-privacy/flakes#barretenberg-versions.beta_22",
     "github:eid-privacy/flakes#nargo-t256-versions.t256-v0_22"
@@ -17,7 +20,7 @@
     "extra-trusted-public-keys": "eid-privacy.cachix.org-1:lxRzvjcWd/A6Wew1tq0IK6OIMVWNJKUTy4s7EKb6C2A="
   },
   "shell": {
-    "init_hook": ["rustup default stable"],
+    "init_hook": ["rustup default stable", ". $VENV_DIR/bin/activate"],
     "scripts": {
       "fetch": "( cd spartan-backend && cargo fetch )",
       "ls": "ls && pwd",
@@ -29,7 +32,8 @@
       "build-docs": "cd spartan-backend && cargo doc",
       "stats-table": "python3 scripts/stats_table.py --update-readme README.md",
       "benchmark": "./scripts/benchmark.sh",
-      "samply": "./scripts/samply.sh $@"
+      "samply": "./scripts/samply.sh $@",
+      "plot": "python3 ./scripts/plot_benchmarks.py $@"
     }
   }
 }
