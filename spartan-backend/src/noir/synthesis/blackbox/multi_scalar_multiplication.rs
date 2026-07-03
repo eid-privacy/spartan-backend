@@ -1,13 +1,15 @@
+use crate::noir::scalar_conversion::to_spartan_scalar;
 use crate::noir::synthesis::allocated_point::AllocatedPoint;
 use crate::noir::synthesis::allocation_support::{AllocatedWire, WitnessMap};
 use crate::noir::synthesis::blackbox::function_input::{allocate_or_get, get_witness_assignment};
+use crate::noir::synthesis::constraints_utils::alloc_zero;
 use crate::types::Scalar;
 use crate::utils::enforce_equal;
 use acir::FieldElement;
 use acir::circuit::opcodes::FunctionInput;
 use acir::native_types::Witness;
-use bellpepper_core::num::AllocatedNum;
 use bellpepper_core::{ConstraintSystem, SynthesisError};
+use ff::Field;
 
 pub fn handle_msm<CS: ConstraintSystem<Scalar>>(
     allocation_store: &WitnessMap<AllocatedWire<Scalar>>,
@@ -27,17 +29,38 @@ pub fn handle_msm<CS: ConstraintSystem<Scalar>>(
         "Only single point multiplication is supported"
     );
 
+    // The high limb of the scalar is ignored (T-256/P-256 field sizes make
+    // recomposition unnecessary), but it must be constrained to zero so a prover
+    // cannot smuggle a value through it.
+    match &scalars[1] {
+        FunctionInput::Constant(c) => {
+            if to_spartan_scalar::<Scalar>(c) != Scalar::ZERO {
+                tracing::error!("MSM with a non-zero constant high scalar limb is unsupported");
+                return Err(SynthesisError::Unsatisfiable);
+            }
+        }
+        FunctionInput::Witness(w) => {
+            let hi = get_witness_assignment(allocation_store, w)?;
+            cs.enforce(
+                || "MSM high scalar limb is zero",
+                |lc| lc + hi.get_variable(),
+                |lc| lc + CS::one(),
+                |lc| lc,
+            );
+        }
+    }
+
+    let x = allocate_or_get(allocation_store, &mut cs.namespace(|| "point x"), &points[0])?;
+    let y = allocate_or_get(allocation_store, &mut cs.namespace(|| "point y"), &points[1])?;
     let point = AllocatedPoint {
-        x: allocate_or_get(allocation_store, &mut *cs, &points[0])?,
-        y: allocate_or_get(allocation_store, &mut *cs, &points[1])?,
-        is_infinity: AllocatedNum::alloc(cs.namespace(|| "point is_infinity"), || {
-            Ok(Scalar::zero())
-        })?,
+        x,
+        y,
+        is_infinity: alloc_zero(cs.namespace(|| "point is_infinity"))?,
     };
 
     let scalar = allocate_or_get(
         allocation_store,
-        &mut *cs,
+        &mut cs.namespace(|| "scalar lo"),
         // low part of the scalar. We don't need the high part for T-256-P-256 since the field
         // sizes play nicely to our advantage. No recomposition needed.
         &scalars[0],

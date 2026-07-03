@@ -75,6 +75,21 @@ pub fn alloc_one<F: PrimeField, CS: ConstraintSystem<F>>(
     Ok(one)
 }
 
+/// Allocate a variable constrained to equal a compile-time constant value.
+pub fn alloc_constant<F: PrimeField, CS: ConstraintSystem<F>>(
+    mut cs: CS,
+    value: F,
+) -> Result<AllocatedNum<F>, SynthesisError> {
+    let num = AllocatedNum::alloc(cs.namespace(|| "alloc"), || Ok(value))?;
+    cs.enforce(
+        || "check constant",
+        |lc| lc + num.get_variable(),
+        |lc| lc + CS::one(),
+        |lc| lc + (value, CS::one()),
+    );
+    Ok(num)
+}
+
 /// Check that two numbers are equal and return a bit
 pub fn alloc_num_equals<F: PrimeField, CS: ConstraintSystem<F>>(
     mut cs: CS,
