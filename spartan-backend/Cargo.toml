@@ -40,3 +40,6 @@ inherits = "release"
 debug = true
 strip = false
 
+[profile.release]
+lto = "fat"
+codegen-units = 1
