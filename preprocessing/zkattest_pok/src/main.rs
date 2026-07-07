@@ -44,7 +44,7 @@ fn fmt_field(label: &str, bytes: &FieldRepr) -> String {
 }
 
 fn main() {
-    let toml_path = PathBuf::from("../circuits/c0101_signature_pok_zkattest_style/Prover.toml");
+    let toml_path = PathBuf::from("../../circuits/c0101_signature_pok_zkattest_style/Prover.toml");
 
     let content = fs::read_to_string(&toml_path).expect("cannot read Prover.toml");
     let prover: ProverToml = toml::from_str(&content).expect("cannot parse Prover.toml");
