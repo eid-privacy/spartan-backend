@@ -8,23 +8,32 @@ mod utils;
 
 use crate::types::Scalar;
 use clap::Parser;
+use spartan_backend::noir::circuit::CircuitParameters;
+use spartan_backend::noir::synthesis::circuit_synthesizer::NoirCircuitSynthesizer;
 use spartan_backend::{
-    instantiate_circuit_from_dir, instantiate_circuit_with_name, prove_circuit, verify_circuit,
+    E, instantiate_circuit_from_dir, instantiate_circuit_with_name, prove_circuit, verify_circuit,
 };
+use spartan2::bellpepper::r1cs::SpartanShape;
+use spartan2::bellpepper::shape_cs::ShapeCS;
 use std::env;
 use std::path::PathBuf;
+use tracing::info_span;
 
 /// Spartan2 backend for Noir circuits — prove and verify.
 #[derive(Parser)]
 #[command(version, about)]
 struct Cli {
-    /// Path to a circuit directory (containing target/*.json and *_input.json).Expand commentComment on line R29Resolved
+    /// Path to a circuit directory (containing target/*.json and *_input.json).
     /// When omitted, all built-in circuits are run.
     circuit_dir: Option<PathBuf>,
 
     /// Enable info-level logging (default is warn; use RUST_LOG for finer control).
     #[arg(short = 'v', long = "verbose")]
     verbose: bool,
+
+    /// Only synthesize the circuit and report R1CS constraint counts; skip prove/verify.
+    #[arg(short = 'c', long = "count-constraints")]
+    count_constraints: bool,
 }
 
 fn main() {
@@ -43,12 +52,9 @@ fn main() {
         .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
         .init();
 
-    match cli.circuit_dir {
+    let circuits: Vec<CircuitParameters> = match cli.circuit_dir {
         Some(dir) => {
-            tracing::info!("Running circuit from directory {}", dir.display());
-            let circuit = instantiate_circuit_from_dir(&dir);
-            let proof = prove_circuit(&circuit);
-            verify_circuit(&circuit, proof);
+            vec![instantiate_circuit_from_dir(&dir)]
         }
         None => {
             let default_circuits = [
@@ -60,12 +66,77 @@ fn main() {
                 "c0005_trivial_msm",
                 "c0100_holder_binding_crescent_style",
             ];
-            for name in default_circuits {
-                tracing::info!("Running circuit {name}");
-                let circuit = instantiate_circuit_with_name(name);
-                let proof = prove_circuit(&circuit);
-                verify_circuit(&circuit, proof);
-            }
+            default_circuits
+                .map(|name| instantiate_circuit_with_name(name))
+                .into()
+        }
+    };
+
+    for circuit in circuits {
+        if cli.count_constraints {
+            count_constraints(circuit);
+        } else {
+            tracing::info!("Running circuit {}", circuit.name);
+            let proof = prove_circuit(&circuit);
+            verify_circuit(&circuit, proof);
         }
     }
+}
+
+/// Synthesizes the circuit into a [`ShapeCS`] and reports the resulting R1CS
+/// sizes without running prove/verify. Uses spartan2's own accounting so the
+/// numbers match what `SpartanSNARK::setup` sees.
+fn count_constraints(circuit: CircuitParameters) {
+    let _span = info_span!("count_constraints", circuit = ?circuit.name).entered();
+
+    // The verifier inputs are enough to build the synthesizer: ShapeCS records
+    // linear-combination structure without evaluating witness values, and
+    // NoirCircuitSynthesizer defaults unassigned private wires to zero.
+    let synth = NoirCircuitSynthesizer::new(
+        circuit.program_artifact.clone(),
+        circuit.verifier_inputs.clone(),
+    );
+
+    let shape = ShapeCS::<E>::r1cs_shape(&synth).expect("failed to synthesize R1CS shape");
+    let [
+        num_cons_unpadded,
+        num_shared_unpadded,
+        num_precommitted_unpadded,
+        num_rest_unpadded,
+        num_cons,
+        num_shared,
+        num_precommitted,
+        num_rest,
+        num_public,
+        num_challenges,
+    ] = shape.sizes();
+
+    tracing::info!(
+        num_cons_unpadded,
+        num_cons,
+        num_shared_unpadded,
+        num_shared,
+        num_precommitted_unpadded,
+        num_precommitted,
+        num_rest_unpadded,
+        num_rest,
+        num_public,
+        num_challenges,
+        "circuit_sizes"
+    );
+
+    println!(
+        "{}: constraints={} (padded={}), shared={} (padded={}), precommitted={} (padded={}), rest={} (padded={}), public={}, challenges={}",
+        circuit.name,
+        num_cons_unpadded,
+        num_cons,
+        num_shared_unpadded,
+        num_shared,
+        num_precommitted_unpadded,
+        num_precommitted,
+        num_rest_unpadded,
+        num_rest,
+        num_public,
+        num_challenges,
+    );
 }
