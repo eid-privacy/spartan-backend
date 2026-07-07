@@ -16,10 +16,10 @@ bytecode are important to track.**
 | ✅    | c0003_trivial_with_brillig          | t256-v0.22|
 | ✅    | c0004_trivial_elliptic_curve_add    | t256-v0.22|
 | ✅    | c0005_trivial_msm                   | t256-v0.22|
-| ✅    | c0006_sha256 | t256-v0.22|
+| ✅    | c0006_sha256                        | t256-v0.22|
 | ✅    | c0100_holder_binding_crescent_style | t256-v0.22|
-| ✅    | c0101_signature_pok_zkattest_style | t256-v0.22|
-| ✅    | c0102_signature_vanilla_equation | t256-v0.22|
+| ✅    | c0101_signature_pok_zkattest_style  | t256-v0.22|
+| ✅    | c0102_signature_vanilla_equation    | t256-v0.22|
 
 ## Reproducing the results
 
