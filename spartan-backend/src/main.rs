@@ -1,22 +1,9 @@
-mod circuit_instance;
-mod nizk_prover;
-mod nizk_verifier;
-pub mod noir;
-mod trivial_circuit;
-pub mod types;
-mod utils;
-
-use crate::circuit_instance::{instantiate_circuit_from_dir, instantiate_circuit_with_name};
-use crate::nizk_prover::prove;
-use crate::nizk_verifier::verify;
-use crate::noir::circuit::CircuitParameters;
-use crate::noir::synthesis::circuit_synthesizer::NoirCircuitSynthesizer;
-use crate::types::{E, Scalar};
 use clap::Parser;
-use spartan2::spartan::SpartanSNARK;
+use spartan_backend::{
+    instantiate_circuit_from_dir, instantiate_circuit_with_name, run_proof_and_verification,
+};
 use std::env;
 use std::path::PathBuf;
-use tracing::info_span;
 
 /// Spartan2 backend for Noir circuits — prove and verify.
 #[derive(Parser)]
@@ -29,37 +16,6 @@ struct Cli {
     /// Enable info-level logging (default is warn; use RUST_LOG for finer control).
     #[arg(short = 'v', long = "verbose")]
     verbose: bool,
-}
-
-fn run_proof_and_verification(circuit: CircuitParameters) {
-    let _total_span = info_span!("total", circuit = ?circuit.name).entered();
-
-    tracing::info!("Running prover and verifier for {:?}", circuit.name);
-    tracing::debug!("ProgramArtifact loaded: {:?}", &circuit.program_artifact);
-    tracing::debug!("Prover inputs {:?}", &circuit.prover_inputs);
-    tracing::debug!("Verifier inputs {:?}", &circuit.verifier_inputs);
-    let prover_circuit = {
-        let _span = info_span!("prover_circuit_synthesis").entered();
-        NoirCircuitSynthesizer::new(circuit.program_artifact.clone(), circuit.prover_inputs)
-    };
-
-    let proof: SpartanSNARK<E> = {
-        let _span = info_span!("proof_creation").entered();
-        prove(prover_circuit)
-    };
-
-    let verifier_circuit = {
-        let _span = info_span!("verifier_circuit_synthesis").entered();
-        NoirCircuitSynthesizer::new(circuit.program_artifact, circuit.verifier_inputs)
-    };
-
-    let verification_result = {
-        let _span = info_span!("verification").entered();
-        verify(verifier_circuit, proof)
-    };
-
-    verification_result.expect("verify failed");
-    tracing::info!("Verification successful.");
 }
 
 fn main() {
