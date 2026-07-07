@@ -3607,6 +3607,7 @@ dependencies = [
  "algebra-utils",
  "bellpepper",
  "bellpepper-core",
+ "bincode",
  "clap",
  "ff",
  "noir_artifact_cli",
