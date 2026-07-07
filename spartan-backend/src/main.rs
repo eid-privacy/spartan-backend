@@ -1,6 +1,6 @@
 use clap::Parser;
 use spartan_backend::{
-    instantiate_circuit_from_dir, instantiate_circuit_with_name, run_proof_and_verification,
+    instantiate_circuit_from_dir, instantiate_circuit_with_name, prove_circuit, verify_circuit,
 };
 use std::env;
 use std::path::PathBuf;
@@ -38,7 +38,8 @@ fn main() {
         Some(dir) => {
             tracing::info!("Running circuit from directory {}", dir.display());
             let circuit = instantiate_circuit_from_dir(&dir);
-            run_proof_and_verification(circuit);
+            let proof = prove_circuit(&circuit);
+            verify_circuit(&circuit, proof);
         }
         None => {
             let default_circuits = [
@@ -53,7 +54,8 @@ fn main() {
             for name in default_circuits {
                 tracing::info!("Running circuit {name}");
                 let circuit = instantiate_circuit_with_name(name);
-                run_proof_and_verification(circuit);
+                let proof = prove_circuit(&circuit);
+                verify_circuit(&circuit, proof);
             }
         }
     }
