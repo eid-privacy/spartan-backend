@@ -21,17 +21,20 @@ use spartan2::spartan::SpartanSNARK;
 use spartan2::traits::circuit::SpartanCircuit;
 use tracing::info_span;
 
-/// Run the Spartan2 prover and verifier for the given Noir circuit parameters.
-pub fn run_proof_and_verification(circuit: CircuitParameters) {
-    let _total_span = info_span!("total", circuit = ?circuit.name).entered();
+/// Generate a Spartan2 proof for the given Noir circuit parameters.
+pub fn prove_circuit(circuit: &CircuitParameters) -> SpartanSNARK<E> {
+    let _total_span = info_span!("prove", circuit = ?circuit.name).entered();
 
-    tracing::info!("Running prover and verifier for {:?}", circuit.name);
+    tracing::info!("Running prover for {:?}", circuit.name);
     tracing::debug!("ProgramArtifact loaded: {:?}", &circuit.program_artifact);
     tracing::debug!("Prover inputs {:?}", &circuit.prover_inputs);
-    tracing::debug!("Verifier inputs {:?}", &circuit.verifier_inputs);
+
     let prover_circuit = {
         let _span = info_span!("prover_circuit_synthesis").entered();
-        NoirCircuitSynthesizer::new(circuit.program_artifact.clone(), circuit.prover_inputs)
+        NoirCircuitSynthesizer::new(
+            circuit.program_artifact.clone(),
+            circuit.prover_inputs.clone(),
+        )
     };
 
     if env::var("SPARTAN_BACKEND_DEBUG_CS").is_ok() {
@@ -44,9 +47,25 @@ pub fn run_proof_and_verification(circuit: CircuitParameters) {
         prove(prover_circuit)
     };
 
+    tracing::info!("Proof created successfully.");
+
+    proof
+}
+
+/// Verify a Spartan2 proof against the given Noir circuit parameters.
+pub fn verify_circuit(circuit: &CircuitParameters, proof: SpartanSNARK<E>) {
+    let _total_span = info_span!("verify", circuit = ?circuit.name).entered();
+
+    tracing::info!("Running verifier for {:?}", circuit.name);
+    tracing::debug!("ProgramArtifact loaded: {:?}", &circuit.program_artifact);
+    tracing::debug!("Verifier inputs {:?}", &circuit.verifier_inputs);
+
     let verifier_circuit = {
         let _span = info_span!("verifier_circuit_synthesis").entered();
-        NoirCircuitSynthesizer::new(circuit.program_artifact, circuit.verifier_inputs)
+        NoirCircuitSynthesizer::new(
+            circuit.program_artifact.clone(),
+            circuit.verifier_inputs.clone(),
+        )
     };
 
     let verification_result = {
