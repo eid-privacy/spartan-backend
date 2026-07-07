@@ -81,6 +81,19 @@ pub fn verify_circuit(circuit: &CircuitParameters, proof: SpartanSNARK<E>) {
     tracing::info!("Verification successful.");
 }
 
+/// Creates a proof for the circuit and reports its serialized size in bytes.
+/// Uses bincode 1.3, the same serializer spartan2 uses internally, so the
+/// byte count reflects the realistic wire size.
+pub fn report_proof_size(circuit: CircuitParameters) {
+    let _span = info_span!("proof_size", circuit = ?circuit.name).entered();
+
+    let proof = prove_circuit(&circuit);
+    let bytes = bincode::serialize(&proof).expect("failed to serialize proof");
+
+    tracing::info!(proof_size_bytes = bytes.len(), "proof_size");
+    println!("{}: proof_size={} bytes", circuit.name, bytes.len());
+}
+
 /// Synthesizes the prover circuit into a [`TestConstraintSystem`] and reports
 /// the first unsatisfied constraint, if any. Used to localise R1CS bugs:
 /// enable with `SPARTAN_BACKEND_DEBUG_CS=1`.

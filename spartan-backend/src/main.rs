@@ -2,7 +2,8 @@ use clap::Parser;
 use spartan_backend::noir::circuit::CircuitParameters;
 use spartan_backend::noir::synthesis::circuit_synthesizer::NoirCircuitSynthesizer;
 use spartan_backend::{
-    E, instantiate_circuit_from_dir, instantiate_circuit_with_name, prove_circuit, verify_circuit,
+    E, instantiate_circuit_from_dir, instantiate_circuit_with_name, prove_circuit,
+    report_proof_size, verify_circuit,
 };
 use spartan2::bellpepper::r1cs::SpartanShape;
 use spartan2::bellpepper::shape_cs::ShapeCS;
@@ -25,6 +26,10 @@ struct Cli {
     /// Only synthesize the circuit and report R1CS constraint counts; skip prove/verify.
     #[arg(short = 'c', long = "count-constraints")]
     count_constraints: bool,
+
+    /// Create a proof and report its serialized size in bytes; skip verify.
+    #[arg(short = 's', long = "proof-size")]
+    proof_size: bool,
 }
 
 fn main() {
@@ -66,6 +71,8 @@ fn main() {
     for circuit in circuits {
         if cli.count_constraints {
             count_constraints(circuit);
+        } else if cli.proof_size {
+            report_proof_size(circuit);
         } else {
             tracing::info!("Running circuit {}", circuit.name);
             let proof = prove_circuit(&circuit);
