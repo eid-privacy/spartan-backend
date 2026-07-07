@@ -8,6 +8,11 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    env:
+      # Treat warnings as errors for every cargo invocation in this job. Set at
+      # the job level (not per-step) so the build and run steps share one
+      # compilation fingerprint and can reuse the same cached artifacts.
+      RUSTFLAGS: "-D warnings"
     steps:
       - uses: actions/checkout@v4
 
@@ -26,6 +31,9 @@ jobs:
 
       - name: Check Rust formatting
         run: devbox run fmt-check
+
+      - name: Build spartan-backend (deny warnings)
+        run: devbox run build-check
 
       - name: Check circuits
         run: devbox run nargo-check

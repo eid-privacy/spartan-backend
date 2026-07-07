@@ -5,7 +5,7 @@ use spartan2::traits::snark::R1CSSNARKTrait;
 
 pub fn prove<E: Engine, C: SpartanCircuit<E>>(prover_circuit: C) -> SpartanSNARK<E> {
     // SETUP
-    let (pk, vk) = {
+    let (pk, _vk) = {
         let _span = tracing::debug_span!("setup").entered();
         SpartanSNARK::<E>::setup(prover_circuit.clone()).expect("setup failed")
     };

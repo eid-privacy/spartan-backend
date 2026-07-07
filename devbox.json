@@ -25,6 +25,7 @@
       "fetch": "( cd spartan-backend && cargo fetch )",
       "ls": "ls && pwd",
       "build": "cd spartan-backend && cargo build --release",
+      "build-check": "cd spartan-backend && RUSTFLAGS=\"-D warnings\" cargo build --all-targets",
       "start": "cd spartan-backend && RUST_LOG=info cargo run",
       "test": "cd spartan-backend && cargo test -- --show-output",
       "fmt-check": "cd spartan-backend && cargo fmt --check",

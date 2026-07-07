@@ -1,12 +1,3 @@
-mod circuit_instance;
-mod nizk_prover;
-mod nizk_verifier;
-pub mod noir;
-mod trivial_circuit;
-pub mod types;
-mod utils;
-
-use crate::types::Scalar;
 use clap::Parser;
 use spartan_backend::noir::circuit::CircuitParameters;
 use spartan_backend::noir::synthesis::circuit_synthesizer::NoirCircuitSynthesizer;
