@@ -353,7 +353,7 @@ fn test_sdjwt_verification() {
     ];
 
     // Placeholder precompute values; real ones to be plugged in after running
-    // the c0200_preprocessing crate against this circuit's Prover.toml.
+    // the c0200_siyu_jwt preprocessing crate against this circuit's Prover.toml.
     let zero32: [u8; 32] = [0; 32];
 
     main(

@@ -46,6 +46,14 @@ This is required if you need to compile/re-compile/execute circuits.
 4. Put it in your path, this README.md assumes it is named "nargo-t256" to distinguish from the original Noir distribution
 5. Build the circuit you're interested in with `nargo-t256 build`
 
+### Preprocessing (ECDSA precompute)
+
+Some circuits need ECDSA-related witnesses that are computed off-circuit on the
+host. The [`preprocessing/`](preprocessing) directory holds one small Cargo tool
+per such circuit; each reads that circuit's `Prover.toml`, does the elliptic-curve
+math, and injects the precomputed values. See
+[`preprocessing/README.md`](preprocessing/README.md) for the full list and usage.
+
 ## Benchmarks
 
 Times in seconds. Rows: ASSERTS; sub-rows per cell: BB prove / Spartan proof / Spartan verify. Columns: INPUT_SIZE.

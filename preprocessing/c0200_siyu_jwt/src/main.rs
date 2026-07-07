@@ -130,7 +130,7 @@ fn affine_to_repr(p: &Secp256r1Affine) -> (FieldRepr, FieldRepr) {
 }
 
 fn main() {
-    let toml_path = PathBuf::from("../circuits/c0200_swiyu_jwt/Prover.toml");
+    let toml_path = PathBuf::from("../../circuits/c0200_swiyu_jwt/Prover.toml");
     let content = fs::read_to_string(&toml_path).expect("cannot read Prover.toml");
     let prover: ProverToml = toml::from_str(&content).expect("cannot parse Prover.toml");
 
@@ -218,11 +218,11 @@ fn main() {
         out.push('\n');
     }
     out.push('\n');
-    out.push_str("# Precomputed (c0200_preprocessing): JWT (issuer) ECDSA recovery\n");
+    out.push_str("# Precomputed (c0200_siyu_jwt): JWT (issuer) ECDSA recovery\n");
     out.push_str(&fmt_array("R_jwt_x", &R_jwt_x));
     out.push_str(&fmt_array("R_jwt_y", &R_jwt_y));
     out.push_str(&fmt_field("s_inv_jwt", &ff_to_be::<Fq>(&s_inv_jwt)));
-    out.push_str("\n# Precomputed (c0200_preprocessing): device ECDSA Crescent triple\n");
+    out.push_str("\n# Precomputed (c0200_siyu_jwt): device ECDSA Crescent triple\n");
     out.push_str(&fmt_array("R_dev_x", &R_dev_x));
     out.push_str(&fmt_array("R_dev_y", &R_dev_y));
     out.push_str(&fmt_array("T_dev_x", &T_dev_x));
@@ -234,7 +234,7 @@ fn main() {
 
     // 7. Regenerate verifier_input.json. All circuit parameters must appear;
     //    private ones are null, public ones carry their value.
-    let verifier_path = PathBuf::from("../circuits/c0200_swiyu_jwt/verifier_input.json");
+    let verifier_path = PathBuf::from("../../circuits/c0200_swiyu_jwt/verifier_input.json");
     let json_array = |bytes: &[u8]| -> String {
         let entries: Vec<String> = bytes.iter().map(|b| b.to_string()).collect();
         format!("[{}]", entries.join(", "))
@@ -277,6 +277,6 @@ fn main() {
     );
     fs::write(&verifier_path, verifier_json).expect("cannot write verifier_input.json");
 
-    println!("c0200_preprocessing: wrote R_jwt, s_inv_jwt, R_dev, T_dev, U_dev to {}", toml_path.display());
-    println!("c0200_preprocessing: wrote {}", verifier_path.display());
+    println!("c0200_siyu_jwt: wrote R_jwt, s_inv_jwt, R_dev, T_dev, U_dev to {}", toml_path.display());
+    println!("c0200_siyu_jwt: wrote {}", verifier_path.display());
 }

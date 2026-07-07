@@ -77,7 +77,7 @@ fn strip_existing_precompute_fields(content: &str) -> (String, bool) {
 }
 
 fn main() {
-    let toml_path = PathBuf::from("../circuits/c0100_holder_binding_crescent_style/Prover.toml");
+    let toml_path = PathBuf::from("../../circuits/c0100_holder_binding_crescent_style/Prover.toml");
 
     let content = fs::read_to_string(&toml_path).expect("cannot read Prover.toml");
     let prover: ProverToml = toml::from_str(&content).expect("cannot parse Prover.toml");
