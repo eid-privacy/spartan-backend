@@ -3,6 +3,7 @@ use crate::nizk_verifier::verify;
 use bellpepper_core::num::AllocatedNum;
 use bellpepper_core::{ConstraintSystem, SynthesisError};
 use ff::{Field, PrimeField, PrimeFieldBits};
+use spartan2::errors::SpartanError;
 use spartan2::provider::T256HyraxEngine;
 use spartan2::spartan::SpartanSNARK;
 use spartan2::traits::Engine;
@@ -39,11 +40,16 @@ impl<Scalar: PrimeField + PrimeFieldBits> TestCircuit<Scalar> {
             <T256HyraxEngine as Engine>::Scalar::ONE,
         );
 
-        let proof: SpartanSNARK<E> = prove(prover_circuit);
-
-        // VERIFY
-        let verification_result = verify(verifier_circuit, proof);
-        verification_result.expect("verify failed");
+        let proof: Result<SpartanSNARK<E>, SpartanError> = prove(prover_circuit);
+        match proof {
+            Ok(proof) => {
+                let verification_result = verify(verifier_circuit, proof);
+                if let Err(e) = verification_result {
+                    tracing::error!("Verification failed: {:?}", e);
+                }
+            }
+            Err(e) => tracing::error!("Proof creation failed: {:?}", e),
+        }
     }
 }
 

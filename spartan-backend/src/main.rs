@@ -69,7 +69,13 @@ fn main() {
         } else {
             tracing::info!("Running circuit {}", circuit.name);
             let proof = prove_circuit(&circuit);
-            verify_circuit(&circuit, proof);
+
+            match proof {
+                Ok(proof) => {
+                    verify_circuit(&circuit, proof);
+                }
+                Err(e) => tracing::error!("Proof creation failed: {:?}", e),
+            }
         }
     }
 }
