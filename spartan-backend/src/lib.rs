@@ -88,7 +88,8 @@ pub fn report_proof_size(circuit: CircuitParameters) {
     let _span = info_span!("proof_size", circuit = ?circuit.name).entered();
 
     let proof = prove_circuit(&circuit);
-    let bytes = bincode::serialize(&proof).expect("failed to serialize proof");
+    let bytes =
+        bincode::serialize(&proof.expect("create proof")).expect("failed to serialize proof");
 
     tracing::info!(proof_size_bytes = bytes.len(), "proof_size");
     println!("{}: proof_size={} bytes", circuit.name, bytes.len());
