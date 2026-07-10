@@ -17,12 +17,13 @@ use crate::nizk_prover::prove;
 use crate::nizk_verifier::verify;
 use crate::noir::circuit::CircuitParameters;
 use crate::noir::synthesis::circuit_synthesizer::NoirCircuitSynthesizer;
+use spartan2::errors::SpartanError;
 use spartan2::spartan::SpartanSNARK;
 use spartan2::traits::circuit::SpartanCircuit;
 use tracing::info_span;
 
 /// Generate a Spartan2 proof for the given Noir circuit parameters.
-pub fn prove_circuit(circuit: &CircuitParameters) -> SpartanSNARK<E> {
+pub fn prove_circuit(circuit: &CircuitParameters) -> Result<SpartanSNARK<E>, SpartanError> {
     let _total_span = info_span!("prove", circuit = ?circuit.name).entered();
 
     tracing::info!("Running prover for {:?}", circuit.name);
@@ -42,12 +43,15 @@ pub fn prove_circuit(circuit: &CircuitParameters) -> SpartanSNARK<E> {
         debug_constraint_system(&prover_circuit);
     }
 
-    let proof: SpartanSNARK<E> = {
+    let proof: Result<SpartanSNARK<E>, SpartanError> = {
         let _span = info_span!("proof_creation").entered();
         prove(prover_circuit)
     };
 
-    tracing::info!("Proof created successfully.");
+    match proof {
+        Ok(_) => tracing::info!("Proof created successfully."),
+        Err(ref e) => tracing::error!("Proof creation failed: {:?}", e),
+    }
 
     proof
 }
