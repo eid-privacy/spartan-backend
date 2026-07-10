@@ -1,0 +1,15 @@
+[package]
+name = "c0201_sicpa_backend"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+toml = "0.8"
+serde = { version = "1", features = ["derive"] }
+algebra-utils = { path = "../../algebra-utils" }
+num-bigint = { version = "0.4.3", features = ["rand"] }
+spartan2 = { version = "0.9.0", default-features = false }
+halo2curves = "0.10.0"
+group = "0.13"
+sha2 = "0.10"
+base64 = "0.22"
