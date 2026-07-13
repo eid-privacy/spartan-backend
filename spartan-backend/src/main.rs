@@ -3,7 +3,7 @@ use spartan_backend::noir::circuit::CircuitParameters;
 use spartan_backend::noir::synthesis::circuit_synthesizer::NoirCircuitSynthesizer;
 use spartan_backend::{
     E, instantiate_circuit_from_dir, instantiate_circuit_with_name, prove_circuit,
-    report_proof_size, verify_circuit,
+    prove_circuit_to_base64, report_proof_size, verify_circuit, verify_circuit_from_base64,
 };
 use spartan2::bellpepper::r1cs::SpartanShape;
 use spartan2::bellpepper::shape_cs::ShapeCS;
@@ -30,9 +30,18 @@ struct Cli {
     /// Create a proof and report its serialized size in bytes; skip verify.
     #[arg(short = 's', long = "proof-size")]
     proof_size: bool,
+
+    /// Only run the prover and print the base64-encoded (bincode) proof to stdout; skip verify.
+    #[arg(short = 'p', long = "prove")]
+    prove: bool,
+
+    /// Only run the verifier against a base64-encoded (bincode) proof passed as
+    /// the value (as produced by `--prove`); skip prove.
+    #[arg(long = "verify", value_name = "BASE64_PROOF")]
+    verify: Option<String>,
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
     // Honor -v unless the user already set RUST_LOG explicitly.
@@ -73,18 +82,22 @@ fn main() {
             count_constraints(circuit);
         } else if cli.proof_size {
             report_proof_size(circuit);
+        } else if cli.prove {
+            let proof_b64 = prove_circuit_to_base64(&circuit).expect("Proof creation failed.");
+            println!("{}", proof_b64);
+        } else if let Some(proof_base64) = &cli.verify {
+            verify_circuit_from_base64(&circuit, proof_base64).expect("Proof verification failed");
+            tracing::info!("Verification successful.");
         } else {
             tracing::info!("Running circuit {}", circuit.name);
-            let proof = prove_circuit(&circuit);
+            let proof = prove_circuit(&circuit).expect("Proof creation failed");
 
-            match proof {
-                Ok(proof) => {
-                    verify_circuit(&circuit, proof);
-                }
-                Err(e) => tracing::error!("Proof creation failed: {:?}", e),
-            }
+            verify_circuit(&circuit, proof).expect("Proof verification failed");
+            tracing::info!("Verification successful.");
         }
     }
+
+    Ok(())
 }
 
 /// Synthesizes the circuit into a [`ShapeCS`] and reports the resulting R1CS
