@@ -6,6 +6,8 @@ mod trivial_circuit;
 pub mod types;
 mod utils;
 
+use base64::Engine as _;
+use base64::engine::general_purpose::STANDARD as BASE64;
 use bellpepper_core::ConstraintSystem;
 use bellpepper_core::num::AllocatedNum;
 use bellpepper_core::test_cs::TestConstraintSystem;
@@ -57,7 +59,10 @@ pub fn prove_circuit(circuit: &CircuitParameters) -> Result<SpartanSNARK<E>, Spa
 }
 
 /// Verify a Spartan2 proof against the given Noir circuit parameters.
-pub fn verify_circuit(circuit: &CircuitParameters, proof: SpartanSNARK<E>) {
+pub fn verify_circuit(
+    circuit: &CircuitParameters,
+    proof: SpartanSNARK<E>,
+) -> Result<(), SpartanError> {
     let _total_span = info_span!("verify", circuit = ?circuit.name).entered();
 
     tracing::info!("Running verifier for {:?}", circuit.name);
@@ -72,13 +77,32 @@ pub fn verify_circuit(circuit: &CircuitParameters, proof: SpartanSNARK<E>) {
         )
     };
 
-    let verification_result = {
-        let _span = info_span!("verification").entered();
-        verify(verifier_circuit, proof)
-    };
+    let _span = info_span!("verification").entered();
+    verify(verifier_circuit, proof)?;
+    Ok(())
+}
 
-    verification_result.expect("verify failed");
-    tracing::info!("Verification successful.");
+/// Runs only the prover for the given circuit and returns the proof as a
+/// base64-encoded, bincode-serialized string (bincode 1.3, the same serializer
+/// spartan2 uses internally).
+pub fn prove_circuit_to_base64(circuit: &CircuitParameters) -> Result<String, SpartanError> {
+    let proof = prove_circuit(circuit)?;
+    let bytes = bincode::serialize(&proof).expect("failed to serialize proof");
+    Ok(BASE64.encode(bytes))
+}
+
+/// Runs only the verifier for the given circuit against a proof provided as a
+/// base64-encoded, bincode-serialized string (as produced by
+/// [`prove_circuit_to_base64`]).
+pub fn verify_circuit_from_base64(
+    circuit: &CircuitParameters,
+    proof_base64: &str,
+) -> Result<(), SpartanError> {
+    let bytes = BASE64
+        .decode(proof_base64.trim())
+        .expect("failed to base64-decode proof");
+    let proof: SpartanSNARK<E> = bincode::deserialize(&bytes).expect("failed to deserialize proof");
+    verify_circuit(circuit, proof)
 }
 
 /// Creates a proof for the circuit and reports its serialized size in bytes.
