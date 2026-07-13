@@ -9,6 +9,7 @@ use spartan2::bellpepper::r1cs::SpartanShape;
 use spartan2::bellpepper::shape_cs::ShapeCS;
 use std::env;
 use std::path::PathBuf;
+use std::process::ExitCode;
 use tracing::info_span;
 
 /// Spartan2 backend for Noir circuits — prove and verify.
@@ -32,7 +33,7 @@ struct Cli {
     proof_size: bool,
 }
 
-fn main() {
+fn main() -> ExitCode {
     let cli = Cli::parse();
 
     // Honor -v unless the user already set RUST_LOG explicitly.
@@ -48,9 +49,21 @@ fn main() {
         .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
         .init();
 
-    let circuits: Vec<CircuitParameters> = match cli.circuit_dir {
+    // Run inside catch_unwind so that any panic (e.g. failing to read a circuit
+    // or its inputs) is reported as exit code 1 rather than the default 101.
+    match std::panic::catch_unwind(|| run(&cli)) {
+        Ok(true) => ExitCode::SUCCESS,
+        Ok(false) => ExitCode::FAILURE,
+        Err(_) => ExitCode::FAILURE,
+    }
+}
+
+/// Runs the requested action over the selected circuits. Returns `true` when
+/// every circuit succeeded, `false` when at least one failed.
+fn run(cli: &Cli) -> bool {
+    let circuits: Vec<CircuitParameters> = match &cli.circuit_dir {
         Some(dir) => {
-            vec![instantiate_circuit_from_dir(&dir)]
+            vec![instantiate_circuit_from_dir(dir)]
         }
         None => {
             let default_circuits = [
@@ -68,23 +81,36 @@ fn main() {
         }
     };
 
+    let mut success = true;
+
     for circuit in circuits {
         if cli.count_constraints {
             count_constraints(circuit);
         } else if cli.proof_size {
-            report_proof_size(circuit);
+            if let Err(e) = report_proof_size(circuit) {
+                tracing::error!("Proof size reporting failed: {:?}", e);
+                success = false;
+            }
         } else {
             tracing::info!("Running circuit {}", circuit.name);
             let proof = prove_circuit(&circuit);
 
             match proof {
                 Ok(proof) => {
-                    verify_circuit(&circuit, proof);
+                    if let Err(e) = verify_circuit(&circuit, proof) {
+                        tracing::error!("Verification failed: {:?}", e);
+                        success = false;
+                    }
                 }
-                Err(e) => tracing::error!("Proof creation failed: {:?}", e),
+                Err(e) => {
+                    tracing::error!("Proof creation failed: {:?}", e);
+                    success = false;
+                }
             }
         }
     }
+
+    success
 }
 
 /// Synthesizes the circuit into a [`ShapeCS`] and reports the resulting R1CS

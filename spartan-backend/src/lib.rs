@@ -57,7 +57,10 @@ pub fn prove_circuit(circuit: &CircuitParameters) -> Result<SpartanSNARK<E>, Spa
 }
 
 /// Verify a Spartan2 proof against the given Noir circuit parameters.
-pub fn verify_circuit(circuit: &CircuitParameters, proof: SpartanSNARK<E>) {
+pub fn verify_circuit(
+    circuit: &CircuitParameters,
+    proof: SpartanSNARK<E>,
+) -> Result<(), SpartanError> {
     let _total_span = info_span!("verify", circuit = ?circuit.name).entered();
 
     tracing::info!("Running verifier for {:?}", circuit.name);
@@ -77,22 +80,32 @@ pub fn verify_circuit(circuit: &CircuitParameters, proof: SpartanSNARK<E>) {
         verify(verifier_circuit, proof)
     };
 
-    verification_result.expect("verify failed");
-    tracing::info!("Verification successful.");
+    match verification_result {
+        Ok(_) => {
+            tracing::info!("Verification successful.");
+            Ok(())
+        }
+        Err(e) => {
+            tracing::error!("Verification failed: {:?}", e);
+            Err(e)
+        }
+    }
 }
 
 /// Creates a proof for the circuit and reports its serialized size in bytes.
 /// Uses bincode 1.3, the same serializer spartan2 uses internally, so the
 /// byte count reflects the realistic wire size.
-pub fn report_proof_size(circuit: CircuitParameters) {
+pub fn report_proof_size(circuit: CircuitParameters) -> Result<(), SpartanError> {
     let _span = info_span!("proof_size", circuit = ?circuit.name).entered();
 
-    let proof = prove_circuit(&circuit);
-    let bytes =
-        bincode::serialize(&proof.expect("create proof")).expect("failed to serialize proof");
+    let proof = prove_circuit(&circuit)?;
+    let bytes = bincode::serialize(&proof).map_err(|e| SpartanError::ProofVerifyError {
+        reason: format!("failed to serialize proof: {e}"),
+    })?;
 
     tracing::info!(proof_size_bytes = bytes.len(), "proof_size");
     println!("{}: proof_size={} bytes", circuit.name, bytes.len());
+    Ok(())
 }
 
 /// Synthesizes the prover circuit into a [`TestConstraintSystem`] and reports
