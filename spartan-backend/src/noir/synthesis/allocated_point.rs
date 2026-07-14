@@ -1,10 +1,11 @@
 //! This module implements various elliptic curve gadgets
 //! This module was copied from Crescent's implementation
 #![allow(non_snake_case)]
+use crate::noir::synthesis::constant_point::ConstantPoint;
 use crate::noir::synthesis::constraints_utils::{
-    alloc_num_equals, alloc_one, alloc_zero, conditionally_select, conditionally_select2,
-    select_num_or_one, select_num_or_zero, select_num_or_zero2, select_one_or_diff2,
-    select_one_or_num2, select_zero_or_num2,
+    alloc_constant, alloc_num_equals, alloc_one, alloc_zero, conditionally_select,
+    conditionally_select2, select_num_or_one, select_num_or_zero, select_num_or_zero2,
+    select_one_or_diff2, select_one_or_num2, select_zero_or_num2,
 };
 use bellpepper::gadgets::Assignment;
 use bellpepper_core::{
@@ -526,6 +527,67 @@ where
         Ok(acc)
     }
 
+    /// Scalar multiplication `s * base` for a base point whose coordinates are
+    /// circuit CONSTANTS. All `2^i * base` are precomputed natively, so there
+    /// are no in-circuit doublings. Semantics match [`scalar_mul`]: `s` is
+    /// interpreted as its full integer value (not reduced modulo the group
+    /// order), and the result is the point at infinity `(0, 0, 1)` iff
+    /// `s * base` is the identity.
+    ///
+    /// Requires `base.y != 0` (checked by the dispatcher in `handle_msm`).
+    pub fn scalar_mul_fixed_base<CS: ConstraintSystem<Scalar>>(
+        mut cs: CS,
+        base: &ConstantPoint<Scalar>,
+        s: &AllocatedNum<Scalar>,
+    ) -> Result<Self, SynthesisError> {
+        let bits = s.to_bits_le(cs.namespace(|| "scalar_bits"))?;
+
+        // Native precomputation. This depends only on the constant base, so the
+        // prover and verifier shape passes build identical tables.
+        let b = base.recover_b();
+        let z = ConstantPoint::derive_offset(b, base);
+        let mut powers = Vec::with_capacity(bits.len());
+        let mut cur = *base;
+        for _ in 0..bits.len() {
+            powers.push(cur);
+            cur = cur.double();
+        }
+
+        // Seed the accumulator with the offset Z. Z has unknown discrete log
+        // w.r.t. `base`, so the incomplete-addition degeneracies (acc equal to
+        // +/- 2^i*base) are unreachable without first computing that log.
+        let mut acc = AllocatedPointNonInfinity::new(
+            alloc_constant(cs.namespace(|| "offset x"), z.x)?,
+            alloc_constant(cs.namespace(|| "offset y"), z.y)?,
+        );
+
+        // Double-and-add with no doubling: each 2^i*base is a constant.
+        // Invariant: after bit i, acc = Z + (s mod 2^{i+1}) * base, never infinity.
+        for (i, bit) in bits.iter().enumerate() {
+            let t =
+                acc.add_incomplete_constant(cs.namespace(|| format!("fixed add {i}")), &powers[i])?;
+            acc = AllocatedPointNonInfinity::conditionally_select(
+                cs.namespace(|| format!("fixed select {i}")),
+                &t,
+                &acc,
+                bit,
+            )?;
+        }
+
+        // Remove the offset with one complete addition of the constant -Z. The
+        // complete law yields infinity when s == 0 (mod the group order), which
+        // matches `scalar_mul`'s output for that case.
+        let zero = alloc_zero(cs.namespace(|| "zero"))?;
+        let neg_z = z.negate();
+        let minus_z = AllocatedPoint {
+            x: alloc_constant(cs.namespace(|| "minus offset x"), neg_z.x)?,
+            y: alloc_constant(cs.namespace(|| "minus offset y"), neg_z.y)?,
+            is_infinity: zero.clone(),
+        };
+        let acc_point = acc.to_allocated_point(&zero)?;
+        acc_point.add(cs.namespace(|| "subtract offset"), &minus_z)
+    }
+
     /// If condition outputs a otherwise outputs b
     pub fn conditionally_select<CS: ConstraintSystem<Scalar>>(
         mut cs: CS,
@@ -712,6 +774,64 @@ impl<Scalar: PrimeField + PrimeFieldBits> AllocatedPointNonInfinity<Scalar> {
         Ok(Self { x, y })
     }
 
+    /// Adds a CONSTANT point `other` to this point using the incomplete
+    /// addition law. The constant coordinates enter the linear combinations as
+    /// coefficients on `CS::one()`, so nothing is allocated for them. Assumes
+    /// `self != +/- other`.
+    pub fn add_incomplete_constant<CS>(
+        &self,
+        mut cs: CS,
+        other: &ConstantPoint<Scalar>,
+    ) -> Result<Self, SynthesisError>
+    where
+        CS: ConstraintSystem<Scalar>,
+    {
+        // lambda = (other.y - self.y) / (other.x - self.x)
+        let lambda = AllocatedNum::alloc(cs.namespace(|| "lambda"), || {
+            let x1 = *self.x.get_value().get()?;
+            if other.x == x1 {
+                Ok(Scalar::ONE)
+            } else {
+                Ok((other.y - *self.y.get_value().get()?) * (other.x - x1).invert().unwrap())
+            }
+        })?;
+        cs.enforce(
+            || "Check that lambda is computed correctly",
+            |lc| lc + lambda.get_variable(),
+            |lc| lc + (other.x, CS::one()) - self.x.get_variable(),
+            |lc| lc + (other.y, CS::one()) - self.y.get_variable(),
+        );
+
+        // x = lambda^2 - self.x - other.x
+        let x = AllocatedNum::alloc(cs.namespace(|| "x"), || {
+            Ok(*lambda.get_value().get()? * lambda.get_value().get()?
+                - *self.x.get_value().get()?
+                - other.x)
+        })?;
+        cs.enforce(
+            || "check that x is correct",
+            |lc| lc + lambda.get_variable(),
+            |lc| lc + lambda.get_variable(),
+            |lc| lc + x.get_variable() + self.x.get_variable() + (other.x, CS::one()),
+        );
+
+        // y = lambda * (self.x - x) - self.y
+        let y = AllocatedNum::alloc(cs.namespace(|| "y"), || {
+            Ok(
+                *lambda.get_value().get()? * (*self.x.get_value().get()? - *x.get_value().get()?)
+                    - *self.y.get_value().get()?,
+            )
+        })?;
+        cs.enforce(
+            || "Check that y is correct",
+            |lc| lc + lambda.get_variable(),
+            |lc| lc + self.x.get_variable() - x.get_variable(),
+            |lc| lc + y.get_variable() + self.y.get_variable(),
+        );
+
+        Ok(Self { x, y })
+    }
+
     /// doubles the point; since this is called with a point not at infinity, it
     /// is guaranteed to be not infinity
     pub fn double_incomplete<CS>(&self, mut cs: CS) -> Result<Self, SynthesisError>
@@ -780,5 +900,164 @@ impl<Scalar: PrimeField + PrimeFieldBits> AllocatedPointNonInfinity<Scalar> {
         let y = conditionally_select(cs.namespace(|| "select y"), &a.y, &b.y, condition)?;
 
         Ok(Self { x, y })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::Scalar;
+    use algebra_utils::hex_to_ff;
+    use bellpepper_core::test_cs::TestConstraintSystem;
+    use ff::Field;
+
+    fn generator() -> ConstantPoint<Scalar> {
+        ConstantPoint::new(
+            hex_to_ff("6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296"),
+            hex_to_ff("4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5"),
+        )
+    }
+
+    /// Little-endian bit decomposition of `s` from its canonical representation.
+    fn bits_le(s: &Scalar) -> Vec<bool> {
+        let repr = s.to_repr();
+        let bytes = repr.as_ref();
+        let mut bits = Vec::with_capacity(bytes.len() * 8);
+        for byte in bytes {
+            for i in 0..8 {
+                bits.push((byte >> i) & 1 == 1);
+            }
+        }
+        bits
+    }
+
+    /// Complete-group-law reference for `s * base`, interpreting `s` as its full
+    /// integer value (matching the gadget). `None` denotes the point at infinity.
+    fn native_mul(base: &ConstantPoint<Scalar>, s: &Scalar) -> Option<ConstantPoint<Scalar>> {
+        let complete_add = |p: Option<ConstantPoint<Scalar>>, q: &ConstantPoint<Scalar>| match p {
+            None => Some(*q),
+            Some(pp) => {
+                if pp.x == q.x {
+                    if pp.y == q.y {
+                        Some(pp.double())
+                    } else {
+                        None // p == -q
+                    }
+                } else {
+                    Some(pp.add(q))
+                }
+            }
+        };
+
+        let mut result: Option<ConstantPoint<Scalar>> = None;
+        let mut addend = *base;
+        for bit in bits_le(s) {
+            if bit {
+                result = complete_add(result, &addend);
+            }
+            addend = addend.double();
+        }
+        result
+    }
+
+    fn run_fixed(
+        base: &ConstantPoint<Scalar>,
+        s: Scalar,
+    ) -> (TestConstraintSystem<Scalar>, AllocatedPoint<Scalar>) {
+        let mut cs = TestConstraintSystem::<Scalar>::new();
+        let s_alloc = AllocatedNum::alloc(cs.namespace(|| "s"), || Ok(s)).unwrap();
+        let res =
+            AllocatedPoint::scalar_mul_fixed_base(cs.namespace(|| "mul"), base, &s_alloc).unwrap();
+        (cs, res)
+    }
+
+    fn run_variable(
+        base: &ConstantPoint<Scalar>,
+        s: Scalar,
+    ) -> (TestConstraintSystem<Scalar>, AllocatedPoint<Scalar>) {
+        let mut cs = TestConstraintSystem::<Scalar>::new();
+        let x = AllocatedNum::alloc(cs.namespace(|| "bx"), || Ok(base.x)).unwrap();
+        let y = AllocatedNum::alloc(cs.namespace(|| "by"), || Ok(base.y)).unwrap();
+        let is_infinity = alloc_zero(cs.namespace(|| "binf")).unwrap();
+        let point = AllocatedPoint { x, y, is_infinity };
+        let s_alloc = AllocatedNum::alloc(cs.namespace(|| "s"), || Ok(s)).unwrap();
+        let res = point.scalar_mul(cs.namespace(|| "mul"), &s_alloc).unwrap();
+        (cs, res)
+    }
+
+    /// P-256 group order n, and a full-width and boundary-aligned test value.
+    fn test_scalars() -> Vec<Scalar> {
+        let n: Scalar =
+            hex_to_ff("ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551");
+        vec![
+            Scalar::ZERO,
+            Scalar::ONE,
+            Scalar::from(2),
+            Scalar::from(3),
+            Scalar::from(0xdead_beef_u64),
+            hex_to_ff("123456789abcdef0fedcba9876543210deadbeefcafebabe0123456789abcdef"),
+            n - Scalar::ONE,
+            n,
+            n + Scalar::ONE,
+            hex_to_ff("8000000000000000000000000000000000000000000000000000000000000000"),
+            Scalar::from(0x1230_u64), // low nibble zero
+        ]
+    }
+
+    #[test]
+    fn fixed_base_matches_native() {
+        let g = generator();
+        for s in test_scalars() {
+            let (cs, res) = run_fixed(&g, s);
+            assert!(cs.is_satisfied(), "unsatisfied for s = {s:?}");
+            match native_mul(&g, &s) {
+                Some(p) => {
+                    assert_eq!(res.x.get_value().unwrap(), p.x, "x mismatch s = {s:?}");
+                    assert_eq!(res.y.get_value().unwrap(), p.y, "y mismatch s = {s:?}");
+                    assert_eq!(res.is_infinity.get_value().unwrap(), Scalar::ZERO);
+                }
+                None => {
+                    assert_eq!(res.x.get_value().unwrap(), Scalar::ZERO);
+                    assert_eq!(res.y.get_value().unwrap(), Scalar::ZERO);
+                    assert_eq!(res.is_infinity.get_value().unwrap(), Scalar::ONE);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn fixed_base_matches_variable_base() {
+        let g = generator();
+        for s in test_scalars() {
+            let (cs_f, res_f) = run_fixed(&g, s);
+            let (cs_v, res_v) = run_variable(&g, s);
+            assert!(cs_f.is_satisfied() && cs_v.is_satisfied());
+            assert_eq!(res_f.x.get_value(), res_v.x.get_value(), "x s = {s:?}");
+            assert_eq!(res_f.y.get_value(), res_v.y.get_value(), "y s = {s:?}");
+            assert_eq!(
+                res_f.is_infinity.get_value(),
+                res_v.is_infinity.get_value(),
+                "is_infinity s = {s:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn fixed_base_constraint_count() {
+        let g = generator();
+        let s = Scalar::from(0xdead_beef_u64);
+        let (cs_f, _) = run_fixed(&g, s);
+        let (cs_v, _) = run_variable(&g, s);
+        let fixed = cs_f.num_constraints();
+        let variable = cs_v.num_constraints();
+        println!("fixed-base constraints: {fixed}, variable-base constraints: {variable}");
+        assert!(
+            fixed <= 1600,
+            "fixed-base constraint count regressed: {fixed}"
+        );
+        assert!(
+            fixed < variable,
+            "fixed-base ({fixed}) not cheaper than variable-base ({variable})"
+        );
     }
 }
