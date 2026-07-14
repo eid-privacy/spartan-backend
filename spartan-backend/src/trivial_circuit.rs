@@ -3,11 +3,11 @@ use crate::nizk_verifier::verify;
 use bellpepper_core::num::AllocatedNum;
 use bellpepper_core::{ConstraintSystem, SynthesisError};
 use ff::{Field, PrimeField, PrimeFieldBits};
-use spartan2::errors::SpartanError;
-use spartan2::provider::T256HyraxEngine;
-use spartan2::spartan::SpartanSNARK;
-use spartan2::traits::Engine;
-use spartan2::traits::circuit::SpartanCircuit;
+use vega_prover::errors::VegaError;
+use vega_prover::provider::T256HyraxEngine;
+use vega_prover::traits::Engine;
+use vega_prover::traits::circuit::VegaCircuit;
+use vega_prover::vega_sc_zkp::VegaZkSNARK;
 
 // Test circuit
 #[allow(unused)]
@@ -40,7 +40,7 @@ impl<Scalar: PrimeField + PrimeFieldBits> TestCircuit<Scalar> {
             <T256HyraxEngine as Engine>::Scalar::ONE,
         );
 
-        let proof: Result<SpartanSNARK<E>, SpartanError> = prove(prover_circuit);
+        let proof: Result<VegaZkSNARK<E>, VegaError> = prove(prover_circuit);
         match proof {
             Ok(proof) => {
                 let verification_result = verify(verifier_circuit, proof);
@@ -53,7 +53,7 @@ impl<Scalar: PrimeField + PrimeFieldBits> TestCircuit<Scalar> {
     }
 }
 
-impl<E: Engine> SpartanCircuit<E> for TestCircuit<E::Scalar> {
+impl<E: Engine> VegaCircuit<E> for TestCircuit<E::Scalar> {
     fn public_values(&self) -> Result<Vec<E::Scalar>, SynthesisError> {
         Ok(vec![self.public_input])
     }

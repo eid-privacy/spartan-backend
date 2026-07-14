@@ -1,12 +1,12 @@
 use num_bigint::{BigInt, BigUint, ToBigInt};
 use num_traits::Num;
 use p256::elliptic_curve::PrimeField;
-use spartan2::provider::T256HyraxEngine;
-use spartan2::traits::Engine;
+use vega_prover::provider::T256HyraxEngine;
+use vega_prover::traits::Engine;
 
 pub mod ecdsa;
 
-// Aliases mostly used to tie the typing to our Spartan backend
+// Aliases mostly used to tie the typing to our Vega backend
 pub type P256Fp = <T256HyraxEngine as Engine>::Scalar;
 pub type Scalar = P256Fp;
 
