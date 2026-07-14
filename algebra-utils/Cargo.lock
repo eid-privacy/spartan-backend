@@ -35,7 +35,7 @@ dependencies = [
  "num-bigint 0.4.6",
  "num-traits",
  "p256",
- "spartan2",
+ "vega-prover",
 ]
 
 [[package]]
@@ -917,41 +917,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67b1b7a3b5fe4f1376887184045fcf45c69e92af734b7aaddc05fb777b6fbd03"
 
 [[package]]
-name = "spartan2"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc56b9c073d61f984aed92dc637f0a2fb3931dcdc2c91bc75ad38beca7b330b3"
-dependencies = [
- "bellpepper",
- "bellpepper-core",
- "bincode",
- "bitvec",
- "byteorder",
- "digest",
- "ff",
- "flate2",
- "generic-array",
- "getrandom",
- "group",
- "halo2curves",
- "itertools",
- "num-bigint 0.4.6",
- "num-integer",
- "num-traits",
- "once_cell",
- "rand",
- "rand_core",
- "rayon",
- "serde",
- "sha2",
- "sha3",
- "subtle",
- "thiserror 2.0.18",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "spin"
 version = "0.9.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1166,6 +1131,41 @@ name = "valuable"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
+
+[[package]]
+name = "vega-prover"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8691c2a88dbd870a24115593a27157c68a1c24c3e93a0223f7ca1dceb5631a9e"
+dependencies = [
+ "bellpepper",
+ "bellpepper-core",
+ "bincode",
+ "bitvec",
+ "byteorder",
+ "digest",
+ "ff",
+ "flate2",
+ "generic-array",
+ "getrandom",
+ "group",
+ "halo2curves",
+ "itertools",
+ "num-bigint 0.4.6",
+ "num-integer",
+ "num-traits",
+ "once_cell",
+ "rand",
+ "rand_core",
+ "rayon",
+ "serde",
+ "sha2",
+ "sha3",
+ "subtle",
+ "thiserror 2.0.18",
+ "tracing",
+ "tracing-subscriber",
+]
 
 [[package]]
 name = "version_check"

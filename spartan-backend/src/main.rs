@@ -5,13 +5,13 @@ use spartan_backend::{
     E, instantiate_circuit_from_dir, instantiate_circuit_with_name, prove_circuit,
     prove_circuit_to_base64, report_proof_size, verify_circuit, verify_circuit_from_base64,
 };
-use spartan2::bellpepper::r1cs::SpartanShape;
-use spartan2::bellpepper::shape_cs::ShapeCS;
 use std::env;
 use std::path::PathBuf;
 use tracing::info_span;
+use vega_prover::bellpepper::r1cs::VegaShape;
+use vega_prover::bellpepper::shape_cs::ShapeCS;
 
-/// Spartan2 backend for Noir circuits — prove and verify.
+/// Vega zkSNARK backend for Noir circuits — prove and verify.
 #[derive(Parser)]
 #[command(version, about)]
 struct Cli {
@@ -101,8 +101,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// Synthesizes the circuit into a [`ShapeCS`] and reports the resulting R1CS
-/// sizes without running prove/verify. Uses spartan2's own accounting so the
-/// numbers match what `SpartanSNARK::setup` sees.
+/// sizes without running prove/verify. Uses vega's own accounting so the
+/// numbers match what `VegaZkSNARK::setup` sees.
 fn count_constraints(circuit: CircuitParameters) {
     let _span = info_span!("count_constraints", circuit = ?circuit.name).entered();
 

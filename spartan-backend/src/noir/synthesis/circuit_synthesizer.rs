@@ -12,8 +12,8 @@ use bellpepper_core::num::AllocatedNum;
 use bellpepper_core::{ConstraintSystem, SynthesisError};
 use ff::Field;
 use noirc_artifacts::program::ProgramArtifact;
-use spartan2::provider::T256HyraxEngine;
-use spartan2::traits::circuit::SpartanCircuit;
+use vega_prover::provider::T256HyraxEngine;
+use vega_prover::traits::circuit::VegaCircuit;
 
 #[derive(Clone)]
 pub struct NoirCircuitSynthesizer {
@@ -102,8 +102,8 @@ impl NoirCircuitSynthesizer {
     }
 }
 
-impl SpartanCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
-    // This is used by Spartan when building the transcript. We need the values at that point.
+impl VegaCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
+    // This is used by Vega when building the transcript. We need the values at that point.
     fn public_values(&self) -> Result<Vec<Scalar>, SynthesisError> {
         let mut sorted_witnesses: Vec<_> = self
             .split_inputs
@@ -128,13 +128,31 @@ impl SpartanCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
         Ok(vec![])
     }
 
-    // This is the place where everything is available and assignments are supposed to happen
-    // -> the old "synthesize" should be here (see Sha256 example again).
+    // Precommitted variables are committed before the verifier's challenge. The Noir
+    // circuit is single-round with no challenges, so it allocates nothing here; all
+    // witness, constraints and public IO are produced in `synthesize` instead.
     fn precommitted<CS: ConstraintSystem<Scalar>>(
+        &self,
+        _: &mut CS,
+        _: &[AllocatedNum<Scalar>],
+    ) -> Result<Vec<AllocatedNum<Scalar>>, SynthesisError> {
+        Ok(vec![])
+    }
+
+    fn num_challenges(&self) -> usize {
+        0
+    }
+
+    // Vega re-runs `synthesize` at prove time (after truncating the constraint system
+    // back to the precommitted prefix) and reads the public IO from it, so the full
+    // circuit — witness allocation, constraints and public inputs — is built here.
+    fn synthesize<CS: ConstraintSystem<Scalar>>(
         &self,
         cs: &mut CS,
         _: &[AllocatedNum<Scalar>],
-    ) -> Result<Vec<AllocatedNum<Scalar>>, SynthesisError> {
+        _: &[AllocatedNum<Scalar>],
+        _: Option<&[Scalar]>, // challenges from the verifier
+    ) -> Result<(), SynthesisError> {
         let allocation_store = self.build_allocation_store(cs)?;
         tracing::debug!("Allocation map: {:?}", allocation_store);
         let mut blackbox_router = BlackboxRouter::new(&allocation_store);
@@ -232,21 +250,6 @@ impl SpartanCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
             total_mem_cells_touched,
         );
 
-        Ok(vec![])
-    }
-
-    fn num_challenges(&self) -> usize {
-        0
-    }
-
-    fn synthesize<CS: ConstraintSystem<Scalar>>(
-        &self,
-        _: &mut CS,
-        _: &[AllocatedNum<Scalar>],
-        _: &[AllocatedNum<Scalar>],
-        _: Option<&[Scalar]>, // challenges from the verifier
-    ) -> Result<(), SynthesisError> {
-        tracing::debug!("Call to synthesize");
         Ok(())
     }
 }

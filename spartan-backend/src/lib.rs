@@ -19,13 +19,13 @@ use crate::nizk_prover::prove;
 use crate::nizk_verifier::verify;
 use crate::noir::circuit::CircuitParameters;
 use crate::noir::synthesis::circuit_synthesizer::NoirCircuitSynthesizer;
-use spartan2::errors::SpartanError;
-use spartan2::spartan::SpartanSNARK;
-use spartan2::traits::circuit::SpartanCircuit;
 use tracing::info_span;
+use vega_prover::errors::VegaError;
+use vega_prover::traits::circuit::VegaCircuit;
+use vega_prover::vega_sc_zkp::VegaZkSNARK;
 
-/// Generate a Spartan2 proof for the given Noir circuit parameters.
-pub fn prove_circuit(circuit: &CircuitParameters) -> Result<SpartanSNARK<E>, SpartanError> {
+/// Generate a Vega zkSNARK proof for the given Noir circuit parameters.
+pub fn prove_circuit(circuit: &CircuitParameters) -> Result<VegaZkSNARK<E>, VegaError> {
     let _total_span = info_span!("prove", circuit = ?circuit.name).entered();
 
     tracing::info!("Running prover for {:?}", circuit.name);
@@ -45,7 +45,7 @@ pub fn prove_circuit(circuit: &CircuitParameters) -> Result<SpartanSNARK<E>, Spa
         debug_constraint_system(&prover_circuit);
     }
 
-    let proof: Result<SpartanSNARK<E>, SpartanError> = {
+    let proof: Result<VegaZkSNARK<E>, VegaError> = {
         let _span = info_span!("proof_creation").entered();
         prove(prover_circuit)
     };
@@ -58,11 +58,8 @@ pub fn prove_circuit(circuit: &CircuitParameters) -> Result<SpartanSNARK<E>, Spa
     proof
 }
 
-/// Verify a Spartan2 proof against the given Noir circuit parameters.
-pub fn verify_circuit(
-    circuit: &CircuitParameters,
-    proof: SpartanSNARK<E>,
-) -> Result<(), SpartanError> {
+/// Verify a Vega zkSNARK proof against the given Noir circuit parameters.
+pub fn verify_circuit(circuit: &CircuitParameters, proof: VegaZkSNARK<E>) -> Result<(), VegaError> {
     let _total_span = info_span!("verify", circuit = ?circuit.name).entered();
 
     tracing::info!("Running verifier for {:?}", circuit.name);
@@ -85,7 +82,7 @@ pub fn verify_circuit(
 /// Runs only the prover for the given circuit and returns the proof as a
 /// base64-encoded, bincode-serialized string (bincode 1.3, the same serializer
 /// spartan2 uses internally).
-pub fn prove_circuit_to_base64(circuit: &CircuitParameters) -> Result<String, SpartanError> {
+pub fn prove_circuit_to_base64(circuit: &CircuitParameters) -> Result<String, VegaError> {
     let proof = prove_circuit(circuit)?;
     let bytes = bincode::serialize(&proof).expect("failed to serialize proof");
     Ok(BASE64.encode(bytes))
@@ -97,16 +94,16 @@ pub fn prove_circuit_to_base64(circuit: &CircuitParameters) -> Result<String, Sp
 pub fn verify_circuit_from_base64(
     circuit: &CircuitParameters,
     proof_base64: &str,
-) -> Result<(), SpartanError> {
+) -> Result<(), VegaError> {
     let bytes = BASE64
         .decode(proof_base64.trim())
         .expect("failed to base64-decode proof");
-    let proof: SpartanSNARK<E> = bincode::deserialize(&bytes).expect("failed to deserialize proof");
+    let proof: VegaZkSNARK<E> = bincode::deserialize(&bytes).expect("failed to deserialize proof");
     verify_circuit(circuit, proof)
 }
 
 /// Creates a proof for the circuit and reports its serialized size in bytes.
-/// Uses bincode 1.3, the same serializer spartan2 uses internally, so the
+/// Uses bincode 1.3, the same serializer vega uses internally, so the
 /// byte count reflects the realistic wire size.
 pub fn report_proof_size(circuit: CircuitParameters) {
     let _span = info_span!("proof_size", circuit = ?circuit.name).entered();
@@ -125,13 +122,21 @@ pub fn report_proof_size(circuit: CircuitParameters) {
 fn debug_constraint_system(circuit: &NoirCircuitSynthesizer) {
     let mut cs = TestConstraintSystem::<Scalar>::new();
 
-    // Mirror the SpartanCircuit invocation order: shared -> precommitted.
+    // Mirror the VegaCircuit invocation order: shared -> precommitted -> synthesize.
     let shared: Vec<AllocatedNum<Scalar>> = circuit
         .shared(&mut cs.namespace(|| "shared"))
         .expect("shared synthesis failed");
-    let _ = circuit
+    let precommitted: Vec<AllocatedNum<Scalar>> = circuit
         .precommitted(&mut cs.namespace(|| "precommitted"), &shared)
         .expect("precommitted synthesis failed");
+    circuit
+        .synthesize(
+            &mut cs.namespace(|| "synthesize"),
+            &shared,
+            &precommitted,
+            None,
+        )
+        .expect("synthesize failed");
 
     tracing::warn!(
         "DEBUG CS: {} constraints, {} inputs, {} aux witnesses",

@@ -1,7 +1,7 @@
 use crate::noir::circuit_reader::types::input_wire::InputWire;
 use noirc_artifacts::program::ProgramArtifact;
-use spartan2::provider::T256HyraxEngine;
-use spartan2::traits::Engine;
+use vega_prover::provider::T256HyraxEngine;
+use vega_prover::traits::Engine;
 
 type E = T256HyraxEngine;
 pub struct CircuitParameters {
