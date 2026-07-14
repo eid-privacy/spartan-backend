@@ -1,7 +1,7 @@
 /// Maximum raw JWT payload length in bytes.
 /// SD-JWT payloads are smaller than full JWT payloads because disclosable claims
 /// are replaced by SHA-256 digests in the `_sd` array.
-pub global PAYLOAD_MAX_LEN: u32 = 2048;
+pub global PAYLOAD_MAX_LEN: u32 = 1911;
 
 /// Maximum decoded disclosure length in bytes.
 /// A disclosure is a JSON array: ["salt","claim_name",claim_value]

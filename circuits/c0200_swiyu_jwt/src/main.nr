@@ -29,7 +29,6 @@ global SIGNING_INPUT_MAX_LEN: u32 = ENCODED_HEADER_LEN + 1 + ENCODED_PAYLOAD_MAX
 
 global ASCII_DOT: u8 = 46;
 global ASCII_X: u8 = 120; // 'x'
-global ASCII_Y: u8 = 121; // 'y'
 
 fn build_dob_disclosure<let S: u32, let V: u32>(
     salt: BoundedVec<u8, S>,
@@ -89,7 +88,6 @@ fn main(
     dob_value: BoundedVec<u8, DOB_VALUE_MAX_LEN>,
     dob_sd_offset: u32,
     x_offset: u32,
-    y_offset: u32,
     device_signature: [u8; 64],
     // JWT/issuer ECDSA precompute (c0102 "vanilla equation" style):
     // R_jwt and s_inv_jwt s.t. R_jwt = t·s⁻¹·G + r·s⁻¹·Q_iss where
@@ -103,15 +101,12 @@ fn main(
     issuer_pub_x: pub [u8; 32],
     issuer_pub_y: pub [u8; 32],
     now_date: pub u32,
-    challenge_nonce: pub [u8; 32],
     // Device ECDSA precompute (c0100 "Crescent" style):
     // T_dev = R_dev·r⁻¹, U_dev = -e·r⁻¹·G with e = challenge_nonce,
     // r = device_signature[..32], s = device_signature[32..].
     // These MUST be public: the verifier validates (R_dev, T_dev, U_dev) is
     // consistent with the public challenge_nonce off-circuit; the in-circuit
     // equation only binds device_pub.x to (T·s + U).x.
-    R_dev_x: pub [u8; 32],
-    R_dev_y: pub [u8; 32],
     T_dev_x: pub [u8; 32],
     T_dev_y: pub [u8; 32],
     U_dev_x: pub [u8; 32],
@@ -181,10 +176,8 @@ fn main(
     );
 
     let device_key_x_bytes = extract_coord_for_key(payload_storage, x_offset, ASCII_X);
-    let device_key_y_bytes = extract_coord_for_key(payload_storage, y_offset, ASCII_Y);
 
     let device_pub_x: [u8; 32] = BASE64_URL_DECODER::decode(device_key_x_bytes);
-    let device_pub_y: [u8; 32] = BASE64_URL_DECODER::decode(device_key_y_bytes);
 
     // ECDSA verification of the device signature on challenge_nonce (c0100
     // "Crescent" style). The device pubkey is derived in-circuit from the
@@ -340,11 +333,6 @@ fn test_sdjwt_verification() {
 
     let now_date: u32 = 20240101;
 
-    let challenge_nonce: [u8; 32] = [
-        207, 158, 213, 45, 0, 176, 56, 230, 100, 221, 242, 129, 246, 31, 52, 192, 7, 253, 22, 114,
-        14, 225, 7, 56, 108, 69, 200, 143, 81, 206, 187, 5,
-    ];
-
     let device_signature: [u8; 64] = [
         159, 191, 146, 6, 209, 21, 91, 71, 63, 80, 53, 163, 105, 85, 83, 33, 43, 51, 38, 20, 14, 41,
         120, 144, 184, 49, 222, 111, 124, 235, 213, 56, 55, 4, 56, 223, 125, 106, 68, 205, 38, 65,
@@ -360,9 +348,8 @@ fn test_sdjwt_verification() {
         payload,
         dob_salt,
         dob_value,
-        745,
-        1471,
-        1521,
+        745, // dob_sd_offset
+        1471, // x_offset
         device_signature,
         zero32, // R_jwt_x
         zero32, // R_jwt_y
@@ -370,9 +357,6 @@ fn test_sdjwt_verification() {
         issuer_x,
         issuer_y,
         now_date,
-        challenge_nonce,
-        zero32, // R_dev_x
-        zero32, // R_dev_y
         zero32, // T_dev_x
         zero32, // T_dev_y
         zero32, // U_dev_x
