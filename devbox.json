@@ -33,8 +33,10 @@
       "build-docs": "cd spartan-backend && cargo doc",
       "stats-table": "python3 scripts/stats_table.py --update-readme README.md",
       "benchmark": "./scripts/benchmark.sh",
+      "benchmark-commits": "./scripts/benchmark_commits.sh $@",
       "samply": "./scripts/samply.sh $@",
-      "plot": "python3 ./scripts/plot_benchmarks.py $@"
+      "plot": "python3 ./scripts/plot_benchmarks.py $@",
+      "plot-commits": "python3 ./scripts/plot_benchmark_commits.py $@"
     }
   }
 }

@@ -1,0 +1,52 @@
+{
+  "_sd": [
+    "0BcTvVGeN-VNmTpYU639TWMgX1krDlxmWWQfyuEyDZw",
+    "101P2u7hSZq6nYU41IhzTOvkn1-LkhW7My2KTRA5raM",
+    "1OjjQ2atKd94oxUd_lizFLJ3AZVyYe27EUYh4mn647g",
+    "2i9QwGjcqRvzSvfcIH1XWuU3MzweqD7rIn4eInMTFqg",
+    "61i-ymJtQnWk1oehxcHle9aljE9TxEvlP2Uo3lId-FQ",
+    "BZwbFMtMD8YtaKtubxnRSU_IZNPjfWmj-zKKmy1L_7E",
+    "FEq8apG7lzd7EiW3d_G63VWwgzCCqNl69cBqcigYmE8",
+    "Fbn1z_Ti6fRdefM3RwRenFOBd3HVonFc8QLPzJ05ZCk",
+    "I4gjr_izD-OypTTnbF3hA8TcCCaq_7Mctavx2qgzhk8",
+    "KkPdL1g26gOct9FtmipbKkvI-JBUwiQC9MFsT9v8Irk",
+    "L2DMt2sQi6tT6P3JiT6BIIqN1z38LuMtNvu4mnF9kQE",
+    "NykXeHA2lkECVsCLRSeOGzEbVx6Q3TKifYwj3yUPeBY",
+    "Ol9Au6JV9nUzWpzKLtgrn1njtWxcmmJ-_VSbczJz390",
+    "PIotU5Ed3YrVTPd2cW1_NeL1L_z7kTDmXJD_egHGBOU",
+    "dKApOUPFn8l37elqnoRwfj9Fir_uZCqgxH5wiWLsx5k",
+    "hAYAvFoUmfkc7CmAj5sFuOJPVhVQCdAjLR8Y-1HHdmE",
+    "ipKkFaPWeTyJSfxbX0XhGZsVDw7H2x__TkeZk1YE04g",
+    "o2y-cUCrbTYleYusqfcEd8m1BagN7rZCoXEJ_nximoY",
+    "oYNXMC7BrBpT6-OwHjkwFSKwMMHj0blxSLitpOnTSng",
+    "pnJkUtCDFWZ3fJ8yDabxYk70LDGjaTsdOBirA6C8JAQ",
+    "yWB80Hcy77rtSUtw-xL8BNzK2cBcn8mHEotaWsKUmFs",
+    "ylrvwezcYuY7pmXkITZc0ksCSr8_3nkGEWMmVx-AiVU",
+    "znHHAY4_A03m_FUrHShFizcmZkG-q-WqYawWq16pFK4"
+  ],
+  "vct_metadata_uri#integrity": "sha256-ByrN+RFnwCp0b5AXVoI4pAbNhzYHlmpgFBrEMQQRNn0=",
+  "vct_metadata_uri": "https://bcs.admin.ch/bcs-web/metadata/betaid-sdjwt/vct/20260128125739",
+  "vct": "betaid-sdjwt",
+  "_sd_alg": "sha-256",
+  "iss": "did:tdw:QmPEZPhDFR4nEYSFK5bMnvECqdpf1tPTPJuWs9QrMjCumw:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:9a5559f0-b81c-4368-a170-e7b4ae424527",
+  "cnf": {
+    "kty": "EC",
+    "crv": "P-256",
+    "x": "4Ch_SBDcVSHipLePUBp8y5RH18VOlirVRtOt-tB-Y_Y",
+    "y": "ePh6PDXQ2cbm53W6aL832Xr8LH5P-bScppq-5eMIl0A",
+    "jwk": {
+      "kty": "EC",
+      "crv": "P-256",
+      "x": "4Ch_SBDcVSHipLePUBp8y5RH18VOlirVRtOt-tB-Y_Y",
+      "y": "ePh6PDXQ2cbm53W6aL832Xr8LH5P-bScppq-5eMIl0A"
+    }
+  },
+  "iat": 1771334876,
+  "status": {
+    "status_list": {
+      "type": "SwissTokenStatusList-1.0",
+      "idx": 7460,
+      "uri": "https://status-reg.trust-infra.swiyu-int.admin.ch/api/v1/statuslist/00d7abf2-1ee4-4cd6-b4da-5039345a1f7f.jwt"
+    }
+  }
+}

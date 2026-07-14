@@ -86,6 +86,67 @@ Times in seconds. Rows: ASSERTS; sub-rows per cell: BB prove / Spartan proof / S
 ```
 <!-- BENCHMARK_TABLE_END -->
 
+### Benchmarking one circuit across commits
+
+The table above sweeps the parametric `c9000_benchmark` circuit
+(`./scripts/benchmark.sh`). To instead track how spartan-backend changes affect a
+single **fixed** circuit across a history of commits, use
+[`scripts/benchmark_commits.sh`](scripts/benchmark_commits.sh):
+
+```bash
+./scripts/benchmark_commits.sh <bb_circuit_code> <circuit_code> [commit ...]
+# or via devbox:
+devbox run benchmark-commits <bb_circuit_code> <circuit_code> [commit ...]
+
+# example: spartan on the signature circuit, Barretenberg on a standard-field circuit
+./scripts/benchmark_commits.sh c0000_trivial c0101_signature_pok_zkattest_style 8c257bb 217b46f f605158 16df669
+```
+
+- `<circuit_code>` (the spartan circuit) and `<bb_circuit_code>` (the Barretenberg
+  circuit) are directory names under `circuits/`. They are **separate** because
+  Barretenberg cannot process the t256-only spartan circuits, so it needs its own
+  standard-field circuit. Commits may be given in any order; if none are given,
+  `HEAD` is used.
+- Each commit is checked out into a throwaway `git worktree` (in a `mktemp`
+  directory, so your working tree is never touched), spartan-backend is built there,
+  and `<circuit_code>`'s proof/verification is timed `N` times (default `N=5`).
+- Results are written to `benchmarks/<circuit_code>/` (the spartan circuit), one CSV
+  per run, named with a two-digit index so a plain sort follows git history (oldest
+  first). Each file has the schema `metric,min,max,mean,stddev`:
+  - `stats-00-barretenberg.csv` — `write_vk` / `prove` / `verify` for
+    `<bb_circuit_code>`, run **once** from the **current working tree** (not any
+    benchmarked commit), since Barretenberg depends only on the circuit, not the
+    spartan-backend code. The circuit is recompiled in place to get a valid witness
+    and the tracked `target/` is restored afterward. Skipped if `<bb_circuit_code>`
+    is also t256-only and doesn't compile with standard `nargo`.
+  - `stats-01-<sha>.csv`, `stats-02-<sha>.csv`, … — one per commit, oldest first,
+    with the spartan-only metrics: `spartan_proof` / `spartan_verify` (timings),
+    plus `spartan_constraints` (R1CS constraint count, via `--count-constraints`)
+    and `spartan_proof_size` (serialized proof size in bytes, via `--proof-size`).
+    The last two are deterministic single values (stddev `0`) and are recorded only
+    for commits whose backend supports the corresponding flag; they are skipped on
+    older commits that predate it.
+
+Plot the collected runs with
+[`scripts/plot_benchmark_commits.py`](scripts/plot_benchmark_commits.py):
+
+```bash
+python3 ./scripts/plot_benchmark_commits.py benchmarks/<circuit_code>
+# or via devbox:
+devbox run plot-commits benchmarks/<circuit_code>
+```
+
+This writes `benchmarks/<circuit_code>/benchmarks.png` with commits on the x-axis
+(oldest → newest); values below `1×` are improvements. The timing series
+`spartan_proof`/`spartan_verify` are shown relative to the **first commit's**
+`spartan_proof` mean, and `spartan_proof_size` relative to its **own first available
+value**. `spartan_constraints` is drawn differently — as `frac(log2(c) + 0.5) - 0.5`
+offset onto the baseline, i.e. the signed distance (in log₂ octaves) to the nearest
+power of two, so the line crossing the baseline marks constraints crossing a
+power-of-two boundary (where the R1CS padding jumps). Commits lacking a metric are
+skipped. When a `stats-00-barretenberg.csv` is present, its `prove`/`verify` times
+are drawn as constant horizontal reference lines.
+
 ## Profiling
 
 To find hotspots in the Spartan backend while proving/verifying a circuit, use
