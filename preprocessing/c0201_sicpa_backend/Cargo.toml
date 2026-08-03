@@ -10,6 +10,6 @@ algebra-utils = { path = "../../algebra-utils" }
 num-bigint = "0.5"
 spartan2 = { version = "0.9.0", default-features = false }
 halo2curves = "0.10.0"
-group = "0.13"
 sha2 = "0.10"
 base64 = "0.22"
+clap = { version = "4", features = ["derive"] }

@@ -4,6 +4,7 @@
 use algebra_utils::{big_to_ff, ff_to_big};
 use base64::Engine as _;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use clap::Parser;
 use group::Curve;
 use halo2curves::{CurveAffine, ff::Field, secp256r1::Secp256r1Affine};
 use num_bigint::BigUint;
@@ -157,8 +158,34 @@ fn affine_to_repr(p: &Secp256r1Affine) -> (FieldRepr, FieldRepr) {
     (ff_to_be::<Fp>(&p.x), ff_to_be::<Fp>(&p.y))
 }
 
+const DEFAULT_TOML_PATH: &str = "../../circuits/c0201_sicpa_backend/Prover.toml";
+
+/// c0201_sicpa_backend Prover.toml preprocessor.
+///
+/// Reconstructs the JWT/device ECDSA recovery values (R, s_inv, T, U) needed
+/// by the c0201_sicpa_backend circuit, writes them back into Prover.toml, and
+/// regenerates the accompanying verifier_input.json next to it.
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+struct Cli {
+    /// Path to the Prover.toml file to read/update.
+    #[arg(default_value = DEFAULT_TOML_PATH)]
+    prover_toml_path: PathBuf,
+
+    /// Path to write the regenerated verifier_input.json.
+    /// [default: verifier_input.json next to PROVER_TOML_PATH]
+    verifier_input_path: Option<PathBuf>,
+}
+
 fn main() {
-    let toml_path = PathBuf::from("../../circuits/c0201_sicpa_backend/Prover.toml");
+    let cli = Cli::parse();
+    let toml_path = cli.prover_toml_path;
+    let verifier_path = cli.verifier_input_path.unwrap_or_else(|| {
+        toml_path
+            .parent()
+            .map(|dir| dir.join("verifier_input.json"))
+            .unwrap_or_else(|| PathBuf::from("verifier_input.json"))
+    });
     let content = fs::read_to_string(&toml_path).expect("cannot read Prover.toml");
     let prover: ProverToml = toml::from_str(&content).expect("cannot parse Prover.toml");
 
