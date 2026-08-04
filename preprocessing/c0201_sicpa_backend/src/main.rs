@@ -5,7 +5,7 @@ use algebra_utils::{big_to_ff, ff_to_big};
 use base64::Engine as _;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use clap::Parser;
-use group::Curve;
+use halo2curves::group::Curve;
 use halo2curves::{CurveAffine, ff::Field, secp256r1::Secp256r1Affine};
 use num_bigint::BigUint;
 use serde::Deserialize;
