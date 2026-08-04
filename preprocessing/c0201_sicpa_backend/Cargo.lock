@@ -208,6 +208,7 @@ dependencies = [
  "algebra-utils",
  "base64",
  "clap",
+ "group",
  "halo2curves",
  "num-bigint 0.5.1",
  "serde",
