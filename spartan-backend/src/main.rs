@@ -1,9 +1,10 @@
-use std::{env, path::PathBuf};
+use std::{env, path::PathBuf, time::Instant};
 
 use clap::Parser;
 use spartan_backend::{
     E, instantiate_circuit_from_dir, instantiate_circuit_with_name,
     noir::{circuit::CircuitParameters, synthesis::circuit_synthesizer::NoirCircuitSynthesizer},
+    online_prover::{OnlineProver, expected_public_values, persistence, verify_online},
     prove_circuit, prove_circuit_to_base64, report_proof_size, verify_circuit,
     verify_circuit_from_base64,
 };
@@ -38,6 +39,25 @@ struct Cli {
     /// the value (as produced by `--prove`); skip prove.
     #[arg(long = "verify", value_name = "BASE64_PROOF")]
     verify: Option<String>,
+
+    /// online-proving benchmark: run `setup`+`prep` once, then produce
+    /// and verify N proofs reusing the prepared state, reporting per-proof
+    /// timings and the amortized speedup vs. the one-off prep cost.
+    #[arg(long = "online", value_name = "N")]
+    online: Option<usize>,
+
+    /// Optional directory to persist (`pk.bin`/`vk.bin`/`prep.bin`) after prep
+    /// and reload before proving, demonstrating cold-start reuse. Only used with
+    /// `--online`.
+    #[arg(long = "prep-dir", value_name = "DIR")]
+    prep_dir: Option<PathBuf>,
+
+    /// Additional circuit directories to prove online, reusing the SAME prepared
+    /// state as the primary circuit. Use for genuinely distinct challenges: each
+    /// dir must share the invariant credential inputs and differ only in the
+    /// online (manifest-declared) inputs. Repeatable. Only used with `--online`.
+    #[arg(long = "also", value_name = "DIR")]
+    also: Vec<PathBuf>,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -79,6 +99,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for circuit in circuits {
         if cli.count_constraints {
             count_constraints(circuit);
+        } else if let Some(n) = cli.online {
+            run_online(circuit, n, cli.prep_dir.as_deref(), &cli.also);
         } else if cli.proof_size {
             report_proof_size(circuit);
         } else if cli.prove {
@@ -111,6 +133,7 @@ fn count_constraints(circuit: CircuitParameters) {
     let synth = NoirCircuitSynthesizer::new(
         circuit.program_artifact.clone(),
         circuit.verifier_inputs.clone(),
+        &circuit.online_seeds,
     );
 
     let shape = ShapeCS::<E>::r1cs_shape(&synth).expect("failed to synthesize R1CS shape");
@@ -155,4 +178,135 @@ fn count_constraints(circuit: CircuitParameters) {
         num_public,
         num_challenges,
     );
+}
+
+/// Online-proving benchmark. Runs `setup`+`prep` once (the amortized
+/// cost, dominated by committing the invariant witness) and then produces and
+/// verifies proofs that reuse the prepared state. With `prep_dir` set, the
+/// artifacts are persisted after prep and reloaded before proving to exercise
+/// the cold-start path.
+///
+/// The primary `circuit` is proven `n` times. Each directory in `also` is a
+/// genuinely distinct challenge (same credential, different online inputs) and
+/// is proven once, reusing the very same prepared state — this is the real
+/// multi-challenge online path. To generate such directories, regenerate the
+/// circuit's online inputs per challenge (see `scripts/online_bench.sh` and
+/// `preprocessing/c0200_siyu_jwt`), keeping the invariant credential inputs
+/// fixed.
+fn run_online(
+    circuit: CircuitParameters,
+    n: usize,
+    prep_dir: Option<&std::path::Path>,
+    also: &[PathBuf],
+) {
+    let _span = info_span!("online", circuit = ?circuit.name).entered();
+
+    if circuit.online_seeds.is_empty() {
+        println!(
+            "{}: no online manifest (online.json) — every witness is in the rest segment; \
+             prep reuse yields no benefit. Add an online.json to enable pre-computation.",
+            circuit.name
+        );
+    }
+
+    // --- setup + prep (amortized once) -----------------------------------
+    let t_setup = Instant::now();
+    let mut prover = OnlineProver::setup(&circuit).expect("online setup/prep failed");
+    let setup_prep_elapsed = t_setup.elapsed();
+    println!(
+        "{}: setup+prep = {:.3?} (one-off, reused across all online proofs)",
+        circuit.name, setup_prep_elapsed
+    );
+
+    // --- optional persistence round-trip (cold start) --------------------
+    if let Some(dir) = prep_dir {
+        let t_save = Instant::now();
+        persistence::save_all(
+            dir,
+            prover.prover_key(),
+            prover.verifier_key(),
+            prover.prep(),
+        )
+        .expect("failed to persist prep artifacts");
+        let save_elapsed = t_save.elapsed();
+
+        let t_load = Instant::now();
+        let (pk, vk, prep) = persistence::load_all(dir).expect("failed to reload prep artifacts");
+        let load_elapsed = t_load.elapsed();
+        prover = OnlineProver::from_parts(pk, vk, prep);
+
+        println!(
+            "{}: persisted prep to {} (save={:.3?}, load={:.3?})",
+            circuit.name,
+            dir.display(),
+            save_elapsed,
+            load_elapsed
+        );
+    }
+
+    let expected = expected_public_values(&circuit);
+
+    // --- online proofs of the primary circuit (reuse prep) ---------------
+    let mut first: Option<std::time::Duration> = None;
+    let mut warm_total = std::time::Duration::ZERO;
+    for i in 0..n {
+        let t_prove = Instant::now();
+        let proof = prover.prove_online(&circuit).expect("online prove failed");
+        let prove_elapsed = t_prove.elapsed();
+
+        verify_online(prover.verifier_key(), &proof, &expected).expect("online verify failed");
+
+        if i == 0 {
+            first = Some(prove_elapsed);
+        } else {
+            warm_total += prove_elapsed;
+        }
+        println!(
+            "{}: online proof {}/{} prove={:.3?} (verified)",
+            circuit.name,
+            i + 1,
+            n,
+            prove_elapsed
+        );
+    }
+
+    if let Some(first) = first {
+        println!(
+            "{}: first prove (caches rest MSM) = {:.3?}",
+            circuit.name, first
+        );
+    }
+    if n > 1 {
+        let warm_avg = warm_total / (n as u32 - 1);
+        println!(
+            "{}: warm prove avg (delta MSM, {} samples) = {:.3?}",
+            circuit.name,
+            n - 1,
+            warm_avg
+        );
+    }
+
+    // --- distinct-challenge circuits (reuse the same prep) ---------------
+    for dir in also {
+        let other = instantiate_circuit_from_dir(dir);
+        if other.online_seeds != circuit.online_seeds {
+            eprintln!(
+                "warning: {} has a different online manifest than the primary circuit; \
+                 prep reuse assumes an identical partition",
+                other.name
+            );
+        }
+        let other_expected = expected_public_values(&other);
+        let t_prove = Instant::now();
+        let proof = prover
+            .prove_online(&other)
+            .expect("online prove (distinct challenge) failed");
+        let prove_elapsed = t_prove.elapsed();
+        verify_online(prover.verifier_key(), &proof, &other_expected)
+            .expect("online verify (distinct challenge) failed");
+        println!(
+            "{}: distinct-challenge online proof prove={:.3?} (verified, reused prep from {})",
+            other.name, prove_elapsed, circuit.name
+        );
+    }
 }

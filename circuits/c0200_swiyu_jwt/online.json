@@ -1,0 +1,12 @@
+{
+  "online_params": [
+    "device_signature",
+    "challenge_nonce",
+    "R_dev_x",
+    "R_dev_y",
+    "T_dev_x",
+    "T_dev_y",
+    "U_dev_x",
+    "U_dev_y"
+  ]
+}

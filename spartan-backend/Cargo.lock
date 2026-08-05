@@ -3616,6 +3616,7 @@ dependencies = [
  "noirc_artifacts",
  "num-bigint 0.4.6",
  "num-traits",
+ "serde",
  "serde_json",
  "tracing",
  "tracing-subscriber",
