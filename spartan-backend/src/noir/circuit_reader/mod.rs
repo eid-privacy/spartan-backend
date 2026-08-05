@@ -1,9 +1,8 @@
-use acir::FieldElement;
-use acir::circuit::Opcode;
-use acir::native_types::Witness;
+use std::fs;
+
+use acir::{FieldElement, circuit::Opcode, native_types::Witness};
 use noirc_artifacts::program::ProgramArtifact;
 use serde_json::Error as JsonError;
-use std::fs;
 
 mod named_parameters_mapping;
 pub mod prover_input_mapping;

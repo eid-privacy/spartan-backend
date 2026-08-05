@@ -1,13 +1,16 @@
-use crate::noir::synthesis::allocated_point::AllocatedPoint;
-use crate::noir::synthesis::allocation_support::{AllocatedWire, WitnessMap};
-use crate::noir::synthesis::blackbox::function_input::{allocate_or_get, get_witness_assignment};
-use crate::noir::synthesis::constraints_utils::alloc_zero;
-use crate::types::Scalar;
-use crate::utils::enforce_equal;
-use acir::FieldElement;
-use acir::circuit::opcodes::FunctionInput;
-use acir::native_types::Witness;
+use acir::{FieldElement, circuit::opcodes::FunctionInput, native_types::Witness};
 use bellpepper_core::{ConstraintSystem, SynthesisError};
+
+use crate::{
+    noir::synthesis::{
+        allocated_point::AllocatedPoint,
+        allocation_support::{AllocatedWire, WitnessMap},
+        blackbox::function_input::{allocate_or_get, get_witness_assignment},
+        constraints_utils::alloc_zero,
+    },
+    types::Scalar,
+    utils::enforce_equal,
+};
 
 type WrappedPoint = Box<[FunctionInput<FieldElement>; 2]>;
 

@@ -1,15 +1,14 @@
+use std::{env, path::PathBuf};
+
 use clap::Parser;
-use spartan_backend::noir::circuit::CircuitParameters;
-use spartan_backend::noir::synthesis::circuit_synthesizer::NoirCircuitSynthesizer;
 use spartan_backend::{
-    E, instantiate_circuit_from_dir, instantiate_circuit_with_name, prove_circuit,
-    prove_circuit_to_base64, report_proof_size, verify_circuit, verify_circuit_from_base64,
+    E, instantiate_circuit_from_dir, instantiate_circuit_with_name,
+    noir::{circuit::CircuitParameters, synthesis::circuit_synthesizer::NoirCircuitSynthesizer},
+    prove_circuit, prove_circuit_to_base64, report_proof_size, verify_circuit,
+    verify_circuit_from_base64,
 };
-use std::env;
-use std::path::PathBuf;
 use tracing::info_span;
-use vega_prover::bellpepper::r1cs::VegaShape;
-use vega_prover::bellpepper::shape_cs::ShapeCS;
+use vega_prover::bellpepper::{r1cs::VegaShape, shape_cs::ShapeCS};
 
 /// Vega zkSNARK backend for Noir circuits — prove and verify.
 #[derive(Parser)]

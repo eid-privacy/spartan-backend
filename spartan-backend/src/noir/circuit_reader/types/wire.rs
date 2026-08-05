@@ -1,5 +1,6 @@
-use crate::noir::circuit_reader::types::input_wire::InputWire;
 use acir::native_types::Witness;
+
+use crate::noir::circuit_reader::types::input_wire::InputWire;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Wire {

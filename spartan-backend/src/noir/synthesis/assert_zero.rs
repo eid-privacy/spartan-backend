@@ -1,11 +1,17 @@
-use crate::noir::scalar_conversion::to_spartan_scalar;
-use crate::noir::synthesis::allocation_support::{AllocatedWire, WitnessMap};
-use crate::types::Scalar;
-use acir::FieldElement;
-use acir::native_types::{Expression, Witness};
-use bellpepper_core::num::AllocatedNum;
-use bellpepper_core::{ConstraintSystem, LinearCombination, SynthesisError};
+use acir::{
+    FieldElement,
+    native_types::{Expression, Witness},
+};
+use bellpepper_core::{ConstraintSystem, LinearCombination, SynthesisError, num::AllocatedNum};
 use ff::Field;
+
+use crate::{
+    noir::{
+        scalar_conversion::to_spartan_scalar,
+        synthesis::allocation_support::{AllocatedWire, WitnessMap},
+    },
+    types::Scalar,
+};
 
 fn resolve<'a>(
     allocation_store: &'a WitnessMap<AllocatedWire<Scalar>>,

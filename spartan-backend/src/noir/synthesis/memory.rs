@@ -15,15 +15,19 @@
 //! currently target and is a deliberate simple-first design. A lookup-argument
 //! based encoding would be a future optimisation.
 
-use crate::noir::synthesis::allocation_support::{AllocatedWire, WitnessMap};
-use crate::types::Scalar;
-use acir::circuit::opcodes::{BlockId, BlockType, MemOp, MemOpKind};
-use acir::native_types::Witness;
-use bellpepper_core::boolean::AllocatedBit;
-use bellpepper_core::num::AllocatedNum;
-use bellpepper_core::{ConstraintSystem, SynthesisError};
-use ff::{Field, PrimeField};
 use std::collections::HashMap;
+
+use acir::{
+    circuit::opcodes::{BlockId, BlockType, MemOp, MemOpKind},
+    native_types::Witness,
+};
+use bellpepper_core::{ConstraintSystem, SynthesisError, boolean::AllocatedBit, num::AllocatedNum};
+use ff::{Field, PrimeField};
+
+use crate::{
+    noir::synthesis::allocation_support::{AllocatedWire, WitnessMap},
+    types::Scalar,
+};
 
 /// Symbolic contents of an ACIR memory block.
 ///

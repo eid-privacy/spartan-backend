@@ -1,8 +1,8 @@
-use crate::Scalar;
-use crate::noir::scalar_conversion::to_spartan_scalar_value;
 use acvm::FieldElement;
 use algebra_utils::biguint_to_scalar;
 use num_bigint::BigUint;
+
+use crate::{Scalar, noir::scalar_conversion::to_spartan_scalar_value};
 
 #[derive(Clone, Copy, Debug)]
 pub enum CircuitInput {

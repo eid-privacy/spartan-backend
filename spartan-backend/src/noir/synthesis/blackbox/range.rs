@@ -1,5 +1,4 @@
-use bellpepper_core::num::AllocatedNum;
-use bellpepper_core::{ConstraintSystem, SynthesisError};
+use bellpepper_core::{ConstraintSystem, SynthesisError, num::AllocatedNum};
 use ff::{PrimeField, PrimeFieldBits};
 
 // this is copied over from bellpepper_core gadgets/boolean.rs except for the "take" in the last

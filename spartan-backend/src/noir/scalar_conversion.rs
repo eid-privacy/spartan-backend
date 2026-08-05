@@ -1,8 +1,9 @@
+use std::sync::OnceLock;
+
 use acir::{AcirField, FieldElement};
 use algebra_utils::hex_to_big;
 use ff::PrimeField;
 use num_bigint::BigUint;
-use std::sync::OnceLock;
 
 fn acir_modulus() -> &'static BigUint {
     static MOD: OnceLock<BigUint> = OnceLock::new();

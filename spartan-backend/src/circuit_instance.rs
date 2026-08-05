@@ -1,11 +1,17 @@
-use crate::Scalar;
-use crate::noir::circuit::CircuitParameters;
-use crate::noir::circuit_reader::prover_input_mapping::read_inputs;
-use crate::noir::circuit_reader::read_noir_circuit;
-use crate::noir::circuit_reader::types::circuit_input::CircuitInput;
-use crate::noir::circuit_reader::types::input_wire::InputWire;
-use crate::noir::circuit_reader::verifier_input_mapping::read_verifier_inputs;
 use std::path::Path;
+
+use crate::{
+    Scalar,
+    noir::{
+        circuit::CircuitParameters,
+        circuit_reader::{
+            prover_input_mapping::read_inputs,
+            read_noir_circuit,
+            types::{circuit_input::CircuitInput, input_wire::InputWire},
+            verifier_input_mapping::read_verifier_inputs,
+        },
+    },
+};
 
 struct CircuitSettings {
     circuit_file: String,

@@ -1,13 +1,13 @@
-use crate::nizk_prover::prove;
-use crate::nizk_verifier::verify;
-use bellpepper_core::num::AllocatedNum;
-use bellpepper_core::{ConstraintSystem, SynthesisError};
+use bellpepper_core::{ConstraintSystem, SynthesisError, num::AllocatedNum};
 use ff::{Field, PrimeField, PrimeFieldBits};
-use vega_prover::errors::VegaError;
-use vega_prover::provider::T256HyraxEngine;
-use vega_prover::traits::Engine;
-use vega_prover::traits::circuit::VegaCircuit;
-use vega_prover::vega_sc_zkp::VegaZkSNARK;
+use vega_prover::{
+    errors::VegaError,
+    provider::T256HyraxEngine,
+    traits::{Engine, circuit::VegaCircuit},
+    vega_sc_zkp::VegaZkSNARK,
+};
+
+use crate::{nizk_prover::prove, nizk_verifier::verify};
 
 // Test circuit
 #[allow(unused)]
