@@ -20,7 +20,11 @@
     "extra-trusted-public-keys": "eid-privacy.cachix.org-1:lxRzvjcWd/A6Wew1tq0IK6OIMVWNJKUTy4s7EKb6C2A="
   },
   "shell": {
-    "init_hook": ["rustup default stable", ". $VENV_DIR/bin/activate"],
+    "init_hook": [
+      "rustup default stable",
+      ". $VENV_DIR/bin/activate",
+      "rustup toolchain install nightly --component rustfmt"
+    ],
     "scripts": {
       "fetch": "( cd spartan-backend && cargo fetch )",
       "ls": "ls && pwd",
@@ -28,7 +32,8 @@
       "build-check": "cd spartan-backend && RUSTFLAGS=\"-D warnings\" cargo build --all-targets",
       "start": "cd spartan-backend && RUST_LOG=info cargo run",
       "test": "cd spartan-backend && cargo test -- --show-output",
-      "fmt-check": "cd spartan-backend && cargo fmt --check",
+      "fmt-check": "cd spartan-backend && cargo +nightly fmt --check",
+      "fmt": "cd spartan-backend && cargo +nightly fmt",
       "nargo-check": "./scripts/nargo_check.sh",
       "build-docs": "cd spartan-backend && cargo doc",
       "stats-table": "python3 scripts/stats_table.py --update-readme README.md",

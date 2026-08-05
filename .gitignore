@@ -4,3 +4,4 @@ stats.txt
 circuits/c9000_benchmark/src/const.nr
 # samply profiling output (see SAMPLY.md)
 scripts/samply/
+benchmarks
