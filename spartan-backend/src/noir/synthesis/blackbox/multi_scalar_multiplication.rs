@@ -1,16 +1,21 @@
-use crate::noir::scalar_conversion::to_spartan_scalar;
-use crate::noir::synthesis::allocated_point::AllocatedPoint;
-use crate::noir::synthesis::allocation_support::{AllocatedWire, WitnessMap};
-use crate::noir::synthesis::blackbox::function_input::{allocate_or_get, get_witness_assignment};
-use crate::noir::synthesis::constant_point::ConstantPoint;
-use crate::noir::synthesis::constraints_utils::alloc_zero;
-use crate::types::Scalar;
-use crate::utils::enforce_equal;
-use acir::FieldElement;
-use acir::circuit::opcodes::FunctionInput;
-use acir::native_types::Witness;
+use acir::{FieldElement, circuit::opcodes::FunctionInput, native_types::Witness};
 use bellpepper_core::{ConstraintSystem, SynthesisError};
 use ff::Field;
+
+use crate::{
+    noir::{
+        scalar_conversion::to_spartan_scalar,
+        synthesis::{
+            allocated_point::AllocatedPoint,
+            allocation_support::{AllocatedWire, WitnessMap},
+            blackbox::function_input::{allocate_or_get, get_witness_assignment},
+            constant_point::ConstantPoint,
+            constraints_utils::alloc_zero,
+        },
+    },
+    types::Scalar,
+    utils::enforce_equal,
+};
 
 pub fn handle_msm<CS: ConstraintSystem<Scalar>>(
     allocation_store: &WitnessMap<AllocatedWire<Scalar>>,

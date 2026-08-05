@@ -1,11 +1,15 @@
-use crate::noir::circuit_reader::named_parameters_mapping::map_wires;
-use crate::noir::circuit_reader::types::circuit_input::CircuitInput;
-use crate::noir::circuit_reader::types::input_wire::InputWire;
-use crate::noir::circuit_reader::types::wire::Wire;
+use std::{
+    collections::{BTreeSet, HashMap},
+    fs,
+};
+
 use noirc_artifacts::program::ProgramArtifact;
 use serde_json::{Error, Map, Value};
-use std::collections::{BTreeSet, HashMap};
-use std::fs;
+
+use crate::noir::circuit_reader::{
+    named_parameters_mapping::map_wires,
+    types::{circuit_input::CircuitInput, input_wire::InputWire, wire::Wire},
+};
 
 pub fn read_verifier_inputs(program: &ProgramArtifact, path: &str) -> Vec<InputWire<CircuitInput>> {
     let wires_mapping = map_wires(

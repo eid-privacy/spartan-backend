@@ -1,13 +1,13 @@
-use crate::noir::circuit_reader::named_parameters_mapping::map_wires;
-use crate::noir::circuit_reader::types::circuit_input::CircuitInput;
-use crate::noir::circuit_reader::types::input_wire::InputWire;
-use crate::noir::circuit_reader::types::wire::Wire;
-use acir::FieldElement;
-use acir::native_types::Witness;
+use std::{collections::HashMap, path::PathBuf};
+
+use acir::{FieldElement, native_types::Witness};
 use noir_artifact_cli::fs::witness::load_witness_from_file;
 use noirc_artifacts::program::ProgramArtifact;
-use std::collections::HashMap;
-use std::path::PathBuf;
+
+use crate::noir::circuit_reader::{
+    named_parameters_mapping::map_wires,
+    types::{circuit_input::CircuitInput, input_wire::InputWire, wire::Wire},
+};
 
 pub fn read_inputs(program: &ProgramArtifact, path: &str) -> Vec<InputWire<CircuitInput>> {
     // required to figure out if a wire is public or private input

@@ -1,13 +1,15 @@
 // Helpers around FunctionInput<_> from Noir
 
-use crate::noir::scalar_conversion::to_spartan_scalar;
-use crate::noir::synthesis::allocation_support::{AllocatedWire, WitnessMap};
-use crate::types::Scalar;
-use acir::FieldElement;
-use acir::circuit::opcodes::FunctionInput;
-use acir::native_types::Witness;
-use bellpepper_core::num::AllocatedNum;
-use bellpepper_core::{ConstraintSystem, SynthesisError};
+use acir::{FieldElement, circuit::opcodes::FunctionInput, native_types::Witness};
+use bellpepper_core::{ConstraintSystem, SynthesisError, num::AllocatedNum};
+
+use crate::{
+    noir::{
+        scalar_conversion::to_spartan_scalar,
+        synthesis::allocation_support::{AllocatedWire, WitnessMap},
+    },
+    types::Scalar,
+};
 
 pub fn allocate_or_get<CS: ConstraintSystem<Scalar>>(
     allocation_store: &WitnessMap<AllocatedWire<Scalar>>,

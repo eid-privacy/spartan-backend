@@ -1,5 +1,4 @@
-use bellpepper_core::ConstraintSystem;
-use bellpepper_core::num::AllocatedNum;
+use bellpepper_core::{ConstraintSystem, num::AllocatedNum};
 use ff::PrimeField;
 
 pub fn enforce_equal<F: PrimeField, CS: ConstraintSystem<F>>(

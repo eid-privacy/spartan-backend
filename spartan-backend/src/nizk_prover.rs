@@ -1,8 +1,8 @@
-use vega_prover::errors::VegaError;
-use vega_prover::traits::Engine;
-use vega_prover::traits::circuit::VegaCircuit;
-use vega_prover::traits::snark::R1CSSNARKTrait;
-use vega_prover::vega_sc_zkp::VegaZkSNARK;
+use vega_prover::{
+    errors::VegaError,
+    traits::{Engine, circuit::VegaCircuit, snark::R1CSSNARKTrait},
+    vega_sc_zkp::VegaZkSNARK,
+};
 
 pub fn prove<E: Engine, C: VegaCircuit<E>>(prover_circuit: C) -> Result<VegaZkSNARK<E>, VegaError>
 where

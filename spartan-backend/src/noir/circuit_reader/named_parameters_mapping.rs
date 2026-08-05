@@ -1,8 +1,9 @@
-use crate::noir::circuit_reader::types::wire::Wire;
-use acir::FieldElement;
-use acir::circuit::Circuit;
-use noirc_abi::{AbiParameter, AbiVisibility};
 use std::collections::HashMap;
+
+use acir::{FieldElement, circuit::Circuit};
+use noirc_abi::{AbiParameter, AbiVisibility};
+
+use crate::noir::circuit_reader::types::wire::Wire;
 
 /// Assign ABI parameters to their respective witnesses in the bytecode
 pub fn map_wires(

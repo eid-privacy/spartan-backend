@@ -1,12 +1,6 @@
 //! This module implements various elliptic curve gadgets
 //! This module was copied from Crescent's implementation
 #![allow(non_snake_case)]
-use crate::noir::synthesis::constant_point::ConstantPoint;
-use crate::noir::synthesis::constraints_utils::{
-    alloc_constant, alloc_num_equals, alloc_one, alloc_zero, conditionally_select,
-    conditionally_select2, select_num_or_one, select_num_or_zero, select_num_or_zero2,
-    select_one_or_diff2, select_one_or_num2, select_zero_or_num2,
-};
 use bellpepper::gadgets::Assignment;
 use bellpepper_core::{
     ConstraintSystem, LinearCombination, SynthesisError,
@@ -14,6 +8,15 @@ use bellpepper_core::{
     num::AllocatedNum,
 };
 use ff::{PrimeField, PrimeFieldBits};
+
+use crate::noir::synthesis::{
+    constant_point::ConstantPoint,
+    constraints_utils::{
+        alloc_constant, alloc_num_equals, alloc_one, alloc_zero, conditionally_select,
+        conditionally_select2, select_num_or_one, select_num_or_zero, select_num_or_zero2,
+        select_one_or_diff2, select_one_or_num2, select_zero_or_num2,
+    },
+};
 
 /// Extracts the `AllocatedBit` from a `Boolean`. `AllocatedNum::to_bits_le`
 /// only ever yields `Boolean::Is`, so the other variants are unreachable here.
@@ -1015,11 +1018,12 @@ impl<Scalar: PrimeField + PrimeFieldBits> AllocatedPointNonInfinity<Scalar> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::types::Scalar;
     use algebra_utils::hex_to_ff;
     use bellpepper_core::test_cs::TestConstraintSystem;
     use ff::Field;
+
+    use super::*;
+    use crate::types::Scalar;
 
     /// Generic width-`w` fixed-base scalar multiplication. This is the original
     /// (pre-specialization) implementation, kept verbatim as an equivalence

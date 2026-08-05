@@ -1,14 +1,22 @@
-use crate::noir::synthesis::allocation_support::{AllocatedWire, WitnessMap};
-use crate::noir::synthesis::blackbox::ec_add::handle_ec_add;
-use crate::noir::synthesis::blackbox::multi_scalar_multiplication::handle_msm;
-use crate::noir::synthesis::blackbox::range::{field_into_allocated_bits_le, powers_of_two};
-use crate::noir::synthesis::blackbox::sha256::handle_sha256_compression;
-use crate::types::Scalar;
-use acir::FieldElement;
-use acir::circuit::opcodes::BlackBoxFuncCall;
-use acir::circuit::opcodes::BlackBoxFuncCall::RANGE;
+use acir::{
+    FieldElement,
+    circuit::opcodes::{BlackBoxFuncCall, BlackBoxFuncCall::RANGE},
+};
 use bellpepper_core::{ConstraintSystem, LinearCombination, SynthesisError};
 use ff::derive::bitvec::macros::internal::funty::Fundamental;
+
+use crate::{
+    noir::synthesis::{
+        allocation_support::{AllocatedWire, WitnessMap},
+        blackbox::{
+            ec_add::handle_ec_add,
+            multi_scalar_multiplication::handle_msm,
+            range::{field_into_allocated_bits_le, powers_of_two},
+            sha256::handle_sha256_compression,
+        },
+    },
+    types::Scalar,
+};
 
 pub struct BlackboxRouter<'a> {
     allocation_store: &'a WitnessMap<AllocatedWire<Scalar>>,

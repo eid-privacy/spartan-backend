@@ -1,9 +1,9 @@
-use acir::native_types::Witness;
-use bellpepper_core::num::AllocatedNum;
-use bellpepper_core::{ConstraintSystem, SynthesisError};
 use core::fmt;
-use ff::PrimeField;
 use std::fmt::Formatter;
+
+use acir::native_types::Witness;
+use bellpepper_core::{ConstraintSystem, SynthesisError, num::AllocatedNum};
+use ff::PrimeField;
 
 pub(crate) struct WitnessMap<V> {
     data: Vec<Option<V>>,

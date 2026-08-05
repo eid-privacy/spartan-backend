@@ -6,23 +6,20 @@ mod trivial_circuit;
 pub mod types;
 mod utils;
 
-use base64::Engine as _;
-use base64::engine::general_purpose::STANDARD as BASE64;
-use bellpepper_core::ConstraintSystem;
-use bellpepper_core::num::AllocatedNum;
-use bellpepper_core::test_cs::TestConstraintSystem;
 use std::env;
+
+use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
+use bellpepper_core::{ConstraintSystem, num::AllocatedNum, test_cs::TestConstraintSystem};
+use tracing::info_span;
 pub use types::{E, Scalar};
+use vega_prover::{errors::VegaError, traits::circuit::VegaCircuit, vega_sc_zkp::VegaZkSNARK};
 
 pub use crate::circuit_instance::{instantiate_circuit_from_dir, instantiate_circuit_with_name};
-use crate::nizk_prover::prove;
-use crate::nizk_verifier::verify;
-use crate::noir::circuit::CircuitParameters;
-use crate::noir::synthesis::circuit_synthesizer::NoirCircuitSynthesizer;
-use tracing::info_span;
-use vega_prover::errors::VegaError;
-use vega_prover::traits::circuit::VegaCircuit;
-use vega_prover::vega_sc_zkp::VegaZkSNARK;
+use crate::{
+    nizk_prover::prove,
+    nizk_verifier::verify,
+    noir::{circuit::CircuitParameters, synthesis::circuit_synthesizer::NoirCircuitSynthesizer},
+};
 
 /// Generate a Vega zkSNARK proof for the given Noir circuit parameters.
 pub fn prove_circuit(circuit: &CircuitParameters) -> Result<VegaZkSNARK<E>, VegaError> {

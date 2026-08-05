@@ -1,19 +1,21 @@
-use crate::noir::circuit_reader::read_witnesses;
-use crate::noir::circuit_reader::types::input_wire::InputWire;
-use crate::noir::synthesis::allocation_support::{
-    AllocatedWire, WitnessMap, allocate_input, allocate_witness,
-};
-use crate::noir::synthesis::assert_zero::handle_assert_zero;
-use crate::noir::synthesis::blackbox::router::BlackboxRouter;
-use crate::noir::synthesis::memory::{MemoryStore, handle_memory_init, handle_memory_op};
-use crate::types::Scalar;
 use acir::circuit::Opcode;
-use bellpepper_core::num::AllocatedNum;
-use bellpepper_core::{ConstraintSystem, SynthesisError};
+use bellpepper_core::{ConstraintSystem, SynthesisError, num::AllocatedNum};
 use ff::Field;
 use noirc_artifacts::program::ProgramArtifact;
-use vega_prover::provider::T256HyraxEngine;
-use vega_prover::traits::circuit::VegaCircuit;
+use vega_prover::{provider::T256HyraxEngine, traits::circuit::VegaCircuit};
+
+use crate::{
+    noir::{
+        circuit_reader::{read_witnesses, types::input_wire::InputWire},
+        synthesis::{
+            allocation_support::{AllocatedWire, WitnessMap, allocate_input, allocate_witness},
+            assert_zero::handle_assert_zero,
+            blackbox::router::BlackboxRouter,
+            memory::{MemoryStore, handle_memory_init, handle_memory_op},
+        },
+    },
+    types::Scalar,
+};
 
 #[derive(Clone)]
 pub struct NoirCircuitSynthesizer {

@@ -1,16 +1,19 @@
-use acir::FieldElement;
-use acir::circuit::opcodes::FunctionInput;
-use acir::native_types::Witness;
-use bellpepper::gadgets::sha256::sha256_compression_function;
-use bellpepper::gadgets::uint32::UInt32;
-use bellpepper_core::boolean::{AllocatedBit, Boolean};
-use bellpepper_core::num::AllocatedNum;
-use bellpepper_core::{ConstraintSystem, LinearCombination, SynthesisError};
+use acir::{FieldElement, circuit::opcodes::FunctionInput, native_types::Witness};
+use bellpepper::gadgets::{sha256::sha256_compression_function, uint32::UInt32};
+use bellpepper_core::{
+    ConstraintSystem, LinearCombination, SynthesisError,
+    boolean::{AllocatedBit, Boolean},
+    num::AllocatedNum,
+};
 use ff::{Field, PrimeFieldBits};
 
-use crate::noir::synthesis::allocation_support::{AllocatedWire, WitnessMap};
-use crate::noir::synthesis::blackbox::function_input::{allocate_or_get, get_witness_assignment};
-use crate::types::Scalar;
+use crate::{
+    noir::synthesis::{
+        allocation_support::{AllocatedWire, WitnessMap},
+        blackbox::function_input::{allocate_or_get, get_witness_assignment},
+    },
+    types::Scalar,
+};
 
 pub fn handle_sha256_compression<CS: ConstraintSystem<Scalar>>(
     allocation_store: &WitnessMap<AllocatedWire<Scalar>>,

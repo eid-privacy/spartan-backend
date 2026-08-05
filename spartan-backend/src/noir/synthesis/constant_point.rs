@@ -101,9 +101,10 @@ impl<F: PrimeField> ConstantPoint<F> {
 
 #[cfg(test)]
 mod tests {
+    use algebra_utils::hex_to_ff;
+
     use super::*;
     use crate::types::Scalar;
-    use algebra_utils::hex_to_ff;
 
     fn generator() -> ConstantPoint<Scalar> {
         ConstantPoint::new(
