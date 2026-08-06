@@ -5,3 +5,6 @@ circuits/c9000_benchmark/src/const.nr
 # samply profiling output (see SAMPLY.md)
 scripts/samply/
 benchmarks
+
+# Precomputed prep artifacts (large, machine-generated; see --precompute)
+circuits/*/target/precompute.bin

@@ -34,6 +34,38 @@ bytecode are important to track.**
 *Note: `cargo run [--release]` (without circuit name) will run all known passing circuits (hardcoded for now).*
 *Note: provide `RUST_LOG` levels to get an output. e.g., `RUST_LOG=DEBUG cargo run`*
 
+### Pre-computing the offline phase (`--precompute`)
+
+Proving is split into an offline phase (`setup` + `prep`, which commits the
+invariant part of the witness) and an online phase (the actual proof). The
+offline phase can be run ahead of time and reused:
+
+```sh
+# offline, once per circuit build
+cargo run --release -- ../circuits/c0200_swiyu_jwt --precompute
+
+# online, any number of times — picks the artifact up automatically
+cargo run --release -- ../circuits/c0200_swiyu_jwt --prove
+```
+
+* `--precompute` writes a single file, `<circuit_dir>/target/precompute.bin`
+  (prover key, verifier key and prepared state, bincode-encoded). It can be
+  large — over a gigabyte for the bigger circuits — and is git-ignored.
+* `--prove` loads that file when it exists and proves through the online path;
+  otherwise it falls back to the usual monolithic proving. The base64 proof
+  printed on stdout is the same either way and verifies with `--verify`.
+* The file records a fingerprint of the circuit's ACIR bytecode and of the
+  online partition declared in `online.json`. Rebuilding the circuit or editing
+  `online.json` makes it stale: `--prove` then warns and falls back to regular
+  proving, so re-run `--precompute`. Changing the **values** of online inputs
+  (challenge nonce, device signature, …) is exactly what the online path is for
+  and never invalidates the artifact.
+* Circuits without an `online.json` still work; the precomputed state saves
+  `setup`, but the witness commitment is redone on every proof.
+
+Note that the prepared state is *not* rewritten after a proof: every `--prove`
+run reuses the same prep as saved by `--precompute`.
+
 ### (Optional) Setup nargo
 
 This is required if you need to compile/re-compile/execute circuits.

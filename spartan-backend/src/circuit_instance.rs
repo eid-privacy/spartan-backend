@@ -122,6 +122,7 @@ fn instantiate_circuit_with_settings(
 
     CircuitParameters {
         name: String::from(name),
+        dir: circuit_settings.manifest_dir.clone(),
         program_artifact,
         prover_inputs: field_prover_input.clone(),
         verifier_inputs: field_verifier_input,

@@ -5,8 +5,8 @@ use spartan_backend::{
     E, instantiate_circuit_from_dir, instantiate_circuit_with_name,
     noir::{circuit::CircuitParameters, synthesis::circuit_synthesizer::NoirCircuitSynthesizer},
     online_prover::{OnlineProver, expected_public_values, persistence, verify_online},
-    prove_circuit, prove_circuit_to_base64, report_proof_size, verify_circuit,
-    verify_circuit_from_base64,
+    precompute, proof_to_base64, prove_circuit, prove_circuit_to_base64, report_proof_size,
+    verify_circuit, verify_circuit_from_base64,
 };
 use tracing::info_span;
 use vega_prover::bellpepper::{r1cs::VegaShape, shape_cs::ShapeCS};
@@ -32,8 +32,15 @@ struct Cli {
     proof_size: bool,
 
     /// Only run the prover and print the base64-encoded (bincode) proof to stdout; skip verify.
+    /// Transparently reuses `<circuit_dir>/target/precompute.bin` when present (see
+    /// `--precompute`).
     #[arg(short = 'p', long = "prove")]
     prove: bool,
+
+    /// Run the offline phase (setup + prep) once and persist it to
+    /// `<circuit_dir>/target/precompute.bin` so later `--prove` runs can skip it.
+    #[arg(long = "precompute")]
+    precompute: bool,
 
     /// Only run the verifier against a base64-encoded (bincode) proof passed as
     /// the value (as produced by `--prove`); skip prove.
@@ -99,12 +106,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for circuit in circuits {
         if cli.count_constraints {
             count_constraints(circuit);
+        } else if cli.precompute {
+            run_precompute(&circuit);
         } else if let Some(n) = cli.online {
             run_online(circuit, n, cli.prep_dir.as_deref(), &cli.also);
         } else if cli.proof_size {
             report_proof_size(circuit);
         } else if cli.prove {
-            let proof_b64 = prove_circuit_to_base64(&circuit).expect("Proof creation failed.");
+            let proof_b64 = prove_with_precompute(&circuit);
             println!("{}", proof_b64);
         } else if let Some(proof_base64) = &cli.verify {
             verify_circuit_from_base64(&circuit, proof_base64).expect("Proof verification failed");
@@ -178,6 +187,52 @@ fn count_constraints(circuit: CircuitParameters) {
         num_public,
         num_challenges,
     );
+}
+
+/// Runs the offline phase (`setup` + `prep_prove`) once and persists it to
+/// `<circuit_dir>/target/precompute.bin`. A later `--prove` picks it up
+/// automatically.
+fn run_precompute(circuit: &CircuitParameters) {
+    let _span = info_span!("precompute", circuit = ?circuit.name).entered();
+
+    if circuit.online_seeds.is_empty() {
+        println!(
+            "{}: no online manifest (online.json) — every witness is in the rest segment; \
+             the precomputed state still saves `setup`, but the witness commitment is redone \
+             on every proof. Add an online.json to get the full benefit.",
+            circuit.name
+        );
+    }
+
+    let t_setup = Instant::now();
+    let prover = OnlineProver::setup(circuit).expect("precompute (setup + prep) failed");
+    let setup_elapsed = t_setup.elapsed();
+
+    let (path, size) = precompute::save(circuit, &prover).expect("failed to write precompute.bin");
+
+    println!(
+        "{}: precompute = {:.3?}, wrote {} ({:.1} MiB)",
+        circuit.name,
+        setup_elapsed,
+        path.display(),
+        size as f64 / (1024.0 * 1024.0),
+    );
+}
+
+/// Produces a base64 proof, reusing `target/precompute.bin` when it is present
+/// and still matches the circuit. Falls back to the regular monolithic prover
+/// otherwise.
+fn prove_with_precompute(circuit: &CircuitParameters) -> String {
+    match precompute::load(circuit) {
+        Some(mut prover) => {
+            let _span = info_span!("prove_precomputed", circuit = ?circuit.name).entered();
+            let proof = prover
+                .prove_online(circuit)
+                .expect("Proof creation from precomputed state failed.");
+            proof_to_base64(&proof)
+        }
+        None => prove_circuit_to_base64(circuit).expect("Proof creation failed."),
+    }
 }
 
 /// Online-proving benchmark. Runs `setup`+`prep` once (the amortized
