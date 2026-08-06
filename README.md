@@ -1,5 +1,7 @@
 # Progress tracker: Spartan backend for Noir
 
+⚠️ **This is demo code, do not use for production or sensitive applications** ⚠️
+
 This repository contains a set of Noir circuits meant to be incrementally complicated.
 They track the evolution of our Spartan backend for Noir.
 
@@ -102,24 +104,24 @@ devbox run benchmark-commits <bb_circuit_code> <circuit_code> [commit ...]
 ./scripts/benchmark_commits.sh c0000_trivial c0101_signature_pok_zkattest_style 8c257bb 217b46f f605158 16df669
 ```
 
-- `<circuit_code>` (the spartan circuit) and `<bb_circuit_code>` (the Barretenberg
+* `<circuit_code>` (the spartan circuit) and `<bb_circuit_code>` (the Barretenberg
   circuit) are directory names under `circuits/`. They are **separate** because
   Barretenberg cannot process the t256-only spartan circuits, so it needs its own
   standard-field circuit. Commits may be given in any order; if none are given,
   `HEAD` is used.
-- Each commit is checked out into a throwaway `git worktree` (in a `mktemp`
+* Each commit is checked out into a throwaway `git worktree` (in a `mktemp`
   directory, so your working tree is never touched), spartan-backend is built there,
   and `<circuit_code>`'s proof/verification is timed `N` times (default `N=5`).
-- Results are written to `benchmarks/<circuit_code>/` (the spartan circuit), one CSV
+* Results are written to `benchmarks/<circuit_code>/` (the spartan circuit), one CSV
   per run, named with a two-digit index so a plain sort follows git history (oldest
   first). Each file has the schema `metric,min,max,mean,stddev`:
-  - `stats-00-barretenberg.csv` — `write_vk` / `prove` / `verify` for
+  * `stats-00-barretenberg.csv` — `write_vk` / `prove` / `verify` for
     `<bb_circuit_code>`, run **once** from the **current working tree** (not any
     benchmarked commit), since Barretenberg depends only on the circuit, not the
     spartan-backend code. The circuit is recompiled in place to get a valid witness
     and the tracked `target/` is restored afterward. Skipped if `<bb_circuit_code>`
     is also t256-only and doesn't compile with standard `nargo`.
-  - `stats-01-<sha>.csv`, `stats-02-<sha>.csv`, … — one per commit, oldest first,
+  * `stats-01-<sha>.csv`, `stats-02-<sha>.csv`, … — one per commit, oldest first,
     with the spartan-only metrics: `spartan_proof` / `spartan_verify` (timings),
     plus `spartan_constraints` (R1CS constraint count, via `--count-constraints`)
     and `spartan_proof_size` (serialized proof size in bytes, via `--proof-size`).
