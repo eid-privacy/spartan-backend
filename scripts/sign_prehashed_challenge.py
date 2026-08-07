@@ -2,28 +2,22 @@
 """
 Sign a 32-byte *prehashed* challenge for the c0200 device ECDSA check.
 
-The c0200 circuit / preprocessing treats `e = challenge_nonce` directly as the
-ECDSA message hash (a 32-byte scalar), so a device signature is produced by
-signing the challenge as an already-computed digest (Prehashed), NOT by hashing
-it again.
+The circuit and its preprocessing treat `e = challenge_nonce` directly as the
+ECDSA message hash, so the nonce is signed as an already-computed digest
+(Prehashed), not hashed again.
 
 Usage:
-    python scripts/sign_prehashed_challenge.py [hex_32_byte_nonce]
+    python scripts/sign_prehashed_challenge.py [hex_32_byte_nonce] [--circuit DIR]
 
-If no nonce is given, a fresh random one (reduced mod the P-256 order) is used.
-Prints TOML-ready `challenge_nonce` and `device_signature` byte arrays (r||s,
-canonical low-s).
+Without a nonce a fresh random one (reduced mod the P-256 order) is used. Prints
+TOML-ready `challenge_nonce` and `device_signature` (r||s, canonical low-s).
 
-IMPORTANT — key selection:
-    The signature must be produced with the *device* private key bound into the
-    credential (the `cnf` JWK in the SD-JWT payload). Set the key path via the
-    DEVICE_JWK environment variable. If unset, this falls back to the c0100
-    holder key, which does NOT match the committed c0200 credential's device
-    key, so the c0200 preprocessing will reject the signature. See
-    scripts/online_bench.sh for the full pipeline and prerequisites.
+The signing key is the device key bound into the credential (the `cnf` JWK of the
+SD-JWT payload), read from `<circuit_dir>/data/holder_private_key.jwk` with
+`circuit_dir` defaulting to `circuits/c0200_swiyu_jwt`. See that directory's
+`data/README.md` for how the key and the credential were generated.
 """
 
-import os
 import sys
 import json
 import base64
@@ -38,6 +32,7 @@ from cryptography.hazmat.primitives.asymmetric.utils import (
 from cryptography.hazmat.primitives import hashes
 
 P256_ORDER = int("FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551", 16)
+DEFAULT_CIRCUIT = "circuits/c0200_swiyu_jwt"
 
 
 def b64url_to_int(s: str) -> int:
@@ -63,23 +58,28 @@ def load_private_key(jwk_path: Path):
 
 def main() -> None:
     root = Path(__file__).resolve().parent.parent
-    env_jwk = os.environ.get("DEVICE_JWK")
-    if env_jwk:
-        jwk_path = Path(env_jwk)
-    else:
-        jwk_path = (
-            root
-            / "circuits"
-            / "c0100_holder_binding_crescent_style"
-            / "data"
-            / "holder_private_key.jwk"
-        )
+
+    args = sys.argv[1:]
+    circuit = None
+    if "--circuit" in args:
+        i = args.index("--circuit")
+        try:
+            circuit = args[i + 1]
+        except IndexError:
+            print("Error: --circuit needs a directory argument", file=sys.stderr)
+            sys.exit(1)
+        del args[i : i + 2]
+
+    circuit_dir = Path(circuit) if circuit else root / DEFAULT_CIRCUIT
+    if not circuit_dir.is_absolute():
+        circuit_dir = (Path.cwd() / circuit_dir).resolve()
+    jwk_path = circuit_dir / "data" / "holder_private_key.jwk"
     if not jwk_path.exists():
-        print(f"Error: JWK not found at {jwk_path}", file=sys.stderr)
+        print(f"Error: holder private key not found at {jwk_path}", file=sys.stderr)
         sys.exit(1)
 
-    if len(sys.argv) >= 2:
-        e = int(sys.argv[1], 16) % P256_ORDER
+    if args:
+        e = int(args[0], 16) % P256_ORDER
     else:
         e = secrets.randbelow(P256_ORDER - 1) + 1
     e_bytes = e.to_bytes(32, "big")

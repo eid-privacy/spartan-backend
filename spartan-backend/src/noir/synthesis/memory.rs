@@ -45,12 +45,6 @@ pub(crate) struct MemoryStore {
 }
 
 impl MemoryStore {
-    pub(crate) fn block_len(
-        &self,
-        block_id: acvm::acir::circuit::opcodes::BlockId,
-    ) -> Option<usize> {
-        self.blocks.get(&block_id.0).map(|b| b.cells.len())
-    }
     pub(crate) fn new() -> Self {
         Self {
             blocks: HashMap::new(),

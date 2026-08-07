@@ -99,15 +99,30 @@ impl Partition {
     ) -> Result<Self, PartitionError> {
         let opcodes = &circuit.opcodes;
 
-        // --- 1. Fixpoint taint propagation -----------------------------------
+        // An `AssertZero` has no declared outputs, but the ACVM solves a witness
+        // from it, so it taints like any other writer.
+        let defined_by_assert_zero = assert_zero_definitions(circuit);
+
         let mut tainted: HashSet<u32> = online_seeds.clone();
         // Memory blocks whose contents are (possibly) challenge-dependent.
         let mut block_tainted: HashSet<u32> = HashSet::new();
 
         loop {
             let mut changed = false;
-            for opcode in opcodes {
+            for (opcode_index, opcode) in opcodes.iter().enumerate() {
                 match opcode {
+                    Opcode::AssertZero(expr) => {
+                        let reads_tainted = expression_witnesses(expr)
+                            .iter()
+                            .any(|w| tainted.contains(&w.witness_index()));
+                        if reads_tainted {
+                            for w in &defined_by_assert_zero[opcode_index] {
+                                if tainted.insert(*w) {
+                                    changed = true;
+                                }
+                            }
+                        }
+                    }
                     Opcode::MemoryInit { block_id, init, .. } => {
                         if init.iter().any(|w| tainted.contains(&w.witness_index()))
                             && block_tainted.insert(block_id.0)
@@ -159,7 +174,6 @@ impl Partition {
             }
         }
 
-        // --- 2. Classify each opcode ----------------------------------------
         let mut opcode_is_invariant = Vec::with_capacity(opcodes.len());
         for opcode in opcodes {
             let reads_tainted = opcode_reads(opcode)
@@ -175,7 +189,7 @@ impl Partition {
             opcode_is_invariant.push(!is_rest);
         }
 
-        // --- 3. Cut set: invariant witnesses read by rest opcodes ------------
+        // Cut set: invariant witnesses read by rest opcodes...
         let mut cut: BTreeSet<u32> = BTreeSet::new();
         for (i, opcode) in opcodes.iter().enumerate() {
             if opcode_is_invariant[i] {
@@ -196,7 +210,6 @@ impl Partition {
             }
         }
 
-        // --- 4. Validation passes -------------------------------------------
         for (i, opcode) in opcodes.iter().enumerate() {
             if opcode_is_invariant[i] {
                 for w in opcode_reads(opcode) {
@@ -210,10 +223,14 @@ impl Partition {
                         return Err(PartitionError::RestWritesInvariant(w.witness_index()));
                     }
                 }
+                for w in &defined_by_assert_zero[i] {
+                    if !tainted.contains(w) {
+                        return Err(PartitionError::RestWritesInvariant(*w));
+                    }
+                }
             }
         }
 
-        // --- 5. Assemble witness sets ---------------------------------------
         let all = all_witnesses(circuit);
         let max_witness_index = all.iter().copied().max().unwrap_or(0);
         let mut invariant: Vec<u32> = all
@@ -256,6 +273,44 @@ fn expression_witnesses(expr: &Expression<FieldElement>) -> Vec<Witness> {
     witnesses.extend(expr.mul_terms.iter().flat_map(|(_, l, r)| [*l, *r]));
     witnesses.extend(expr.linear_combinations.iter().map(|(_, w)| *w));
     witnesses
+}
+
+/// For every opcode, the witnesses the ACVM would *solve* from it when it is an
+/// [`Opcode::AssertZero`] (empty for all other opcodes).
+///
+/// Replays the solver's walk: opcodes in order against the set of already-known
+/// witnesses (circuit inputs plus everything written earlier). This is purely
+/// structural, so the result is identical at `setup` and at `prove`. Expressions
+/// with several unknowns are attributed all of them, which over-approximates the
+/// online segment — sound, unlike the reverse.
+fn assert_zero_definitions(circuit: &Circuit<FieldElement>) -> Vec<Vec<u32>> {
+    let mut known: HashSet<u32> = HashSet::new();
+    known.extend(
+        circuit
+            .public_parameters
+            .0
+            .iter()
+            .map(|w| w.witness_index()),
+    );
+    known.extend(circuit.private_parameters.iter().map(|w| w.witness_index()));
+
+    let mut definitions = Vec::with_capacity(circuit.opcodes.len());
+    for opcode in &circuit.opcodes {
+        let mut defined = Vec::new();
+        if let Opcode::AssertZero(expr) = opcode {
+            for w in expression_witnesses(expr) {
+                let idx = w.witness_index();
+                if known.insert(idx) {
+                    defined.push(idx);
+                }
+            }
+        }
+        for w in opcode_writes(opcode) {
+            known.insert(w.witness_index());
+        }
+        definitions.push(defined);
+    }
+    definitions
 }
 
 /// Witnesses an opcode *reads* (its inputs).

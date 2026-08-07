@@ -48,23 +48,45 @@ cargo run --release -- ../circuits/c0200_swiyu_jwt --precompute
 cargo run --release -- ../circuits/c0200_swiyu_jwt --prove
 ```
 
-* `--precompute` writes a single file, `<circuit_dir>/target/precompute.bin`
-  (prover key, verifier key and prepared state, bincode-encoded). It can be
-  large — over a gigabyte for the bigger circuits — and is git-ignored.
-* `--prove` loads that file when it exists and proves through the online path;
-  otherwise it falls back to the usual monolithic proving. The base64 proof
-  printed on stdout is the same either way and verifies with `--verify`.
+* `--precompute` writes a single git-ignored file,
+  `<circuit_dir>/target/precompute.bin` (prover key, verifier key and prepared
+  state). It can exceed a gigabyte for the bigger circuits.
+* `--prove` loads that file when it exists, otherwise it falls back to the usual
+  monolithic proving. The base64 proof is the same either way.
 * The file records a fingerprint of the circuit's ACIR bytecode and of the
   online partition declared in `online.json`. Rebuilding the circuit or editing
-  `online.json` makes it stale: `--prove` then warns and falls back to regular
-  proving, so re-run `--precompute`. Changing the **values** of online inputs
-  (challenge nonce, device signature, …) is exactly what the online path is for
-  and never invalidates the artifact.
+  `online.json` makes it stale, so `--prove` warns and falls back to regular
+  proving; re-run `--precompute`. Changing the **values** of online inputs
+  (challenge nonce, device signature, …) never invalidates the artifact — that
+  is the whole point of the online path.
 * Circuits without an `online.json` still work; the precomputed state saves
   `setup`, but the witness commitment is redone on every proof.
 
-Note that the prepared state is *not* rewritten after a proof: every `--prove`
-run reuses the same prep as saved by `--precompute`.
+Two scripts drive this from the repository root:
+
+* `scripts/precompute.sh [circuit_dir]` — checks the prerequisites (built ACIR,
+  solved witness, `verifier_input.json`, `online.json`), validates the partition
+  with a cheap ACIR-only pre-flight, checks free disk space, then runs the
+  expensive offline phase.
+* `scripts/online_bench.sh [NUM_PROOFS] [NUM_EXTRA_CHALLENGES]` — the
+  online-proving benchmark. It times a non-amortized baseline, then
+  `--precompute` once, then `NUM_PROOFS` × `--prove`, splitting each measurement
+  into artifact load vs. proving, and verifies the proofs. With
+  `NUM_EXTRA_CHALLENGES > 0` it also regenerates genuinely distinct challenges,
+  re-signing each with the circuit's device key
+  (`<circuit_dir>/data/holder_private_key.jwk`). Example on c0200:
+
+  ```
+  offline (--precompute, one-off) = 4.149s, 1570.6 MiB on disk
+  first online proof           wall=2.640s    load=1.628s    prove=1.012s
+  warm online avg (2 samples)  wall=2.686s    load=1.610s    prove=1.076s
+  baseline (no precompute)        = 3.799s
+  speedup, proving only           = 3.75x
+  speedup, end-to-end incl. load  = 1.44x
+  ```
+
+  The gap between the two speedups is the cost of re-reading the artifact in a
+  fresh process; a long-lived prover process would pay it once.
 
 ### (Optional) Setup nargo
 
@@ -79,6 +101,10 @@ This is required if you need to compile/re-compile/execute circuits.
 3. Build `nargo_cli`
 4. Put it in your path, this README.md assumes it is named "nargo-t256" to distinguish from the original Noir distribution
 5. Build the circuit you're interested in with `nargo-t256 build`
+
+Keep circuit sources **ASCII-only** (comments included): the T-256 fork rejects
+non-ASCII characters with `Invalid comment character: only ASCII is currently
+supported`.
 
 ### Preprocessing (ECDSA precompute)
 

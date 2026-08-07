@@ -25,11 +25,11 @@ fn main(
         sha256_var(credential_string.as_bytes(), constants::CREDENTIAL_LEN).into();
     let t = T256Scalar { hi: 0, lo: array_to_field(credential_hash) };
 
-    // Step 2: Compute tr⁻¹G = t · (r⁻¹G) in-circuit
+    // Step 2: Compute tr^-1G = t * (r^-1G) in-circuit
     let trG = t256_msm([rG], [t]);
 
-    // ZKAttest equation: zR - tr⁻¹G = Q
-    // We express it as zR = Q + tr⁻¹G
+    // ZKAttest equation: zR - tr^-1G = Q
+    // We express it as zR = Q + tr^-1G
     let zR = t256_msm([R], [T256Scalar { hi: 0, lo: z}]);
     let rhs = t256_ec_add(Q, trG);
 

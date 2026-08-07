@@ -107,8 +107,7 @@ fn instantiate_circuit_with_settings(
     tracing::debug!("Verifier inputs: {:?}", mapped_verifier_input);
     let field_verifier_input = map_into_field_flat(&mapped_verifier_input);
 
-    // Load the online manifest (if any) and resolve the online ABI
-    // parameters to their witness indices. Absent manifest -> empty -> monolithic proof.
+    // An absent manifest yields no seeds, i.e. the monolithic behaviour.
     let manifest = OnlineManifest::load_from_dir(&circuit_settings.manifest_dir);
     let online_seeds = manifest.online_witnesses(&program_artifact);
     if !online_seeds.is_empty() {

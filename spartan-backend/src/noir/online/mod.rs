@@ -1,21 +1,14 @@
-//! Lever A: precompute/online split for Noir circuits over Vega.
+//! Precompute/online split for Noir circuits over Vega.
 //!
-//! Noir/ACIR emits a single monolithic circuit with no notion of which witness
-//! is invariant across proofs vs. challenge-dependent. This module reconstructs
-//! that boundary *outside* Noir:
+//! ACIR emits a monolithic circuit with no notion of which witness is invariant
+//! across proofs, so the boundary is reconstructed here: [`manifest`] loads the
+//! per-circuit list of "online" ABI parameters, and [`partition`] taints the
+//! ACIR opcodes from them to derive the invariant (Vega `precommitted`) and
+//! online (Vega `rest`) segments plus the cut set between them.
 //!
-//! - [`manifest`] loads a per-circuit list of "online" ABI parameters (the ones
-//!   that change between runs, e.g. `challenge_nonce` and the device-signature
-//!   precompute for c0200).
-//! - [`partition`] runs a value-independent taint closure over the ACIR opcodes
-//!   to derive which opcodes/witnesses are invariant (Vega's `precommitted`
-//!   segment) and which are online (Vega's `rest` segment), plus the cut set of
-//!   invariant witnesses that must cross the boundary.
-//!
-//! The synthesizer ([`crate::noir::synthesis::circuit_synthesizer`]) consumes a
-//! [`partition::Partition`] to allocate the invariant witness once
-//! (`precommitted`) and only the online witness per proof (`synthesize`), so
-//! Vega can reuse the prepared state (`prep_snark`) across proofs.
+//! The synthesizer ([`crate::noir::synthesis::circuit_synthesizer`]) then
+//! allocates the invariant witness once and only the online witness per proof,
+//! letting Vega reuse the prepared state (`prep_snark`).
 
 pub mod manifest;
 pub mod partition;
@@ -85,6 +78,16 @@ mod tests {
                 assert!(rest.contains(s), "referenced seed {s} must be in rest");
             }
         }
+        // Witnesses solved from a challenge-dependent `AssertZero` have no
+        // declared writer but must still be online (see
+        // `partition::assert_zero_definitions`).
+        assert!(
+            partition.rest_witnesses.len() > seeds.len(),
+            "online segment ({}) must also cover the witnesses derived from the \
+             {} seeds by solved AssertZero constraints",
+            partition.rest_witnesses.len(),
+            seeds.len()
+        );
     }
 
     /// An empty manifest must reproduce the monolithic all-online behaviour.

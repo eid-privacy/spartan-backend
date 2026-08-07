@@ -4,7 +4,7 @@
 //!
 //! The manifest lives next to the circuit as `online.json`:
 //! ```json
-//! { "online_params": ["challenge_nonce", "R_dev_x", "device_signature"] }
+//! { "online_params": ["device_signature", "T_dev_x", "T_dev_y"] }
 //! ```
 //! An absent or empty manifest means *everything is online* — i.e. the original
 //! monolithic behaviour (backward compatible).
@@ -52,11 +52,8 @@ impl OnlineManifest {
     }
 
     /// Resolve the declared online ABI parameter names to the set of witness
-    /// indices they occupy (the taint-closure seeds).
-    ///
-    /// Parameters not found in the ABI are logged and ignored; this keeps the
-    /// manifest robust to renames but such a mistake is caught later by the
-    /// partition validation / verify failure.
+    /// indices they occupy (the taint-closure seeds). Names absent from the ABI
+    /// are logged and ignored.
     pub fn online_witnesses(&self, program: &ProgramArtifact) -> HashSet<u32> {
         let mapping = map_wires(
             &program.abi.parameters,

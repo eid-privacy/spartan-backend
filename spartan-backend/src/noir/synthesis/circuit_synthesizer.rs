@@ -8,10 +8,10 @@ use vega_prover::{provider::T256HyraxEngine, traits::circuit::VegaCircuit};
 
 use crate::{
     noir::{
-        circuit_reader::{read_witnesses, types::input_wire::InputWire},
+        circuit_reader::types::input_wire::InputWire,
         online::partition::Partition,
         synthesis::{
-            allocation_support::{AllocatedWire, WitnessMap, allocate_input, allocate_witness},
+            allocation_support::{AllocatedWire, WitnessMap, allocate_witness},
             assert_zero::handle_assert_zero,
             blackbox::router::BlackboxRouter,
             memory::{MemoryStore, handle_memory_init, handle_memory_op},
@@ -28,11 +28,9 @@ pub struct NoirCircuitSynthesizer {
 }
 
 impl NoirCircuitSynthesizer {
-    /// `online_seeds` are the witness
-    /// indices of the ABI parameters that change between proofs;
-    /// everything not reachable from them becomes Vega's `precommitted` segment.
-    ///
-    /// An empty seed set falls back to the trivial all-online partition.
+    /// `online_seeds` are the witness indices of the ABI parameters that change
+    /// between proofs; everything not reachable from them becomes Vega's
+    /// `precommitted` segment. An empty seed set falls back to all-online.
     pub fn new(
         program_artifact: ProgramArtifact,
         split_inputs: Vec<InputWire<Option<Scalar>>>,
@@ -66,7 +64,6 @@ impl NoirCircuitSynthesizer {
         }
     }
 
-    /// Read-only access to the computed partition (used by CLI reporting/tests).
     pub fn partition(&self) -> &Partition {
         &self.partition
     }
@@ -224,11 +221,10 @@ impl VegaCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
         Ok(vec![])
     }
 
-    // Precommitted variables are committed before the verifier's challenge and,
-    // crucially, reused across proofs via Vega's `prep_snark`.
-    // we allocate every invariant witness, enforce every invariant opcode, and return the
-    // cut set (invariant witnesses read by the online segment, plus committed
-    // copies of the invariant public inputs) so it can cross into `synthesize`.
+    // Precommitted variables are committed before the verifier's challenge and
+    // reused across proofs via Vega's `prep_snark`. Allocates every invariant
+    // witness, enforces every invariant opcode and returns the cut set so it can
+    // cross into `synthesize`.
     fn precommitted<CS: ConstraintSystem<Scalar>>(
         &self,
         cs: &mut CS,
@@ -259,10 +255,7 @@ impl VegaCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
 
     // Vega re-runs `synthesize` at prove time (after truncating the constraint
     // system back to the shared+precommitted prefix) and reads the public IO
-    // from it. So the online (rest) segment is built here: re-associate the
-    // crossing cut-set wires, allocate the online witnesses, `inputize` *all*
-    // public inputs in witness-index order (matching `public_values`), and
-    // enforce the online opcodes.
+    // from it, so the online (rest) segment is built here.
     fn synthesize<CS: ConstraintSystem<Scalar>>(
         &self,
         cs: &mut CS,
@@ -282,8 +275,7 @@ impl VegaCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
         let indexed = self.indexed_inputs();
         let mut store = WitnessMap::new(self.partition.max_witness_index);
 
-        // 1. Re-associate the crossing cut-set AllocatedNums with their witness
-        //    indices (same sorted order as `precommitted` produced).
+        // Same sorted order as `precommitted` produced.
         for (&idx, allocation) in self.partition.cut_set.iter().zip(precommitted.iter()) {
             store.insert(
                 idx,
@@ -294,7 +286,6 @@ impl VegaCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
             );
         }
 
-        // 2. Allocate every online (rest) witness as a committed variable.
         for &idx in &self.partition.rest_witnesses {
             let allocated = allocate_witness(
                 &mut cs.namespace(|| format!("allocate witness {idx}")),
@@ -305,9 +296,8 @@ impl VegaCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
             store.insert(idx, allocated);
         }
 
-        // 3. Inputize all public inputs in witness-index order. Online publics
-        //    inputize their own online witness; invariant publics inputize the
-        //    crossing committed copy (which adds the linking equality for free).
+        // Witness-index order, matching `public_values`. Invariant publics
+        // inputize their crossing committed copy, which links the two segments.
         for &idx in &self.partition.public_witnesses {
             let wire = store.get(&idx).ok_or(SynthesisError::AssignmentMissing)?;
             let allocation = wire
@@ -317,7 +307,6 @@ impl VegaCircuit<T256HyraxEngine> for NoirCircuitSynthesizer {
             allocation.inputize(&mut cs.namespace(|| format!("inputize public {idx}")))?;
         }
 
-        // 4. Enforce the online (rest) opcodes.
         self.process_segment(cs, &store, false)?;
 
         Ok(())

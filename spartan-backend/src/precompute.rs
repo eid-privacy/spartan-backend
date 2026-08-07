@@ -1,24 +1,14 @@
 //! Persist the offline ("prep") phase of a proof next to the circuit so that a
 //! later `--prove` run can skip `setup` + `prep_prove` entirely.
 //!
-//! The whole thing lives in a single file, `<circuit_dir>/target/precompute.bin`,
-//! serialized with bincode 1.3 (the same serializer Vega uses internally).
+//! The artifact is a single bincode file, `<circuit_dir>/target/precompute.bin`.
+//! It embeds a [`Fingerprint`] of what actually invalidates a prepared state:
+//! the ACIR bytecode and the online seed witnesses. Input *values* are excluded
+//! — changing them between proofs is the entire point of the online path. A
+//! mismatch is a warning, not an error: we fall back to monolithic proving.
 //!
-//! ## Staleness
-//! The file embeds a [`Fingerprint`] computed from *only* what actually
-//! invalidates the prepared state: the circuit's ACIR bytecode and the set of
-//! witness indices declared online by `online.json`. The **values** of the
-//! online inputs (challenge nonce, device signature, ...) are deliberately not
-//! part of the fingerprint — changing them between proofs is the entire point of
-//! the online path. Prover/verifier input values are excluded for the same
-//! reason. A mismatch is a warning, not an error: we fall back to the regular
-//! monolithic proving path.
-//!
-//! ## Prep rerandomization
-//! `Snark::prove` consumes the prepared state and returns a rerandomized one.
-//! We intentionally do **not** write that refreshed state back to disk: the file
-//! is read-only at prove time and every run reuses the same prep. This is a
-//! deliberate design choice, not an oversight.
+//! `Snark::prove` returns a rerandomized prep which we deliberately do not write
+//! back: the file is read-only at prove time and every run reuses the same prep.
 
 use std::{
     hash::{DefaultHasher, Hash, Hasher},
@@ -36,7 +26,7 @@ use crate::{
 /// Name of the artifact written inside the circuit's `target/` directory.
 pub const PRECOMPUTE_FILE: &str = "precompute.bin";
 
-/// Bumped whenever the on-disk layout changes; an older file is then ignored
+/// Bumped whenever the on-disk layout changes, so older files are ignored
 /// instead of being mis-deserialized.
 const FORMAT_VERSION: u32 = 1;
 
@@ -53,9 +43,9 @@ pub struct PrecomputeFile {
     pub prep: PrepSnark,
 }
 
-/// Borrowed mirror of [`PrecomputeFile`] used for writing, so we never have to
-/// clone the (large) prover key and prepared state. The field order must stay
-/// identical: bincode is positional.
+/// Borrowed mirror of [`PrecomputeFile`] used for writing, so we never clone the
+/// (large) prover key and prepared state. bincode is positional, so the field
+/// order must stay identical.
 #[derive(Serialize)]
 struct PrecomputeFileRef<'a> {
     version: u32,
@@ -76,8 +66,7 @@ pub fn path_for(circuit: &CircuitParameters) -> PathBuf {
 }
 
 /// Fingerprint of everything that invalidates a prepared state: the ACIR
-/// bytecode and the online partition seeds. Input *values* are excluded on
-/// purpose (see the module docs).
+/// bytecode and the online partition seeds.
 pub fn fingerprint(circuit: &CircuitParameters) -> Fingerprint {
     let mut hasher = DefaultHasher::new();
 
@@ -120,12 +109,11 @@ pub fn save(circuit: &CircuitParameters, prover: &OnlineProver) -> io::Result<(P
 
 /// Load a previously saved [`OnlineProver`] for this circuit.
 ///
-/// Returns `None` — after logging the reason — when the file is absent, was
-/// written by another format version, does not match the circuit's current
-/// fingerprint, or cannot be deserialized. Callers are expected to fall back to
-/// the regular proving path.
+/// Returns `None` — after logging the reason — when the file is absent, stale or
+/// unreadable; callers then fall back to the regular proving path.
 pub fn load(circuit: &CircuitParameters) -> Option<OnlineProver> {
     let path = path_for(circuit);
+    let started = std::time::Instant::now();
 
     let bytes = match std::fs::read(&path) {
         Ok(bytes) => bytes,
@@ -139,6 +127,7 @@ pub fn load(circuit: &CircuitParameters) -> Option<OnlineProver> {
         }
     };
 
+    let size_bytes = bytes.len() as u64;
     let file: PrecomputeFile = match bincode::deserialize(&bytes) {
         Ok(file) => file,
         Err(e) => {
@@ -173,5 +162,11 @@ pub fn load(circuit: &CircuitParameters) -> Option<OnlineProver> {
     }
 
     tracing::info!("Loaded precomputed artifact from {}", path.display());
+    // Machine-parsable counterpart, parsed by scripts/online_bench.sh.
+    tracing::info!(
+        elapsed_ms = started.elapsed().as_millis() as u64,
+        size_bytes,
+        "precompute_load"
+    );
     Some(OnlineProver::from_parts(file.pk, file.vk, file.prep))
 }
