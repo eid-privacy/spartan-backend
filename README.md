@@ -8,20 +8,39 @@ They track the evolution of our Spartan backend for Noir.
 **Note: the "target" directory are intentionally versioned since changes to `nargo` and the resulting changes to the
 bytecode are important to track.**
 
-## Implementation status
+## Setup
 
-| pass | circuit                             | noir commit                              |
-|------|-------------------------------------|------------------------------------------|
-| ✅    | c0000_trivial                       | t256-v0.22 |
-| ✅    | c0001_trivial_with_range            | t256-v0.22|
-| ✅    | c0002_trivial_with_strings          | t256-v0.22|
-| ✅    | c0003_trivial_with_brillig          | t256-v0.22|
-| ✅    | c0004_trivial_elliptic_curve_add    | t256-v0.22|
-| ✅    | c0005_trivial_msm                   | t256-v0.22|
-| ✅    | c0006_sha256                        | t256-v0.22|
-| ✅    | c0100_holder_binding_crescent_style | t256-v0.22|
-| ✅    | c0101_signature_pok_zkattest_style  | t256-v0.22|
-| ✅    | c0102_signature_vanilla_equation    | t256-v0.22|
+### Using devbox (recommended)
+
+This repo uses [devbox](https://www.jetify.com/devbox) to pin the exact `rustc`,
+`nargo-t256`, and `barretenberg` versions the code is tested against (see
+`devbox.json`), so it's the preferred way to get a working environment — no
+manual toolchain installation needed.
+
+1. Make sure your `/etc/nix/nix.conf` has these lines (needed to fetch the
+   `nargo-t256` binaries from cachix, and to run devbox inside a docker
+   environment):
+   ```
+   experimental-features = nix-command flakes
+   sandbox = relaxed
+   filter-syscalls = false
+   extra-substituters = https://eid-privacy.cachix.org
+   extra-trusted-public-keys = eid-privacy.cachix.org-1:lxRzvjcWd/A6Wew1tq0IK6OIMVWNJKUTy4s7EKb6C2A=
+   ```
+2. `devbox shell` — installs and puts `rustup`, `nargo-t256`, and the other
+   pinned tools on your `PATH`.
+3. Use the scripts in `devbox.json` (`devbox run build`, `devbox run test`,
+   `devbox run start`, etc.) instead of invoking `cargo`/`nargo-t256` directly;
+   they already set the right working directory and flags. See the sections
+   below for which script maps to which manual command.
+
+### Manual setup (without devbox)
+
+Only needed if you're not using devbox. Install Rust via
+[rustup](https://rustup.rs), and see "Manual nargo setup" below if you need to
+compile or re-compile circuits — you'll be responsible for tracking the
+`nargo-t256`/noir/barretenberg versions yourself instead of getting them
+pinned automatically.
 
 ## Reproducing the results
 
@@ -29,21 +48,23 @@ bytecode are important to track.**
 
 1. Make sure inputs are set in `prover_input.json` and `verifier_input.json` for the circuit(s) you want to run.
 2. In `spartan-backend/`: `cargo run [--release] <circuit_name>` where the circuit name is the directory name within
-   the `circuits` directory.
+   the `circuits` directory (or via devbox: `devbox run start` to run all known passing circuits).
 
 *Note: `cargo run [--release]` (without circuit name) will run all known passing circuits (hardcoded for now).*
 *Note: provide `RUST_LOG` levels to get an output. e.g., `RUST_LOG=DEBUG cargo run`*
 
-### (Optional) Setup nargo
+### Manual nargo setup (skip if using devbox)
 
-This is required if you need to compile/re-compile/execute circuits.
+`devbox shell` already puts a matching `nargo-t256` on your `PATH` — only
+follow this if you're not using devbox. Required if you need to
+compile/re-compile/execute circuits.
 
 * `nargo build` needs to produce an ACIR in which coefficients and constants are embedded into T-256
 * `nargo execute` needs to use the T-256 Blackbox Solver to compute intermediate and output witnesses and those need
   to then be embedded in the T-256 field.
 
 1. Download our fork of Noir: <https://github.com/eid-privacy/noir>
-2. Checkout the "noir commit" indicated in the table
+2. Checkout the tag matching the `t256-v0.N` tag used in `spartan-backend/Cargo.toml`
 3. Build `nargo_cli`
 4. Put it in your path, this README.md assumes it is named "nargo-t256" to distinguish from the original Noir distribution
 5. Build the circuit you're interested in with `nargo-t256 build`
@@ -165,19 +186,3 @@ This records a profile and opens a flamegraph in the browser. See
 
 * On some Macs it might happen that the `nargo` binary gets killed instantly on invocation.
   It requires re-signing: `codesign --sign - --force --preserve-metadata=entitlements $(which nargo-t256)`
-
-# Using devbox
-
-If you want to use devbox for this repo, make sure to have the following
-lines in your `/etc/nix/nix.conf`:
-
-```
-experimental-features = nix-command flakes
-sandbox = relaxed
-filter-syscalls = false
-extra-substituters = https://eid-privacy.cachix.org
-extra-trusted-public-keys = eid-privacy.cachix.org-1:lxRzvjcWd/A6Wew1tq0IK6OIMVWNJKUTy4s7EKb6C2A=
-```
-
-this will allow to download the nargo-t256 binaries from cachix and also help
-running it in a docker environment.
