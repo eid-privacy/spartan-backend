@@ -1,0 +1,9 @@
+{
+  "online_params": [
+    "device_signature",
+    "T_dev_x",
+    "T_dev_y",
+    "U_dev_x",
+    "U_dev_y"
+  ]
+}

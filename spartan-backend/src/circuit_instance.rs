@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::{
     Scalar,
@@ -10,6 +10,7 @@ use crate::{
             types::{circuit_input::CircuitInput, input_wire::InputWire},
             verifier_input_mapping::read_verifier_inputs,
         },
+        online::manifest::OnlineManifest,
     },
 };
 
@@ -17,6 +18,7 @@ struct CircuitSettings {
     circuit_file: String,
     prover_inputs_file: String,
     verifier_inputs_file: String,
+    manifest_dir: PathBuf,
 }
 
 impl CircuitSettings {
@@ -27,6 +29,7 @@ impl CircuitSettings {
             circuit_file: format!("{}/{}/target/{}.json", Self::BASE_PATH, name, name),
             prover_inputs_file: format!("{}/{}/target/{}.gz", Self::BASE_PATH, name, name),
             verifier_inputs_file: format!("{}/{}/verifier_input.json", Self::BASE_PATH, name),
+            manifest_dir: PathBuf::from(format!("{}/{}", Self::BASE_PATH, name)),
         }
     }
 
@@ -41,6 +44,7 @@ impl CircuitSettings {
             circuit_file: format!("{}/target/{}.json", dir_str, name),
             prover_inputs_file: format!("{}/target/{}.gz", dir_str, name),
             verifier_inputs_file: format!("{}/verifier_input.json", dir_str),
+            manifest_dir: dir.to_path_buf(),
         }
     }
 }
@@ -103,10 +107,24 @@ fn instantiate_circuit_with_settings(
     tracing::debug!("Verifier inputs: {:?}", mapped_verifier_input);
     let field_verifier_input = map_into_field_flat(&mapped_verifier_input);
 
+    // An absent manifest yields no seeds, i.e. the monolithic behaviour.
+    let manifest = OnlineManifest::load_from_dir(&circuit_settings.manifest_dir);
+    let online_seeds = manifest.online_witnesses(&program_artifact);
+    if !online_seeds.is_empty() {
+        tracing::info!(
+            "Loaded online manifest for {}: {} online params, {} seed witnesses",
+            name,
+            manifest.online_params.len(),
+            online_seeds.len(),
+        );
+    }
+
     CircuitParameters {
         name: String::from(name),
+        dir: circuit_settings.manifest_dir.clone(),
         program_artifact,
         prover_inputs: field_prover_input.clone(),
         verifier_inputs: field_verifier_input,
+        online_seeds,
     }
 }
