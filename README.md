@@ -75,6 +75,10 @@ compile/re-compile/execute circuits.
 4. Put it in your path, this README.md assumes it is named "nargo-t256" to distinguish from the original Noir distribution
 5. Build the circuit you're interested in with `nargo-t256 build`
 
+Keep circuit sources **ASCII-only** (comments included): the T-256 fork rejects
+non-ASCII characters with `Invalid comment character: only ASCII is currently
+supported`.
+
 ### Preprocessing (ECDSA precompute)
 
 Some circuits need ECDSA-related witnesses that are computed off-circuit on the
