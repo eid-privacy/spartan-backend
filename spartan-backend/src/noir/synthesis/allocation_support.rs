@@ -70,28 +70,6 @@ impl<V: PrimeField> fmt::Debug for AllocatedWire<V> {
     }
 }
 
-pub fn allocate_input<V, CS>(
-    cs: &mut CS,
-    witness: Witness,
-    value: V,
-) -> Result<AllocatedWire<V>, SynthesisError>
-where
-    V: PrimeField,
-    CS: ConstraintSystem<V>,
-{
-    let allocation_result = AllocatedNum::alloc(
-        cs.namespace(|| format!("input {:?}", witness.witness_index())),
-        || Ok(value),
-    )?;
-
-    allocation_result.inputize(cs)?;
-
-    Ok(AllocatedWire {
-        witness,
-        allocation: Ok(allocation_result),
-    })
-}
-
 pub fn allocate_witness<V, CS>(
     cs: &mut CS,
     witness: Witness,

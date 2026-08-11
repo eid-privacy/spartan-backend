@@ -34,6 +34,7 @@ pub fn prove_circuit(circuit: &CircuitParameters) -> Result<VegaZkSNARK<E>, Vega
         NoirCircuitSynthesizer::new(
             circuit.program_artifact.clone(),
             circuit.prover_inputs.clone(),
+            &circuit.online_seeds,
         )
     };
 
@@ -68,6 +69,7 @@ pub fn verify_circuit(circuit: &CircuitParameters, proof: VegaZkSNARK<E>) -> Res
         NoirCircuitSynthesizer::new(
             circuit.program_artifact.clone(),
             circuit.verifier_inputs.clone(),
+            &circuit.online_seeds,
         )
     };
 

@@ -117,6 +117,7 @@ fn count_constraints(circuit: CircuitParameters) {
     let synth = NoirCircuitSynthesizer::new(
         circuit.program_artifact.clone(),
         circuit.verifier_inputs.clone(),
+        &circuit.online_seeds,
     );
 
     let shape = ShapeCS::<E>::r1cs_shape(&synth).expect("failed to synthesize R1CS shape");
