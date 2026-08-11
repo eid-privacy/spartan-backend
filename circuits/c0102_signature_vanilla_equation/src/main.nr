@@ -27,18 +27,18 @@ fn main(
         sha256_var(credential_string.as_bytes(), constants::CREDENTIAL_LEN).into();
     let t = T256Scalar { hi: 0, lo: array_to_field(credential_hash) };
 
-    // Step 2: Compute s⁻¹G and s⁻¹Q in-circuit (s_inv is the only precomputed scalar)
+    // Step 2: Compute s^-1G and s^-1Q in-circuit (s_inv is the only precomputed scalar)
     let s_inv_scalar = T256Scalar { hi: 0, lo: s_inv };
     let sG = t256_msm([G], [s_inv_scalar]);
     let sQ = t256_msm([Q], [s_inv_scalar]);
 
-    // Step 3: Compute ts⁻¹G = t · (s⁻¹G) and rs⁻¹Q = r · (s⁻¹Q) in-circuit,
+    // Step 3: Compute ts^-1G = t * (s^-1G) and rs^-1Q = r * (s^-1Q) in-circuit,
     // where r = R.x (mod the P-256 scalar order, here reused as a scalar).
     let tsG = t256_msm([sG], [t]);
     let r = T256Scalar { hi: 0, lo: R.x };
     let rsQ = t256_msm([sQ], [r]);
 
-    // Verification equation: R = ts⁻¹G + rs⁻¹Q
+    // Verification equation: R = ts^-1G + rs^-1Q
     let rhs = t256_ec_add(tsG, rsQ);
 
     assert(R.x == rhs.x);

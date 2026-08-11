@@ -9,21 +9,21 @@
 //! statically-unrolled loop, so every byte access is a *constant* array
 //! index and resolves to a direct witness reference rather than a memory
 //! op. Per 3-byte chunk we pay only the bit decomposition (a few u8 div /
-//! mod ops) plus four 6-bit → ASCII conditional selects.
+//! mod ops) plus four 6-bit -> ASCII conditional selects.
 //!
 //! The encoder is **not padded** (URL-safe, no `=`) and matches RFC-4648
-//! §5 ("base64url"). Output length is `ceil(in_len * 4 / 3)`.
+//! sec. 5 ("base64url"). Output length is `ceil(in_len * 4 / 3)`.
 
 /// Map a 6-bit value to its base64url ASCII character.
 ///
 /// Soundness: `v` is assumed (and used as) a `u8` with `0 <= v < 64`. The
 /// branches partition `[0, 64)` exhaustively and disjointly:
 ///
-/// - `v <  26`  → `'A' + v`           (uppercase, 65..90)
-/// - `v <  52`  → `'a' + (v - 26)`    (lowercase, 97..122)
-/// - `v <  62`  → `'0' + (v - 52)`    (digit,    48..57)
-/// - `v == 62`  → `'-'` (45)
-/// - else        → `'_'` (95)
+/// - `v <  26`  -> `'A' + v`           (uppercase, 65..90)
+/// - `v <  52`  -> `'a' + (v - 26)`    (lowercase, 97..122)
+/// - `v <  62`  -> `'0' + (v - 52)`    (digit,    48..57)
+/// - `v == 62`  -> `'-'` (45)
+/// - else        -> `'_'` (95)
 pub fn u6_to_ascii_url(v: u8) -> u8 {
     if v < 26 {
         v + 65
@@ -76,7 +76,7 @@ pub fn encode_url_into<let IN_LEN: u32, let OUT_LEN: u32>(
         // The `i0 + k < IN_LEN` predicates are compile-time constants because
         // both `i0` (loop-unrolled) and `IN_LEN` (generic) are known at
         // monomorphization. Noir prunes the dead branches, so each chunk's
-        // accesses become static witness references — never a memory op.
+        // accesses become static witness references -- never a memory op.
         let b0 = if i0 < IN_LEN { input[i0] } else { 0 };
         let b1 = if i0 + 1 < IN_LEN { input[i0 + 1] } else { 0 };
         let b2 = if i0 + 2 < IN_LEN { input[i0 + 2] } else { 0 };
