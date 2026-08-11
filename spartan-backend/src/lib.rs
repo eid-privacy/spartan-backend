@@ -2,6 +2,7 @@ mod circuit_instance;
 mod nizk_prover;
 mod nizk_verifier;
 pub mod noir;
+pub mod online_prover;
 mod trivial_circuit;
 pub mod types;
 mod utils;
@@ -83,8 +84,13 @@ pub fn verify_circuit(circuit: &CircuitParameters, proof: VegaZkSNARK<E>) -> Res
 /// spartan2 uses internally).
 pub fn prove_circuit_to_base64(circuit: &CircuitParameters) -> Result<String, VegaError> {
     let proof = prove_circuit(circuit)?;
-    let bytes = bincode::serialize(&proof).expect("failed to serialize proof");
-    Ok(BASE64.encode(bytes))
+    Ok(proof_to_base64(&proof))
+}
+
+/// Encodes a proof the way the CLI transports it: bincode 1.3 then base64.
+pub fn proof_to_base64(proof: &VegaZkSNARK<E>) -> String {
+    let bytes = bincode::serialize(proof).expect("failed to serialize proof");
+    BASE64.encode(bytes)
 }
 
 /// Runs only the verifier for the given circuit against a proof provided as a
