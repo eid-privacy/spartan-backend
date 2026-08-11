@@ -3,6 +3,7 @@ mod nizk_prover;
 mod nizk_verifier;
 pub mod noir;
 pub mod online_prover;
+pub mod precompute;
 mod trivial_circuit;
 pub mod types;
 mod utils;
