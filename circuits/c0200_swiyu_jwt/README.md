@@ -14,6 +14,11 @@ https://github.com/eid-privacy/noir-experiments/blob/main/circuits/jwt-swiyu/exp
 
 The output is then used in the `Prover.toml`.
 
+The holder (device) key bound into that `cnf` claim ships with the circuit as
+`./data/holder_private_key.jwk` / `./data/holder_public_key.jwk`, so fresh
+challenges can be re-signed locally (see `./data/README.md` for the full
+provenance and `scripts/sign_prehashed_challenge.py` for the signing).
+
 # Possible Optimization
 
 To verify the signature, this circuit re-creates the BASE64-encoded
