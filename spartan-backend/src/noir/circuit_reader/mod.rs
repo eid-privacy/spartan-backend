@@ -4,7 +4,7 @@ use acir::{FieldElement, circuit::Opcode, native_types::Witness};
 use noirc_artifacts::program::ProgramArtifact;
 use serde_json::Error as JsonError;
 
-mod named_parameters_mapping;
+pub mod named_parameters_mapping;
 pub mod prover_input_mapping;
 pub mod types;
 pub mod verifier_input_mapping;
