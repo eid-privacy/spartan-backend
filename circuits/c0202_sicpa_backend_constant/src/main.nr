@@ -8,7 +8,7 @@ use std::field::t256::{T256Point, T256Scalar, t256_msm, t256_ec_add};
 mod constants;
 use constants::{
     COORD_BASE64_LEN, DISCLOSURE_MAX_LEN, DOB_CLAIM_NAME, DOB_SALT_MAX_LEN, DOB_VALUE_MAX_LEN,
-    ENCODED_HEADER_MAX_LEN, MIN_AGE_YEARS, PAYLOAD_MAX_LEN,
+    ENCODED_HEADER_LEN, MIN_AGE_YEARS, PAYLOAD_MAX_LEN,
 };
 
 pub global G: T256Point = T256Point {
@@ -20,7 +20,7 @@ pub global G: T256Point = T256Point {
 global ENCODED_PAYLOAD_MAX_LEN: u32 = ((PAYLOAD_MAX_LEN + 2) / 3) * 4;
 
 
-global SIGNING_INPUT_MAX_LEN: u32 = ENCODED_HEADER_MAX_LEN + 1 + ENCODED_PAYLOAD_MAX_LEN;
+global SIGNING_INPUT_MAX_LEN: u32 = ENCODED_HEADER_LEN + 1 + ENCODED_PAYLOAD_MAX_LEN;
 
 global ASCII_DOT: u8 = 46;
 global ASCII_X: u8 = 120; // 'x'
@@ -96,7 +96,7 @@ fn main(
     R_jwt_y: [u8; 32],
     s_inv_jwt: Field,
     // Public inputs
-    encoded_header: pub BoundedVec<u8, ENCODED_HEADER_MAX_LEN>,
+    encoded_header: pub [u8; ENCODED_HEADER_LEN],
     issuer_pub_x: pub [u8; 32],
     issuer_pub_y: pub [u8; 32],
     now_date: pub u32,
@@ -122,22 +122,20 @@ fn main(
     // directly after it. We use `eid::fast_base64::encode_url_into` rather than
     // `BASE64_URL_ENCODER::encode_var` because the latter's alphabet lookup
     // costs ~400 R1CS aux per output character (~2.7k chars here).
-    let header_storage = encoded_header.storage();
-    let header_len = encoded_header.len();
     let mut signing_input_storage: [u8; SIGNING_INPUT_MAX_LEN] = [0; SIGNING_INPUT_MAX_LEN];
-    for i in 0..ENCODED_HEADER_MAX_LEN {
-        signing_input_storage[i] = header_storage[i];
+    for i in 0..ENCODED_HEADER_LEN {
+        signing_input_storage[i] = encoded_header[i];
     }
-    signing_input_storage[header_len] = ASCII_DOT;
+    signing_input_storage[ENCODED_HEADER_LEN] = ASCII_DOT;
     let payload_storage = payload.storage();
     let payload_len = payload.len();
     let encoded_payload_len: u32 = encode_url_into(
         payload_storage,
         payload_len,
         &mut signing_input_storage,
-        header_len + 1,
+        ENCODED_HEADER_LEN + 1,
     );
-    let signing_input_len: u32 = header_len + 1 + encoded_payload_len;
+    let signing_input_len: u32 = ENCODED_HEADER_LEN + 1 + encoded_payload_len;
 
     // ECDSA verification of the issuer JWT signature (c0102 "vanilla equation").
     // We assert that R_jwt = t*s^-1*G + r*s^-1*Q_iss with r := R_jwt.x. Equivalent

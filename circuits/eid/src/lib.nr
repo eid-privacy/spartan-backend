@@ -37,3 +37,32 @@ pub fn decode_hex_32<let LEN: u32>(hex_str: [u8; LEN], start: u32) -> [u8; 32] {
 fn decode_nibble(hex_char: u8) -> u8 {
     (hex_char & 0x0F) + (hex_char >> 6) * 9
 }
+
+pub fn move_right<let N: u32, let LOG: u32>(src: [u8; N], shift: u32) -> [u8; N] {
+    let mut rest = shift;
+    let mut cur = src;
+    let mut step: u32 = 1;
+    for _k in 0..LOG {
+        let bit = rest % 2; // `%` / `/` rather than bitwise: no BLACKBOX::AND
+        rest = rest / 2;
+        let mut next: [u8; N] = [0; N];
+        for i in 0..N {
+            let from = if i >= step { cur[i - step] } else { 0 };
+            next[i] = if bit == 1 { from } else { cur[i] };
+        }
+        cur = next;
+        step *= 2;
+    }
+    assert(rest == 0, "move out of range");
+    cur
+}
+
+pub fn move_right_simple<let N: u32>(src: [u8; N], shift: u32) -> [u8; N] {
+    let mut out: [u8; N] = [0; N];
+    for k in 0..N {
+        if k >= shift {
+            out[k] = src[k - shift]
+        }
+    }
+    out
+}
