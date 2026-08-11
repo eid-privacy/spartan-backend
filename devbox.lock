@@ -5,17 +5,17 @@
       "last_modified": "2026-08-10T07:49:06Z",
       "resolved": "github:NixOS/nixpkgs/d482ef84049d9b7276b83a06e4e4d76983830097?lastModified=1786348146&narHash=sha256-we5zDEFfn8TgzeWKjKDMIjeQZ59omEPl23NIF%2B13%2Fys%3D"
     },
-    "github:eid-privacy/flakes#barretenberg-versions.beta_25": {
-      "last_modified": "2026-08-11T08:50:40Z",
-      "resolved": "github:eid-privacy/flakes/682ccc663cec3a06733532b747f6b02cb102c136?lastModified=1786438240&narHash=sha256-LILR3MvcxJhL8Xqwy8x%2BHISV3Rj85oe5aVWhb7MXVrU%3D#barretenberg-versions.beta_25"
+    "github:eid-privacy/flakes#barretenberg-versions.beta_26": {
+      "last_modified": "2026-08-11T09:34:00Z",
+      "resolved": "github:eid-privacy/flakes/ec8516e15158c7b437ce9bcd442175b8762903c0?lastModified=1786440840&narHash=sha256-%2FEYLZiqCbGcRjjWfZzp2p9bIT5VH1yyiAMSWvsRVASc%3D#barretenberg-versions.beta_26"
     },
-    "github:eid-privacy/flakes#nargo-t256-versions.t256-v0_25": {
-      "last_modified": "2026-08-11T08:50:40Z",
-      "resolved": "github:eid-privacy/flakes/682ccc663cec3a06733532b747f6b02cb102c136?lastModified=1786438240&narHash=sha256-LILR3MvcxJhL8Xqwy8x%2BHISV3Rj85oe5aVWhb7MXVrU%3D#nargo-t256-versions.t256-v0_25"
+    "github:eid-privacy/flakes#nargo-t256-versions.t256-v0_26": {
+      "last_modified": "2026-08-11T09:34:00Z",
+      "resolved": "github:eid-privacy/flakes/ec8516e15158c7b437ce9bcd442175b8762903c0?lastModified=1786440840&narHash=sha256-%2FEYLZiqCbGcRjjWfZzp2p9bIT5VH1yyiAMSWvsRVASc%3D#nargo-t256-versions.t256-v0_26"
     },
-    "github:eid-privacy/flakes#noir-versions.v1_0_0-beta_25": {
-      "last_modified": "2026-08-11T08:50:40Z",
-      "resolved": "github:eid-privacy/flakes/682ccc663cec3a06733532b747f6b02cb102c136?lastModified=1786438240&narHash=sha256-LILR3MvcxJhL8Xqwy8x%2BHISV3Rj85oe5aVWhb7MXVrU%3D#noir-versions.v1_0_0-beta_25"
+    "github:eid-privacy/flakes#noir-versions.v1_0_0-beta_26": {
+      "last_modified": "2026-08-11T09:34:00Z",
+      "resolved": "github:eid-privacy/flakes/ec8516e15158c7b437ce9bcd442175b8762903c0?lastModified=1786440840&narHash=sha256-%2FEYLZiqCbGcRjjWfZzp2p9bIT5VH1yyiAMSWvsRVASc%3D#noir-versions.v1_0_0-beta_26"
     },
     "jq@latest": {
       "last_modified": "2026-08-01T16:34:20Z",

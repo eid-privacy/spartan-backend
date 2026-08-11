@@ -8,9 +8,9 @@
     "python@3.14",
     "python314Packages.matplotlib",
     "python314Packages.numpy@latest",
-    "github:eid-privacy/flakes#noir-versions.v1_0_0-beta_25",
-    "github:eid-privacy/flakes#barretenberg-versions.beta_25",
-    "github:eid-privacy/flakes#nargo-t256-versions.t256-v0_25"
+    "github:eid-privacy/flakes#noir-versions.v1_0_0-beta_26",
+    "github:eid-privacy/flakes#barretenberg-versions.beta_26",
+    "github:eid-privacy/flakes#nargo-t256-versions.t256-v0_26"
   ],
   "env": {
     "PROJECT_DIR": "$PWD"
