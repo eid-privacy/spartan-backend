@@ -3,6 +3,8 @@ use sha256::sha256_var;
 
 use eid::fast_base64::encode_url_into;
 use eid::field_utils::{array_to_field, split_point};
+use eid::move_right;
+// use eid::move_right_simple;
 use std::field::t256::{T256Point, T256Scalar, t256_msm, t256_ec_add};
 
 mod constants;
@@ -21,6 +23,10 @@ global ENCODED_PAYLOAD_MAX_LEN: u32 = ((PAYLOAD_MAX_LEN + 2) / 3) * 4;
 
 
 global SIGNING_INPUT_MAX_LEN: u32 = ENCODED_HEADER_MAX_LEN + 1 + ENCODED_PAYLOAD_MAX_LEN;
+
+// Number of binary-decomposition steps `move_right` needs to cover any shift
+// up to ENCODED_HEADER_MAX_LEN (128 = 2^7, so 8 bits).
+global HEADER_SHIFT_LOG: u32 = 8;
 
 global ASCII_DOT: u8 = 46;
 global ASCII_X: u8 = 120; // 'x'
@@ -122,21 +128,28 @@ fn main(
     // directly after it. We use `eid::fast_base64::encode_url_into` rather than
     // `BASE64_URL_ENCODER::encode_var` because the latter's alphabet lookup
     // costs ~400 R1CS aux per output character (~2.7k chars here).
-    let header_storage = encoded_header.storage();
-    let header_len = encoded_header.len();
-    let mut signing_input_storage: [u8; SIGNING_INPUT_MAX_LEN] = [0; SIGNING_INPUT_MAX_LEN];
-    for i in 0..ENCODED_HEADER_MAX_LEN {
-        signing_input_storage[i] = header_storage[i];
-    }
-    signing_input_storage[header_len] = ASCII_DOT;
+    let mut signing_input_storage_scratch: [u8; SIGNING_INPUT_MAX_LEN] = [0; SIGNING_INPUT_MAX_LEN];
+    signing_input_storage_scratch[0] = ASCII_DOT;
     let payload_storage = payload.storage();
     let payload_len = payload.len();
     let encoded_payload_len: u32 = encode_url_into(
         payload_storage,
         payload_len,
-        &mut signing_input_storage,
-        header_len + 1,
+        &mut signing_input_storage_scratch,
+        1,
     );
+
+    let header_storage = encoded_header.storage();
+    let header_len = encoded_header.len();
+    let mut signing_input_storage =
+        move_right::<SIGNING_INPUT_MAX_LEN, HEADER_SHIFT_LOG>(signing_input_storage_scratch, header_len);
+    // let mut signing_input_storage =
+    //     move_right_simple(signing_input_storage_scratch, header_len);
+    for i in 0..ENCODED_HEADER_MAX_LEN {
+        if i < header_len {
+            signing_input_storage[i] = header_storage[i];
+        }
+    }
     let signing_input_len: u32 = header_len + 1 + encoded_payload_len;
 
     // ECDSA verification of the issuer JWT signature (c0102 "vanilla equation").
