@@ -115,6 +115,32 @@ cargo run --release -- ../circuits/c0200_swiyu_jwt --prove
 * Circuits without an `online.json` still work; the precomputed state saves
   `setup`, but the witness commitment is redone on every proof.
 
+Two scripts drive this from the repository root:
+
+* `scripts/precompute.sh [circuit_dir]` — checks the prerequisites (built ACIR,
+  solved witness, `verifier_input.json`, `online.json`), validates the partition
+  with a cheap ACIR-only pre-flight, checks free disk space, then runs the
+  expensive offline phase.
+* `scripts/online_bench.sh [NUM_PROOFS] [NUM_EXTRA_CHALLENGES]` — the
+  online-proving benchmark. It times a non-amortized baseline, then
+  `--precompute` once, then `NUM_PROOFS` × `--prove`, splitting each measurement
+  into artifact load vs. proving, and verifies the proofs. With
+  `NUM_EXTRA_CHALLENGES > 0` it also regenerates genuinely distinct challenges,
+  re-signing each with the circuit's device key
+  (`<circuit_dir>/data/holder_private_key.jwk`). Example on c0200:
+
+  ```
+  offline (--precompute, one-off) = 4.149s, 1570.6 MiB on disk
+  first online proof           wall=2.640s    load=1.628s    prove=1.012s
+  warm online avg (2 samples)  wall=2.686s    load=1.610s    prove=1.076s
+  baseline (no precompute)        = 3.799s
+  speedup, proving only           = 3.75x
+  speedup, end-to-end incl. load  = 1.44x
+  ```
+
+  The gap between the two speedups is the cost of re-reading the artifact in a
+  fresh process; a long-lived prover process would pay it once.
+
 ## Benchmarks
 
 Times in seconds. Rows: ASSERTS; sub-rows per cell: BB prove / Spartan proof / Spartan verify. Columns: INPUT_SIZE.
