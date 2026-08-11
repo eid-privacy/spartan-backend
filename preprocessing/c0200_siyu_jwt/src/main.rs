@@ -232,8 +232,10 @@ fn main() {
 
     fs::write(&toml_path, out).expect("cannot write Prover.toml");
 
-    // 7. Regenerate verifier_input.json. All circuit parameters must appear;
-    //    private ones are null, public ones carry their value.
+    // 7. Regenerate verifier_input.json. Exactly the circuit's ABI parameters
+    //    must appear (the backend asserts the count); private ones are null,
+    //    public ones carry their value. y_offset, challenge_nonce and R_dev_x/y
+    //    stay in Prover.toml for the preprocessing itself but left the ABI.
     let verifier_path = PathBuf::from("../../circuits/c0200_swiyu_jwt/verifier_input.json");
     let json_array = |bytes: &[u8]| -> String {
         let entries: Vec<String> = bytes.iter().map(|b| b.to_string()).collect();
@@ -247,7 +249,6 @@ fn main() {
             "  \"dob_value\": null,\n",
             "  \"dob_sd_offset\": null,\n",
             "  \"x_offset\": null,\n",
-            "  \"y_offset\": null,\n",
             "  \"device_signature\": null,\n",
             "  \"R_jwt_x\": null,\n",
             "  \"R_jwt_y\": null,\n",
@@ -255,9 +256,6 @@ fn main() {
             "  \"issuer_pub_x\": {},\n",
             "  \"issuer_pub_y\": {},\n",
             "  \"now_date\": {},\n",
-            "  \"challenge_nonce\": {},\n",
-            "  \"R_dev_x\": {},\n",
-            "  \"R_dev_y\": {},\n",
             "  \"T_dev_x\": {},\n",
             "  \"T_dev_y\": {},\n",
             "  \"U_dev_x\": {},\n",
@@ -267,9 +265,6 @@ fn main() {
         json_array(&issuer_x),
         json_array(&issuer_y),
         prover.now_date,
-        json_array(&prover.challenge_nonce),
-        json_array(&R_dev_x),
-        json_array(&R_dev_y),
         json_array(&T_dev_x),
         json_array(&T_dev_y),
         json_array(&U_dev_x),
