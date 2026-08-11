@@ -49,7 +49,7 @@ impl MemoryStore {
         &self,
         block_id: acvm::acir::circuit::opcodes::BlockId,
     ) -> Option<usize> {
-        self.blocks.get(&block_id.0).map(|b| b.cells.len())
+        self.blocks.get(&block_id.as_u32()).map(|b| b.cells.len())
     }
     pub(crate) fn new() -> Self {
         Self {
@@ -164,7 +164,7 @@ pub(crate) fn handle_memory_init(
         return Err(SynthesisError::Unsatisfiable);
     }
 
-    if store.blocks.contains_key(&block_id.0) {
+    if store.blocks.contains_key(&block_id.as_u32()) {
         tracing::error!("MemoryInit called twice for block {}", block_id);
         return Err(SynthesisError::Unsatisfiable);
     }
@@ -179,7 +179,9 @@ pub(crate) fn handle_memory_init(
         block_id,
         cells.len()
     );
-    store.blocks.insert(block_id.0, MemoryBlock { cells });
+    store
+        .blocks
+        .insert(block_id.as_u32(), MemoryBlock { cells });
     Ok(())
 }
 
@@ -195,7 +197,7 @@ pub(crate) fn handle_memory_op<CS>(
 where
     CS: ConstraintSystem<Scalar>,
 {
-    let block = store.blocks.get(&block_id.0).ok_or_else(|| {
+    let block = store.blocks.get(&block_id.as_u32()).ok_or_else(|| {
         tracing::error!("MemoryOp on uninitialised block {}", block_id);
         SynthesisError::Unsatisfiable
     })?;
@@ -276,7 +278,7 @@ where
             // Now mutate the block.
             let block_mut = store
                 .blocks
-                .get_mut(&block_id.0)
+                .get_mut(&block_id.as_u32())
                 .expect("block existence already checked");
             block_mut.cells = new_cells;
         }

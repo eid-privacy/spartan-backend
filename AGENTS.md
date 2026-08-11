@@ -47,8 +47,12 @@ bad attribute — use that as a last resort to find the right one.
 Assume the previous version's bump is already committed and CI-green before
 starting the next one. Run from the repo root.
 
-0. If `$DEVBOX_SHELL_ENABLED` is not set, ask the user to run `devbox shell`
-   before continuing — don't try to work around it.
+0. Editing the version strings (steps 1, 2, 4) does not require a devbox
+   shell. But testing the bump (step 3 onward: `devbox update`, `devbox run
+   fetch`/`build-check`/`nargo-check`/`test`/`start`/`fmt-check`) must happen
+   inside a devbox shell — if `$DEVBOX_SHELL_ENABLED` is not set when you
+   reach step 3, ask the user to run `devbox shell` before continuing, don't
+   try to work around it.
 1. Resolve the exact tag/attribute strings for target beta_N as above.
 2. Edit `devbox.json`: bump all three flake refs together.
 3. `devbox update` — regenerates `devbox.lock`.
