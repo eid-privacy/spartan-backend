@@ -51,7 +51,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    // Logs go to stderr so that stdout carries only the program's output (e.g.
+    // the base64 proof printed by `--prove`), keeping the CLI pipeable. ANSI
+    // colours are only emitted when stderr is a terminal, so redirected logs
+    // stay greppable.
     tracing_subscriber::fmt()
+        .with_writer(std::io::stderr)
+        .with_ansi(std::io::IsTerminal::is_terminal(&std::io::stderr()))
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
         .init();
