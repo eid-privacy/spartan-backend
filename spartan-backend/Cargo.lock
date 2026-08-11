@@ -4,8 +4,8 @@ version = 4
 
 [[package]]
 name = "acir"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 dependencies = [
  "acir_field",
  "base64",
@@ -25,8 +25,8 @@ dependencies = [
 
 [[package]]
 name = "acir_field"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 dependencies = [
  "ark-bn254",
  "ark-ff",
@@ -42,8 +42,8 @@ dependencies = [
 
 [[package]]
 name = "acvm"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 dependencies = [
  "acir",
  "acvm_blackbox_solver",
@@ -58,8 +58,8 @@ dependencies = [
 
 [[package]]
 name = "acvm_blackbox_solver"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 dependencies = [
  "acir",
  "aes",
@@ -594,8 +594,8 @@ dependencies = [
 
 [[package]]
 name = "bn254_blackbox_solver"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 dependencies = [
  "acir",
  "acvm_blackbox_solver",
@@ -619,8 +619,8 @@ dependencies = [
 
 [[package]]
 name = "brillig"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 dependencies = [
  "acir_field",
  "itertools 0.15.0",
@@ -630,8 +630,8 @@ dependencies = [
 
 [[package]]
 name = "brillig_vm"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 dependencies = [
  "acir",
  "acvm_blackbox_solver",
@@ -1374,8 +1374,8 @@ dependencies = [
 
 [[package]]
 name = "fm"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 dependencies = [
  "codespan-reporting",
  "iter-extended",
@@ -1954,8 +1954,8 @@ checksum = "a6cb138bb79a146c1bd460005623e142ef0181e3d0219cb493e02f7d08a35695"
 
 [[package]]
 name = "iter-extended"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 
 [[package]]
 name = "itertools"
@@ -2301,8 +2301,8 @@ dependencies = [
 
 [[package]]
 name = "msgpack_tagged"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 dependencies = [
  "msgpack_tagged_derive",
  "rmp",
@@ -2313,8 +2313,8 @@ dependencies = [
 
 [[package]]
 name = "msgpack_tagged_derive"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2323,8 +2323,8 @@ dependencies = [
 
 [[package]]
 name = "nargo"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 dependencies = [
  "acvm",
  "fm",
@@ -2350,8 +2350,8 @@ dependencies = [
 
 [[package]]
 name = "noir_artifact_cli"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 dependencies = [
  "acir",
  "acvm",
@@ -2377,8 +2377,8 @@ dependencies = [
 
 [[package]]
 name = "noir_greybox_fuzzer"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 dependencies = [
  "acvm",
  "build-data",
@@ -2398,8 +2398,8 @@ dependencies = [
 
 [[package]]
 name = "noirc_abi"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 dependencies = [
  "acvm",
  "iter-extended",
@@ -2415,13 +2415,13 @@ dependencies = [
 
 [[package]]
 name = "noirc_arena"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 
 [[package]]
 name = "noirc_artifacts"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 dependencies = [
  "acir",
  "acvm",
@@ -2440,8 +2440,8 @@ dependencies = [
 
 [[package]]
 name = "noirc_driver"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 dependencies = [
  "acvm",
  "build-data",
@@ -2460,8 +2460,8 @@ dependencies = [
 
 [[package]]
 name = "noirc_errors"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 dependencies = [
  "codespan-reporting",
  "fm",
@@ -2473,8 +2473,8 @@ dependencies = [
 
 [[package]]
 name = "noirc_evaluator"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 dependencies = [
  "acvm",
  "ark-ff",
@@ -2510,8 +2510,8 @@ dependencies = [
 
 [[package]]
 name = "noirc_frontend"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 dependencies = [
  "acvm",
  "ark-ff",
@@ -2545,8 +2545,8 @@ dependencies = [
 
 [[package]]
 name = "noirc_printable_type"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 dependencies = [
  "acvm",
  "iter-extended",
@@ -2557,8 +2557,8 @@ dependencies = [
 
 [[package]]
 name = "noirc_span"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 dependencies = [
  "codespan",
  "serde",
@@ -3866,8 +3866,8 @@ dependencies = [
 
 [[package]]
 name = "t256_blackbox_solver"
-version = "1.0.0-beta.24"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.24#c2bd4325f2f5e6de2a3f53be3331dca46d8704ae"
+version = "1.0.0-beta.25"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.25#3a0a31ca4c89de661bc21fb5f54220b7e88c242d"
 dependencies = [
  "acir",
  "acvm_blackbox_solver",
