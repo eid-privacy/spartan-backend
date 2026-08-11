@@ -17,7 +17,7 @@ This repo uses [devbox](https://www.jetify.com/devbox) to pin the exact `rustc`,
 `devbox.json`), so it's the preferred way to get a working environment — no
 manual toolchain installation needed.
 
-1. Make sure your `/etc/nix/nix.conf` has these lines (needed to fetch the
+1. Make sure your `/etc/nix/nix.custom.conf` has these lines (needed to fetch the
    `nargo-t256` binaries from cachix, and to run devbox inside a docker
    environment):
    ```
@@ -33,6 +33,12 @@ manual toolchain installation needed.
    `devbox run start`, etc.) instead of invoking `cargo`/`nargo-t256` directly;
    they already set the right working directory and flags. See the sections
    below for which script maps to which manual command.
+4. If the flakes have been updated after the first run of `devbox`, the cache
+   of nix needs to be refreshed:
+
+```bash
+nix flake metadata github:eid-privacy/flakes --refresh
+```
 
 ### Manual setup (without devbox)
 
