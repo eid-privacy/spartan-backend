@@ -87,6 +87,34 @@ per such circuit; each reads that circuit's `Prover.toml`, does the elliptic-cur
 math, and injects the precomputed values. See
 [`preprocessing/README.md`](preprocessing/README.md) for the full list and usage.
 
+### Pre-computing the offline phase (`--precompute`)
+
+Proving is split into an offline phase (`setup` + `prep`, which commits the
+invariant part of the witness) and an online phase (the actual proof). The
+offline phase can be run ahead of time and reused:
+
+```sh
+# offline, once per circuit build
+cargo run --release -- ../circuits/c0200_swiyu_jwt --precompute
+
+# online, any number of times — picks the artifact up automatically
+cargo run --release -- ../circuits/c0200_swiyu_jwt --prove
+```
+
+* `--precompute` writes a single git-ignored file,
+  `<circuit_dir>/target/precompute.bin` (prover key, verifier key and prepared
+  state). It can exceed a gigabyte for the bigger circuits.
+* `--prove` loads that file when it exists, otherwise it falls back to the usual
+  monolithic proving. The base64 proof is the same either way.
+* The file records a fingerprint of the circuit's ACIR bytecode and of the
+  online partition declared in `online.json`. Rebuilding the circuit or editing
+  `online.json` makes it stale, so `--prove` warns and falls back to regular
+  proving; re-run `--precompute`. Changing the **values** of online inputs
+  (challenge nonce, device signature, …) never invalidates the artifact — that
+  is the whole point of the online path.
+* Circuits without an `online.json` still work; the precomputed state saves
+  `setup`, but the witness commitment is redone on every proof.
+
 ## Benchmarks
 
 Times in seconds. Rows: ASSERTS; sub-rows per cell: BB prove / Spartan proof / Spartan verify. Columns: INPUT_SIZE.
