@@ -4,23 +4,23 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-acir = { git = "https://github.com/eid-privacy/noir", tag = "t256-v0.22-1", features = [
+acir = { git = "https://github.com/eid-privacy/noir", tag = "t256-v0.23", features = [
   "t256",
 ] }
 #acir = { path = "../../noir/acvm-repo/acir", features = ["t256"] }
-acvm = { git = "https://github.com/eid-privacy/noir", tag = "t256-v0.22-1", features = [
+acvm = { git = "https://github.com/eid-privacy/noir", tag = "t256-v0.23", features = [
   "t256",
 ] }
 #acvm = { path = "../../noir/acvm-repo/acvm", features = ["t256"] }
 bellpepper-core = "0.4.0"
 ff = "0.13.1"
-noirc_abi = { git = "https://github.com/eid-privacy/noir", tag = "t256-v0.22-1", features = [
+noirc_abi = { git = "https://github.com/eid-privacy/noir", tag = "t256-v0.23", features = [
   "t256",
 ] }
 #noirc_abi = { path = "../../noir/tooling/noirc_abi", features = ["t256"] }
-noirc_artifacts = { git = "https://github.com/eid-privacy/noir", tag = "t256-v0.22-1" }
+noirc_artifacts = { git = "https://github.com/eid-privacy/noir", tag = "t256-v0.23" }
 #noirc_artifacts = { path = "../../noir/tooling/noirc_artifacts" }
-noir_artifact_cli = { git = "https://github.com/eid-privacy/noir", tag = "t256-v0.22-1" }
+noir_artifact_cli = { git = "https://github.com/eid-privacy/noir", tag = "t256-v0.23" }
 #noir_artifact_cli = { path = "../../noir/tooling/artifact_cli" }
 num-bigint = { version = "0.4.3", features = ["rand"] }
 num-traits = "0.2.14"

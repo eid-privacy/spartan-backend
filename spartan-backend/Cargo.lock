@@ -4,8 +4,8 @@ version = 4
 
 [[package]]
 name = "acir"
-version = "1.0.0-beta.22"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 dependencies = [
  "acir_field",
  "base64",
@@ -25,8 +25,8 @@ dependencies = [
 
 [[package]]
 name = "acir_field"
-version = "1.0.0-beta.22"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 dependencies = [
  "ark-bn254",
  "ark-ff",
@@ -42,14 +42,15 @@ dependencies = [
 
 [[package]]
 name = "acvm"
-version = "1.0.0-beta.22"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 dependencies = [
  "acir",
  "acvm_blackbox_solver",
  "brillig_vm",
  "indexmap 2.14.0",
- "itertools",
+ "itertools 0.15.0",
+ "rustc-hash",
  "serde",
  "thiserror 2.0.18",
  "tracing",
@@ -57,8 +58,8 @@ dependencies = [
 
 [[package]]
 name = "acvm_blackbox_solver"
-version = "1.0.0-beta.22"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 dependencies = [
  "acir",
  "aes",
@@ -68,7 +69,7 @@ dependencies = [
  "k256",
  "keccak 0.2.0",
  "log",
- "p256 0.14.0-rc.9",
+ "p256 0.14.0-rc.11",
  "sha2 0.11.0",
  "thiserror 2.0.18",
 ]
@@ -237,7 +238,7 @@ dependencies = [
  "educe",
  "fnv",
  "hashbrown 0.17.0",
- "itertools",
+ "itertools 0.14.0",
  "num-bigint 0.4.6",
  "num-integer",
  "num-traits",
@@ -448,7 +449,7 @@ checksum = "9ae286c2cb403324ab644c7cc68dceb25fe52ca9429908a726d7ed272c1edf7b"
 dependencies = [
  "bellpepper-core",
  "byteorder",
- "ff",
+ "ff 0.13.1",
 ]
 
 [[package]]
@@ -459,7 +460,7 @@ checksum = "1d8abb418570756396d722841b19edfec21d4e89e1cf8990610663040ecb1aea"
 dependencies = [
  "blake2s_simd",
  "byteorder",
- "ff",
+ "ff 0.13.1",
  "serde",
  "thiserror 1.0.69",
 ]
@@ -496,6 +497,12 @@ checksum = "b71798fca2c1fe1086445a7258a4bc81e6e49dcd24c8d0dd9a1e57395b603f51"
 dependencies = [
  "serde",
 ]
+
+[[package]]
+name = "bitflags"
+version = "1.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
 name = "bitflags"
@@ -587,8 +594,8 @@ dependencies = [
 
 [[package]]
 name = "bn254_blackbox_solver"
-version = "1.0.0-beta.22"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 dependencies = [
  "acir",
  "acvm_blackbox_solver",
@@ -597,7 +604,7 @@ dependencies = [
  "ark-ff",
  "ark-grumpkin",
  "hex",
- "itertools",
+ "itertools 0.15.0",
 ]
 
 [[package]]
@@ -612,23 +619,23 @@ dependencies = [
 
 [[package]]
 name = "brillig"
-version = "1.0.0-beta.22"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 dependencies = [
  "acir_field",
- "itertools",
+ "itertools 0.15.0",
  "msgpack_tagged",
  "serde",
 ]
 
 [[package]]
 name = "brillig_vm"
-version = "1.0.0-beta.22"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 dependencies = [
  "acir",
  "acvm_blackbox_solver",
- "itertools",
+ "itertools 0.15.0",
  "num-bigint 0.4.6",
  "num-traits",
  "thiserror 2.0.18",
@@ -1060,6 +1067,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "defmt"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2953bfe4f93bbd20cc71198842756f77d161884c99ebbabc41d80231ded88d1"
+dependencies = [
+ "bitflags 1.3.2",
+ "defmt-macros",
+]
+
+[[package]]
+name = "defmt-macros"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bad9c72e7ca2137e0dc3813245a0d282fd6daad32fd800af018306a9169b5fe8"
+dependencies = [
+ "defmt-parser",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
+
+[[package]]
+name = "defmt-parser"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "10d60334b3b2e7c9d91ef8150abfb6fa4c1c39ebbcf4a81c2e346aad939fee3e"
+dependencies = [
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "der"
 version = "0.7.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1148,15 +1186,15 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.17.0-rc.18"
+version = "0.17.0-rc.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54fb064faabbee66e1fc8e5c5a9458d4269dc2d8b638fe86a425adb2510d1a96"
+checksum = "0fcddae1289a08e614a83d155a070f54c1803196e92089b8299e2738eb74d3e4"
 dependencies = [
  "der 0.8.0",
  "digest 0.11.2",
- "elliptic-curve 0.14.0-rc.32",
- "rfc6979 0.5.0-rc.5",
- "signature 3.0.0-rc.10",
+ "elliptic-curve 0.14.0-rc.34",
+ "rfc6979 0.6.0-pre.0",
+ "signature 3.0.0",
  "spki 0.8.0",
  "zeroize",
 ]
@@ -1188,9 +1226,9 @@ dependencies = [
  "base16ct 0.2.0",
  "crypto-bigint 0.5.5",
  "digest 0.10.7",
- "ff",
+ "ff 0.13.1",
  "generic-array",
- "group",
+ "group 0.13.0",
  "pem-rfc7468 0.7.0",
  "pkcs8 0.10.2",
  "rand_core 0.6.4",
@@ -1201,23 +1239,24 @@ dependencies = [
 
 [[package]]
 name = "elliptic-curve"
-version = "0.14.0-rc.32"
+version = "0.14.0-rc.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cda94f31325c4275e9706adecbb6f0650dee2f904c915a98e3d81adaaaa757aa"
+checksum = "88a44d097c9f3e494ddc19f77af5aab89f0b3b2652cde370ec8c6064faca5bd2"
 dependencies = [
  "base16ct 1.0.0",
  "crypto-bigint 0.7.2",
  "crypto-common 0.2.1",
  "digest 0.11.2",
+ "ff 0.14.0",
+ "group 0.14.0",
  "hybrid-array",
  "once_cell",
  "pem-rfc7468 1.0.0",
  "pkcs8 0.11.0",
  "rand_core 0.10.0",
- "rustcrypto-ff",
- "rustcrypto-group",
  "sec1 0.8.0",
  "subtle",
+ "wnaf",
  "zeroize",
 ]
 
@@ -1287,6 +1326,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ff"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a1f686ab92a9fb0eaf188f6c6c87b89490baa6fdb0db4544ba4dc47f7942489f"
+dependencies = [
+ "rand_core 0.10.0",
+ "subtle",
+]
+
+[[package]]
 name = "ff_derive"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1325,8 +1374,8 @@ dependencies = [
 
 [[package]]
 name = "fm"
-version = "1.0.0-beta.22"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 dependencies = [
  "codespan-reporting",
  "iter-extended",
@@ -1462,8 +1511,19 @@ version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f0f9ef7462f7c099f518d754361858f86d8a07af53ba9af0fe635bbccb151a63"
 dependencies = [
- "ff",
+ "ff 0.13.1",
  "rand_core 0.6.4",
+ "subtle",
+]
+
+[[package]]
+name = "group"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7fd1a1c7a5206c5b7a3f5a0d7ccd3ff85d0c8f5133d62a02680255b0004af5f4"
+dependencies = [
+ "ff 0.14.0",
+ "rand_core 0.10.0",
  "subtle",
 ]
 
@@ -1493,8 +1553,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d124fcb02bccc7a9253a8aaa99a365f47f0f8b5a363b26a494f06f4a221bd4b7"
 dependencies = [
  "digest 0.10.7",
- "ff",
- "group",
+ "ff 0.13.1",
+ "group 0.13.0",
  "halo2derive",
  "hex",
  "lazy_static",
@@ -1578,9 +1638,9 @@ dependencies = [
 
 [[package]]
 name = "hmac"
-version = "0.13.0-rc.6"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60017b071c523c9e5a55dd1253582bff6150c5e96a7e8511e419de1ab5ee97f9"
+checksum = "6303bc9732ae41b04cb554b844a762b4115a61bfaa81e3e83050991eeb56863f"
 dependencies = [
  "digest 0.11.2",
 ]
@@ -1894,8 +1954,8 @@ checksum = "a6cb138bb79a146c1bd460005623e142ef0181e3d0219cb493e02f7d08a35695"
 
 [[package]]
 name = "iter-extended"
-version = "1.0.0-beta.22"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 
 [[package]]
 name = "itertools"
@@ -1907,10 +1967,72 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b4baf93f58d4425749ca49a51c50ebab072c5df6994d08fed93541c331481dc"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
+
+[[package]]
+name = "jiff"
+version = "0.2.35"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "668b7183bd07af9a4885f5c35b0cc5c83c4607a913c16b7e17291832910d2dcc"
+dependencies = [
+ "defmt",
+ "jiff-core",
+ "jiff-static",
+ "jiff-tzdb-platform",
+ "log",
+ "portable-atomic",
+ "portable-atomic-util",
+ "serde_core",
+ "windows-link",
+]
+
+[[package]]
+name = "jiff-core"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7feca88439efe53da3754500c1851dedf3cb36c524dd5cf8225cc0794de95d09"
+dependencies = [
+ "defmt",
+]
+
+[[package]]
+name = "jiff-static"
+version = "0.2.35"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a69dcb3a21cfb32ce1cd056169337ca284af0766dd766e7878819b251a49204"
+dependencies = [
+ "jiff-core",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
+
+[[package]]
+name = "jiff-tzdb"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "142bd39932ad231f10513df9ab62661fead8719872150b7ad02a2df79f4e141e"
+
+[[package]]
+name = "jiff-tzdb-platform"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "875a5a69ac2bab1a891711cf5eccbec1ce0341ea805560dcd90b7a2e925132e8"
+dependencies = [
+ "jiff-tzdb",
+]
 
 [[package]]
 name = "jni"
@@ -2051,15 +2173,15 @@ dependencies = [
 
 [[package]]
 name = "k256"
-version = "0.14.0-rc.9"
+version = "0.14.0-rc.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b382cbfd43caf55991a93850ce538aa1aa67bb264af367d22dfe7937c4e997d"
+checksum = "9eb95d01f9d0270fc40dcb217cb25de1494383597d27b4fe832a42f5d907824a"
 dependencies = [
  "cpubits",
- "ecdsa 0.17.0-rc.18",
- "elliptic-curve 0.14.0-rc.32",
+ "ecdsa 0.17.0-rc.19",
+ "elliptic-curve 0.14.0-rc.34",
  "sha2 0.11.0",
- "signature 3.0.0-rc.10",
+ "signature 3.0.0",
 ]
 
 [[package]]
@@ -2179,8 +2301,8 @@ dependencies = [
 
 [[package]]
 name = "msgpack_tagged"
-version = "1.0.0-beta.20"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 dependencies = [
  "msgpack_tagged_derive",
  "rmp",
@@ -2191,8 +2313,8 @@ dependencies = [
 
 [[package]]
 name = "msgpack_tagged_derive"
-version = "1.0.0-beta.20"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2201,13 +2323,11 @@ dependencies = [
 
 [[package]]
 name = "nargo"
-version = "1.0.0-beta.22"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 dependencies = [
  "acvm",
- "brillig",
  "fm",
- "iter-extended",
  "jsonrpsee",
  "noir_greybox_fuzzer",
  "noirc_abi",
@@ -2230,8 +2350,8 @@ dependencies = [
 
 [[package]]
 name = "noir_artifact_cli"
-version = "1.0.0-beta.22"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 dependencies = [
  "acir",
  "acvm",
@@ -2240,7 +2360,7 @@ dependencies = [
  "color-eyre",
  "const_format",
  "fm",
- "itertools",
+ "itertools 0.15.0",
  "nargo",
  "noirc_abi",
  "noirc_artifacts",
@@ -2257,13 +2377,13 @@ dependencies = [
 
 [[package]]
 name = "noir_greybox_fuzzer"
-version = "1.0.0-beta.22"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 dependencies = [
  "acvm",
  "build-data",
  "fm",
- "itertools",
+ "itertools 0.15.0",
  "noirc_abi",
  "noirc_artifacts",
  "num-traits",
@@ -2278,12 +2398,12 @@ dependencies = [
 
 [[package]]
 name = "noirc_abi"
-version = "1.0.0-beta.22"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 dependencies = [
  "acvm",
  "iter-extended",
- "itertools",
+ "itertools 0.15.0",
  "noirc_printable_type",
  "num-bigint 0.4.6",
  "num-traits",
@@ -2295,13 +2415,13 @@ dependencies = [
 
 [[package]]
 name = "noirc_arena"
-version = "1.0.0-beta.22"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 
 [[package]]
 name = "noirc_artifacts"
-version = "1.0.0-beta.22"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 dependencies = [
  "acir",
  "acvm",
@@ -2320,8 +2440,8 @@ dependencies = [
 
 [[package]]
 name = "noirc_driver"
-version = "1.0.0-beta.22"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 dependencies = [
  "acvm",
  "build-data",
@@ -2340,8 +2460,8 @@ dependencies = [
 
 [[package]]
 name = "noirc_errors"
-version = "1.0.0-beta.22"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 dependencies = [
  "codespan-reporting",
  "fm",
@@ -2353,8 +2473,8 @@ dependencies = [
 
 [[package]]
 name = "noirc_evaluator"
-version = "1.0.0-beta.22"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 dependencies = [
  "acvm",
  "bit-vec 0.9.1",
@@ -2365,7 +2485,7 @@ dependencies = [
  "im",
  "indexmap 2.14.0",
  "iter-extended",
- "itertools",
+ "itertools 0.15.0",
  "log",
  "noirc_artifacts",
  "noirc_errors",
@@ -2389,16 +2509,17 @@ dependencies = [
 
 [[package]]
 name = "noirc_frontend"
-version = "1.0.0-beta.22"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 dependencies = [
  "acvm",
  "bn254_blackbox_solver",
  "cfg-if",
  "fm",
  "im",
+ "indexmap 2.14.0",
  "iter-extended",
- "itertools",
+ "itertools 0.15.0",
  "noirc_arena",
  "noirc_artifacts",
  "noirc_errors",
@@ -2410,6 +2531,7 @@ dependencies = [
  "rustc-hash",
  "serde",
  "serde_json",
+ "siphasher",
  "small-ord-set",
  "smol_str",
  "strum",
@@ -2421,20 +2543,20 @@ dependencies = [
 
 [[package]]
 name = "noirc_printable_type"
-version = "1.0.0-beta.22"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 dependencies = [
  "acvm",
  "iter-extended",
- "itertools",
+ "itertools 0.15.0",
  "serde",
  "serde_json",
 ]
 
 [[package]]
 name = "noirc_span"
-version = "1.0.0-beta.22"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 dependencies = [
  "codespan",
  "serde",
@@ -2565,14 +2687,14 @@ dependencies = [
 
 [[package]]
 name = "p256"
-version = "0.14.0-rc.9"
+version = "0.14.0-rc.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b97e3bf0465157ae90975ff52dbeb1362ba618924878c9f74c25baa27a65f9a"
+checksum = "04cfbd444125de5ec2af6c4bc081d932e2ca90497cbd0300f7c862133ea6e27b"
 dependencies = [
- "ecdsa 0.17.0-rc.18",
- "elliptic-curve 0.14.0-rc.32",
+ "ecdsa 0.17.0-rc.19",
+ "elliptic-curve 0.14.0-rc.34",
  "primefield",
- "primeorder 0.14.0-rc.9",
+ "primeorder 0.14.0-rc.11",
  "sha2 0.11.0",
 ]
 
@@ -2582,7 +2704,7 @@ version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "81fec4625e73cf41ef4bb6846cafa6d44736525f442ba45e407c4a000a13996f"
 dependencies = [
- "group",
+ "group 0.13.0",
 ]
 
 [[package]]
@@ -2689,6 +2811,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "portable-atomic"
+version = "1.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05c8b63e8d9609db387f0324918f81d68fe27748f084ef092fb35954d0539a85"
+
+[[package]]
+name = "portable-atomic-util"
+version = "0.2.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2a106d1259c23fac8e543272398ae0e3c0b8d33c88ed73d0cc71b0f1d902618"
+dependencies = [
+ "portable-atomic",
+]
+
+[[package]]
 name = "potential_utf"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2724,14 +2861,14 @@ dependencies = [
 
 [[package]]
 name = "primefield"
-version = "0.14.0-rc.9"
+version = "0.14.0-rc.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b52e6ee42db392378a95622b463c9740631171d1efce43fa445a569c1600cb6"
+checksum = "b1d7e42f46a29abc16fb621a3466ee453358ebaae48a9e515f287e0af052ed8f"
 dependencies = [
  "crypto-bigint 0.7.2",
  "crypto-common 0.2.1",
+ "ff 0.14.0",
  "rand_core 0.10.0",
- "rustcrypto-ff",
  "subtle",
  "zeroize",
 ]
@@ -2747,11 +2884,11 @@ dependencies = [
 
 [[package]]
 name = "primeorder"
-version = "0.14.0-rc.9"
+version = "0.14.0-rc.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0556580e42c19833f5d232aca11a7687a503ee41f937b54f5ae1d50fc2a6a36a"
+checksum = "a1576f33b3071d61b06389caf381238dd95ccd2519cd04d788cd52450462eab4"
 dependencies = [
- "elliptic-curve 0.14.0-rc.32",
+ "elliptic-curve 0.14.0-rc.34",
 ]
 
 [[package]]
@@ -2780,7 +2917,7 @@ checksum = "4b45fcc2344c680f5025fe57779faef368840d0bd1f42f216291f0dc4ace4744"
 dependencies = [
  "bit-set",
  "bit-vec 0.8.0",
- "bitflags",
+ "bitflags 2.11.0",
  "num-traits",
  "rand 0.9.2",
  "rand_chacha 0.9.0",
@@ -2994,12 +3131,12 @@ dependencies = [
 
 [[package]]
 name = "rfc6979"
-version = "0.5.0-rc.5"
+version = "0.6.0-pre.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23a3127ee32baec36af75b4107082d9bd823501ec14a4e016be4b6b37faa74ae"
+checksum = "9935425142ac6e252364413291d96c8bc9898d0876a801824c7af4eae397b689"
 dependencies = [
- "hmac 0.13.0-rc.6",
- "subtle",
+ "ctutils",
+ "hmac 0.13.0",
 ]
 
 [[package]]
@@ -3088,33 +3225,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "781442f29170c5c93b7185ad559492601acdc71d5bb0706f5868094f45cfcd08"
 
 [[package]]
-name = "rustcrypto-ff"
-version = "0.14.0-rc.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd2a8adb347447693cd2ba0d218c4b66c62da9b0a5672b17b981e4291ec65ff6"
-dependencies = [
- "rand_core 0.10.0",
- "subtle",
-]
-
-[[package]]
-name = "rustcrypto-group"
-version = "0.14.0-rc.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "369f9b61aa45933c062c9f6b5c3c50ab710687eca83dd3802653b140b43f85ed"
-dependencies = [
- "rand_core 0.10.0",
- "rustcrypto-ff",
- "subtle",
-]
-
-[[package]]
 name = "rustix"
 version = "1.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6fe4565b9518b83ef4f91bb47ce29620ca828bd32cb7e408f0062e9930ba190"
 dependencies = [
- "bitflags",
+ "bitflags 2.11.0",
  "errno",
  "libc",
  "linux-raw-sys",
@@ -3324,7 +3440,7 @@ version = "3.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b7f4bc775c73d9a02cde8bf7b2ec4c9d12743edf609006c7facc23998404cd1d"
 dependencies = [
- "bitflags",
+ "bitflags 2.11.0",
  "core-foundation",
  "core-foundation-sys",
  "libc",
@@ -3429,9 +3545,9 @@ dependencies = [
 
 [[package]]
 name = "serde_with"
-version = "3.20.0"
+version = "3.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e72c1c2cb7b223fafb600a619537a871c2818583d619401b785e7c0b746ccde2"
+checksum = "ee78f1fbe43ac4a0e47aadb3dbd357b69eb0d3793e948624cd03dd2750ab1c0a"
 dependencies = [
  "base64",
  "bs58",
@@ -3439,6 +3555,7 @@ dependencies = [
  "hex",
  "indexmap 1.9.3",
  "indexmap 2.14.0",
+ "jiff",
  "schemars 0.9.0",
  "schemars 1.2.1",
  "serde_core",
@@ -3449,9 +3566,9 @@ dependencies = [
 
 [[package]]
 name = "serde_with_macros"
-version = "3.20.0"
+version = "3.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b90c488738ecb4fb0262f41f43bc40efc5868d9fb744319ddf5f5317f417bfac"
+checksum = "8705578779c2b6bd90d84d66eb2e206b708b1a4d7b9f17641b293545bf1c7e46"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -3530,9 +3647,9 @@ dependencies = [
 
 [[package]]
 name = "signature"
-version = "3.0.0-rc.10"
+version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f1880df446116126965eeec169136b2e0251dba37c6223bcc819569550edea3"
+checksum = "28d567dcbaf0049cb8ac2608a76cd95ff9e4412e1899d389ee400918ca7537f5"
 dependencies = [
  "digest 0.11.2",
  "rand_core 0.10.0",
@@ -3543,6 +3660,12 @@ name = "simd-adler32"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e320a6c5ad31d271ad523dcf3ad13e2767ad8b1cb8f047f75a8aeaf8da139da2"
+
+[[package]]
+name = "siphasher"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8ee5873ec9cce0195efcb7a4e9507a04cd49aec9c83d0389df45b1ef7ba2e649"
 
 [[package]]
 name = "sized-chunks"
@@ -3610,7 +3733,7 @@ dependencies = [
  "bellpepper-core",
  "bincode",
  "clap",
- "ff",
+ "ff 0.13.1",
  "noir_artifact_cli",
  "noirc_abi",
  "noirc_artifacts",
@@ -3731,8 +3854,8 @@ dependencies = [
 
 [[package]]
 name = "t256_blackbox_solver"
-version = "1.0.0-beta.22"
-source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.22-1#0a70e796219dcd9cbbbf227d2f87c3d9d7c26df9"
+version = "1.0.0-beta.23"
+source = "git+https://github.com/eid-privacy/noir?tag=t256-v0.23#b250d703175a69a22dba969b8287b0fc8c2111d1"
 dependencies = [
  "acir",
  "acvm_blackbox_solver",
@@ -3741,7 +3864,7 @@ dependencies = [
  "ark-secp256r1",
  "ark-tom256",
  "hex",
- "itertools",
+ "itertools 0.15.0",
 ]
 
 [[package]]
@@ -4180,13 +4303,13 @@ dependencies = [
  "bitvec",
  "byteorder",
  "digest 0.10.7",
- "ff",
+ "ff 0.13.1",
  "flate2",
  "generic-array",
  "getrandom 0.2.17",
- "group",
+ "group 0.13.0",
  "halo2curves",
- "itertools",
+ "itertools 0.14.0",
  "num-bigint 0.4.6",
  "num-integer",
  "num-traits",
@@ -4325,7 +4448,7 @@ version = "0.244.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "47b807c72e1bac69382b3a6fb3dbe8ea4c0ed87ff5629b8685ae6b9a611028fe"
 dependencies = [
- "bitflags",
+ "bitflags 2.11.0",
  "hashbrown 0.15.5",
  "indexmap 2.14.0",
  "semver",
@@ -4650,7 +4773,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d66ea20e9553b30172b5e831994e35fbde2d165325bec84fc43dbf6f4eb9cb2"
 dependencies = [
  "anyhow",
- "bitflags",
+ "bitflags 2.11.0",
  "indexmap 2.14.0",
  "log",
  "serde",
@@ -4678,6 +4801,16 @@ dependencies = [
  "serde_json",
  "unicode-xid",
  "wasmparser",
+]
+
+[[package]]
+name = "wnaf"
+version = "0.14.0-pre.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81b8f9936fa4378fbe26130d702e51a9d723b22a073105500dfd80d9bb508199"
+dependencies = [
+ "ff 0.14.0",
+ "group 0.14.0",
 ]
 
 [[package]]
