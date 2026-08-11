@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-num-bigint = {version="0.4.3", features = ["rand"]}
+num-bigint = "0.5"
 num-traits = "0.2.14"
 vega-prover = "0.1.0"
 p256 = { version = "0.13.2" }

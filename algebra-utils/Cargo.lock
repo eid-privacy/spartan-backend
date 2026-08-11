@@ -32,7 +32,7 @@ dependencies = [
 name = "algebra-utils"
 version = "0.1.0"
 dependencies = [
- "num-bigint 0.4.6",
+ "num-bigint 0.5.1",
  "num-traits",
  "p256",
  "vega-prover",
@@ -581,6 +581,16 @@ dependencies = [
  "num-traits",
  "rand",
  "serde",
+]
+
+[[package]]
+name = "num-bigint"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93e7820bc0a80a0238e650327316f929ba18d5be054b647490a3a6a339f3e7c0"
+dependencies = [
+ "num-integer",
+ "num-traits",
 ]
 
 [[package]]
