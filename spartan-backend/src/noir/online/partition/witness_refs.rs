@@ -172,7 +172,7 @@ mod tests {
     #[test]
     fn memory_op_direction_depends_on_kind() {
         let op = |operation| Opcode::MemoryOp {
-            block_id: BlockId(0),
+            block_id: BlockId::new(0),
             op: MemOp {
                 operation,
                 index: Witness(1),
@@ -192,7 +192,7 @@ mod tests {
     #[test]
     fn memory_init_only_reads() {
         let opcode: Opcode<acir::FieldElement> = Opcode::MemoryInit {
-            block_id: BlockId(0),
+            block_id: BlockId::new(0),
             init: vec![Witness(4), Witness(5)],
             block_type: BlockType::Memory,
         };

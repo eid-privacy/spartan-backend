@@ -63,7 +63,7 @@ impl TaintSet {
                     }
                     Opcode::MemoryInit { block_id, init, .. } => {
                         if init.iter().any(|w| tainted.contains(&w.witness_index()))
-                            && tainted_blocks.insert(block_id.0)
+                            && tainted_blocks.insert(block_id.as_u32())
                         {
                             changed = true;
                         }
@@ -73,7 +73,8 @@ impl TaintSet {
                         let val_tainted = tainted.contains(&op.value.witness_index());
                         match op.operation {
                             MemOpKind::Write => {
-                                if (idx_tainted || val_tainted) && tainted_blocks.insert(block_id.0)
+                                if (idx_tainted || val_tainted)
+                                    && tainted_blocks.insert(block_id.as_u32())
                                 {
                                     changed = true;
                                 }
@@ -81,11 +82,11 @@ impl TaintSet {
                             MemOpKind::Read => {
                                 // A tainted (dynamic) index makes the whole
                                 // block's addressing challenge-dependent.
-                                if idx_tainted && tainted_blocks.insert(block_id.0) {
+                                if idx_tainted && tainted_blocks.insert(block_id.as_u32()) {
                                     changed = true;
                                 }
                                 // Reading a tainted block yields a tainted value.
-                                if (idx_tainted || tainted_blocks.contains(&block_id.0))
+                                if (idx_tainted || tainted_blocks.contains(&block_id.as_u32()))
                                     && tainted.insert(op.value.witness_index())
                                 {
                                     changed = true;
@@ -210,7 +211,7 @@ mod tests {
     /// in the opcode list, which is why the closure runs to a fixpoint.
     #[test]
     fn tainted_write_taints_block_and_earlier_reads() {
-        let block = BlockId(7);
+        let block = BlockId::new(7);
         let c = circuit(
             vec![
                 Opcode::MemoryInit {
@@ -239,7 +240,7 @@ mod tests {
         );
         let taint = TaintSet::compute(&c, &seeds(&[40]));
 
-        assert!(taint.is_block_tainted(block.0));
+        assert!(taint.is_block_tainted(block.as_u32()));
         assert!(
             taint.is_tainted(30),
             "the earlier read must be revisited once the block is tainted"
@@ -250,7 +251,7 @@ mod tests {
     /// values read from it are online even though its contents are not.
     #[test]
     fn tainted_index_taints_block_addressing() {
-        let block = BlockId(1);
+        let block = BlockId::new(1);
         let c = circuit(
             vec![
                 Opcode::MemoryInit {
@@ -271,7 +272,7 @@ mod tests {
         );
         let taint = TaintSet::compute(&c, &seeds(&[50]));
 
-        assert!(taint.is_block_tainted(block.0));
+        assert!(taint.is_block_tainted(block.as_u32()));
         assert!(taint.is_tainted(51));
     }
 
