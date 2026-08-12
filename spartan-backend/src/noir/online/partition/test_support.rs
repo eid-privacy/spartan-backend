@@ -53,7 +53,7 @@ pub fn linear(a: u32, b: u32, c: u32) -> Opcode<FieldElement> {
 /// A Brillig call reading `input` and declaring `outputs` as its writes.
 pub fn brillig(input: u32, outputs: &[u32]) -> Opcode<FieldElement> {
     Opcode::BrilligCall {
-        id: BrilligFunctionId(0),
+        id: BrilligFunctionId::new(0),
         inputs: vec![BrilligInputs::Single(single(input))],
         outputs: outputs
             .iter()

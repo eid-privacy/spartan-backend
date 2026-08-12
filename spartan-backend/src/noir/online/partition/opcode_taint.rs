@@ -28,9 +28,9 @@ pub fn classify_opcodes(circuit: &Circuit<FieldElement>, taint: &TaintSet) -> Ve
             .iter()
             .any(|w| taint.is_tainted(w.witness_index()));
         let is_rest = match opcode {
-            Opcode::MemoryInit { block_id, .. } => taint.is_block_tainted(block_id.0),
+            Opcode::MemoryInit { block_id, .. } => taint.is_block_tainted(block_id.as_u32()),
             Opcode::MemoryOp { block_id, .. } => {
-                taint.is_block_tainted(block_id.0) || reads_tainted
+                taint.is_block_tainted(block_id.as_u32()) || reads_tainted
             }
             _ => reads_tainted,
         };
@@ -161,7 +161,7 @@ mod tests {
     /// its own witnesses is online.
     #[test]
     fn online_block_pulls_its_opcodes_online() {
-        let block = BlockId(3);
+        let block = BlockId::new(3);
         let c = circuit(
             vec![
                 Opcode::MemoryInit {
