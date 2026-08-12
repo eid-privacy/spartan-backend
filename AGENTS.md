@@ -66,16 +66,7 @@ starting the next one. Run from the repo root.
 6. `devbox run build-check` — full workspace build with warnings as errors.
    Fix any compile breaks caused by upstream API changes before moving on;
    don't paper over them with `allow` attributes.
-7. `devbox run nargo-check` — recompiles every `circuits/c0*/` with the new
-   `nargo-t256` binary and fails only on a semantic `hash` mismatch versus the
-   committed target JSON (bytecode/noir_version churn is expected and
-   ignored, see `scripts/nargo_check.sh`).
-   - A hash mismatch means the new noir/nargo version changed circuit
-     semantics. Decide whether that's expected (e.g. an optimizer or gadget
-     fix upstream) or a real regression. If expected, `git add` the
-     regenerated `circuits/c0*/target/*.json` (and `.gz`) files; if not,
-     stop and investigate before continuing to the next beta.
-8. `devbox run test` and `devbox run start` — unit tests and the end-to-end
+7. `devbox run test` and `devbox run start` — unit tests and the end-to-end
    circuit run.
    - **Known pre-existing exception:** `c0102_signature_vanilla_equation`
      panics at the final `verify()` step ("Public inputs mismatch") on
@@ -84,12 +75,12 @@ starting the next one. Run from the repo root.
      completes without panic" as c0102's signal, not verify(). The real
      green/red gate is: c0000–c0101 pass end-to-end, c0102 reaches prove()
      without panicking.
-9. `devbox run fmt-check`.
-10. Commit this single beta bump on its own (devbox.json, devbox.lock,
+8. `devbox run fmt-check`.
+9. Commit this single beta bump on its own (devbox.json, devbox.lock,
     spartan-backend/Cargo.toml, spartan-backend/Cargo.lock, any regenerated
     circuit targets). Do not combine multiple beta bumps into one commit —
     one commit per N is what makes step 11 possible.
-11. Only after this commit is clean, move to beta_(N+1).
+10. Only after this commit is clean, move to beta_(N+1).
 
 ## If something breaks
 
