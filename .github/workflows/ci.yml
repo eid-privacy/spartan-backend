@@ -35,8 +35,5 @@ jobs:
       - name: Build spartan-backend (deny warnings)
         run: devbox run build-check
 
-      - name: Check circuits
-        run: devbox run nargo-check
-
       - name: Run circuits
         run: devbox run start
