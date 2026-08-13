@@ -1,45 +1,8 @@
 # Experiment Background
 
-This repo contains an SD-JWT experiment. The SD-JWT (credential) is produced by a Python script and consumed by the Noir circuits.
-The script `create-prover.py` sets up the specific credential structure used in the
-SICPA backend, which includes the public key of the issuer in the SD-JWT header.
-This is different from the Swiyu-SD-JWT, which has a generic header, and a Web3-DID
-in the body of the SD-JWT.
-If you have devbox installed, you can create a new SD-JWT which will be written
-to Prover.toml:
-
-```bash
-devbox shell
-# inside devbox:
-python3 create-prover.py
-```
-
-Once the Prover.toml is written, you can use the scripts from the `zkp-pocs/noir/scripts`
-directory to run all benchmarks.
-
-# Signature verification (Crescent + vanilla equation)
-
-This circuit does **not** use Noir's built-in `std::ecdsa_secp256r1::verify_signature`.
-Instead, following `c0200_swiyu_jwt`, it verifies:
-
-- the **issuer JWT signature** with the "vanilla equation" style (cf.
-  `c0102_signature_vanilla_equation`), consuming precomputed `R_jwt_x/y` and
-  `s_inv_jwt` (private), and
-- the **device signature** on `challenge_nonce` with the "Crescent" style (cf.
-  `c0100_holder_binding_crescent_style`), consuming the precomputed public triple
-  `R_dev_x/y`, `T_dev_x/y`, `U_dev_x/y`.
-
-These precomputed witnesses cannot (cheaply) be derived in-circuit, so after
-running `create-prover.py` you must run the off-circuit preprocessor to inject
-them into `Prover.toml` and to (re)generate `verifier_input.json`:
-
-```bash
-cd ../../preprocessing/c0201_sicpa_backend
-cargo run --release
-```
-
-The end-to-end flow is therefore: `create-prover.py` → preprocessor →
-`nargo-t256 execute` (and prove/verify with the spartan backend).
+This is based on [c0201_sicpa_backend](../c0201_sicpa_backend) and 
+experiments how to keep variable-length header witnesses with a reasonable
+constraint size.
 
 # Why `ENCODED_HEADER_LEN` is a compile-time constant
 
@@ -118,75 +81,11 @@ here, and made per-layer cost look sublinear in `LOG`. Fold every output byte
 into an asserted value (or feed the buffer to `sha256_var`, as the real circuit
 does) before believing any number.
 
-## If a variable-length header becomes necessary
-
-Keep witness indices away from the big buffer entirely: build it with constant
-indices only, then apply the variable placement with a **log-depth barrel
-shifter** in which every index is a compile-time constant. The shift here is
-bounded by `ENCODED_HEADER_MAX_LEN` (128), so 8 layers suffice — `LOG` tracks
-the maximum shift, not `N`.
-
-```noir
-/// Shift `src` towards higher indices by a witness amount. Every array index
-/// below is a compile-time constant, so `src` never becomes a memory block.
-/// `LOG` must cover the maximum shift: shift <= 128 needs LOG = 8.
-fn shift_right<let N: u32>(src: [u8; N], shift: u32) -> [u8; N] {
-    let mut rest = shift;
-    let mut cur = src;
-    let mut step: u32 = 1;
-    for _k in 0..LOG {
-        let bit = rest % 2; // `%` / `/` rather than bitwise: no BLACKBOX::AND
-        rest = rest / 2;
-        let mut next: [u8; N] = [0; N];
-        for i in 0..N {
-            let from = if i >= step { cur[i - step] } else { 0 };
-            next[i] = if bit == 1 { from } else { cur[i] };
-        }
-        cur = next;
-        step *= 2;
-    }
-    assert(rest == 0, "shift out of range");
-    cur
-}
-```
-
-Cost is `O(N · log(max_shift))` with zero memory ops: 10 307 constraints in the
-table above, i.e. 1.6× the constant-offset version and 20× cheaper than the
-witness-offset one. The shifter's own share is 3 773 constraints for
-`8 · 257 = 2 056` byte muxes, i.e. **~1.8 constraints per byte per layer**.
-Verified byte-for-byte against `encode_url_into(…, out, o)` for
-`o ∈ {0, 11, …, 121}` with `nargo test`.
-
-Why this beats the obvious loop: `out[i + shift] = enc[i]` needs, for each of
-`N` bytes, an `N`-wide one-hot selector to express "which cell" — `N` muxes of
-width `N`, hence `O(N²)`, even though the whole permutation is determined by
-just `log₂(max_shift)` bits of witness. The barrel shifter matches that
-entropy: it factors an arbitrary shift into `log₂(max_shift)` *fixed* shifts,
-and each layer applies its fixed shift to all `N` bytes under **one shared
-selector bit**. So the selector cost falls from `N · N` bits to `log₂(max_shift)`
-bits, and every index becomes a compile-time constant — which is what keeps the
-array out of a memory block and stops the poisoning of downstream reads.
-
-Bounding the shift is what makes it cheap: with `shift ≤ 128` only 8 layers are
-needed, regardless of `N` being 257 or 2 861 bytes.
-
-The call site then becomes: put `'.'` at `enc[0]`, encode the payload at the
-constant offset 1, `shift_right` by `header_len`, and finally overlay the
-header over indices `0..ENCODED_HEADER_MAX_LEN` masked by `i < header_len`
-(constant indices, ~2 constraints per byte over 128 bytes). Nothing
-witness-indexed ever touches the buffer, so `sha256_var` stays cheap too.
-
-Two cheaper alternatives, in preference order:
-
-1. **Keep the length constant** — what this circuit does. `encoded_header` is a
-   *public* input anyway, so pinning its encoded length costs nothing. It only
-   works while the issuer's `kid` / DID yields a stable header length (88 bytes
-   for the credentials `create-prover.py` currently emits).
-2. **Dispatch over a small set of lengths.** With `k` candidate offsets, hoist
-   the encoder out and select only the placement: `k · ENC_LEN` selects at ~1
-   constraint each. Competitive with the shifter for small `k`, and simpler.
+# Long term fix
 
 Longer term the fix belongs in the backend: `memory.rs` notes that the
 selector encoding is a deliberate simple-first choice, and a
 lookup-argument-based memory would remove this whole class of blow-up rather
 than requiring each circuit to dodge it.
+
+https://github.com/eid-privacy/spartan-backend/issues/59

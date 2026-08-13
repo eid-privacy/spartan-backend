@@ -1,64 +1,33 @@
 # Experiment Background
 
-This repo contains an SD-JWT experiment. The SD-JWT (credential) is produced by a Python script and consumed by the Noir circuits.
-The script `create-prover.py` sets up the specific credential structure used in the
-SICPA backend, which includes the public key of the issuer in the SD-JWT header.
-This is different from the Swiyu-SD-JWT, which has a generic header, and a Web3-DID
-in the body of the SD-JWT.
-If you have devbox installed, you can create a new SD-JWT which will be written
-to Prover.toml:
+This is based on [c0201_sicpa_backend](../c0201_sicpa_backend) and 
+experiments how to keep variable-length header witnesses with a reasonable
+constraint size.
 
-```bash
-devbox shell
-# inside devbox:
-python3 create-prover.py
-```
+Claude proposed a `barrel shifter` trick in the method `move_right`, 
+which allows to reduce the constraints to a little factor.
+Instead of shifting by a variable length, which is very expensive, the shift
+is done conditionally on powers of two of the variable length.
+There is a comparison with a `move_right_simple` method which does a shift
+based on common software wisdom.
+However, this latter is still very expensive!
+Here is Claude's explanation of why:
 
-Once the Prover.toml is written, you can use the scripts from the `zkp-pocs/noir/scripts`
-directory to run all benchmarks.
+> The core issue: variable array indices are expensive in a circuit.
 
-# Signature verification (Crescent + vanilla equation)
-
-This circuit does **not** use Noir's built-in `std::ecdsa_secp256r1::verify_signature`.
-Instead, following `c0200_swiyu_jwt`, it verifies:
-
-- the **issuer JWT signature** with the "vanilla equation" style (cf.
-  `c0102_signature_vanilla_equation`), consuming precomputed `R_jwt_x/y` and
-  `s_inv_jwt` (private), and
-- the **device signature** on `challenge_nonce` with the "Crescent" style (cf.
-  `c0100_holder_binding_crescent_style`), consuming the precomputed public triple
-  `R_dev_x/y`, `T_dev_x/y`, `U_dev_x/y`.
-
-These precomputed witnesses cannot (cheaply) be derived in-circuit, so after
-running `create-prover.py` you must run the off-circuit preprocessor to inject
-them into `Prover.toml` and to (re)generate `verifier_input.json`:
-
-```bash
-cd ../../preprocessing/c0201_sicpa_backend
-cargo run --release
-```
-
-The end-to-end flow is therefore: `create-prover.py` → preprocessor →
-`nargo-t256 execute` (and prove/verify with the spartan backend).
-
-# Encode-header Change
-
-As described in [c0202_sicpa_backend_const/README.md](../c0202_sicpa_backend_const/README.md),
-the jwt-header should be of static size so that the conversion to base64 is easiest.
-This implements Claude's suggestion to "shift right", or rather "move right"
-the payload to make space for the header.
-
-So instead of:
-
-```
-concat(base64(header), '.', base64(payload))
-```
-
-it does
-
-```
-signing_input = move_right(base64(payload), len(header));
-signing_input[0..len(header)] = base64(header);
-```
-
-which seems to be much easier in circuits. Go figure...
+> In a circuit, "array index" isn't a pointer lookup like in normal code — the compiler has to turn it into arithmetic constraints. If the index is a
+> compile-time constant, that's free: it's just wiring `out[3] = src[1]`, decided at compile time. But if the index is a runtime value (a witness, unknown
+> until the prover runs), the circuit can't "jump" to that slot. It has to build logic that says, for every possible index value, "is this the one? if
+> so, copy it" — effectively a scan over all N positions for every single output element.
+> 
+> - `move_right_simple` does `src[k - shift]` where `shift` is a runtime input. That's a variable index, so for each of the N output bytes, the compiler emits
+> an ~N-sized selector over all possible source positions. N outputs × N-sized lookup each ≈ O(N²) constraints. Your `SIGNING_INPUT_MAX_LEN` is in the
+> thousands of bytes, so N² blows up fast.
+> - `move_right` never does a variable-index read. It decomposes the shift into its bits (LOG of them, since shift is bounded — here at most 128, i.e. 8
+> bits). At each bit-step it shifts by a fixed power of two (1, 2, 4, 8, ...), and those are compile-time constants baked into the unrolled loop (step
+> doubles each iteration, LOG is a compile-time generic, so the outer loop is fully unrolled at compile time). Indexing by a constant offset is free. The
+> only "runtime" part is a cheap `if bit == 1 { from } else { cur[i] }` select per byte per step — O(N) work, done LOG times, so O(N·LOG) total — roughly
+> N·8 instead of N².
+> 
+> This is the classic "barrel shifter" trick: instead of one big variable shift (expensive random access), do log2(max_shift) small conditional shifts by
+> fixed powers of two (cheap, since each is a constant-offset copy plus a select). Same result, dramatically fewer constraints.
