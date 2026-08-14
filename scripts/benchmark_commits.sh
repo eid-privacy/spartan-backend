@@ -1,321 +1,367 @@
-#!/bin/bash -e
+#!/bin/bash
 #
-# Benchmark a single (non-parametric) circuit across a set of commits.
+# Config-driven benchmark driver: measures noir/barretenberg and spartan-backend
+# performance across the commit history described in a config file (see
+# benchmarks/swiyu_jwt/config.yaml for an example and BENCHMARK_PLAN.md for the
+# full spec). Two curves share one timeline: noir/bb across the commits that bump
+# the noir/barretenberg/nargo-t256 flake pins, spartan across our own commits.
+# Commits are grouped under the circuit name they were built with (`circuit:` +
+# `commits:` under `noir:`/`spartan:`), so renaming a circuit directory only
+# means opening a new group for future commits — old groups and their stored
+# results keep referencing the name they were actually measured under.
+#
+# Run from a plain shell, NOT from inside `devbox shell` (nesting devbox
+# environments is unsupported). This script itself has zero devbox dependency;
+# it only *calls* `devbox run` inside a per-commit checkout so every commit is
+# measured with its own pinned toolchain. No yq/jq/python, no devbox shellenv.
 #
 # Usage:
-#   scripts/benchmark_commits.sh <circuit_code> [--barretenberg <bb_circuit_code>] [--commits <c1[,c2[,...]]>]
-#   scripts/benchmark_commits.sh c0101_signature_pok_zkattest_style --barretenberg c0000_trivial --commits 8c257bb,16df669
+#   scripts/benchmark_commits.sh <config.yaml> [options]
 #
-# <circuit_code> (the sole positional argument) names BOTH the benchmarks/ output
-# directory and the circuits/ directory holding the spartan circuit to benchmark.
+#     --force            re-run every leg, ignoring stored results
+#     --only <ref>       run only this commit (both of its legs), ignoring stored results
+#     --runs <n>         override `runs:` from the config
+#     --dry-run          print the work plan and exit
+#     -h | --help
 #
-# Barretenberg cannot process the t256-only spartan circuits, so it is benchmarked
-# on a SEPARATE, standard-field circuit given via --barretenberg <bb_circuit_code>;
-# the spartan proof/verify is benchmarked on <circuit_code>. Omit --barretenberg to
-# skip the Barretenberg measurement entirely.
-#
-# For each commit it checks out a throwaway git worktree (in a mktemp dir, so the
-# main working tree is never touched), builds spartan-backend there and times the
-# proof/verification of <circuit_code> as committed at that commit. Barretenberg
-# (write_vk/prove/verify) depends only on the circuit and not on the spartan-backend
-# code, so it is run ONCE (on <bb_circuit_code>, from the CURRENT working tree — not
-# any benchmarked commit).
-#
-# Results are written to benchmarks/<circuit_code>/, one CSV per run, named with a
-# two-digit index so a plain lexical sort reflects git history (oldest first):
-#   stats-00-barretenberg.csv   write_vk, prove, verify        (run once, bb circuit)
-#   stats-01-<sha>.csv          spartan_proof, spartan_verify  (oldest commit)
-#   stats-02-<sha>.csv          spartan_proof, spartan_verify
-#   ...
-# Each file has the schema: metric,min,max,mean,stddev
+# Bash 3.2 safe: parallel indexed arrays only, no mapfile/declare -A/${var^^}.
 
-DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
-REPO_ROOT="$(git -C "$DIR" rev-parse --show-toplevel)"
+SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 
-N=5  # Number of times each benchmark is run; stats are computed over all N runs
+usage() {
+    cat >&2 <<'EOF'
+Usage: scripts/benchmark_commits.sh <config.yaml> [options]
 
-if [ "$#" -lt 1 ]; then
-    echo "Usage: $0 <circuit_code> [--barretenberg <bb_circuit_code>] [--commits <c1[,c2[,...]]>]" >&2
+  --force            re-run every leg, ignoring stored results
+  --only <ref>       run only this commit (both of its legs), ignoring stored results
+  --runs <n>         override `runs:` from the config
+  --dry-run          print the work plan and exit
+  -h | --help
+EOF
+}
+
+if [ "$#" -eq 0 ]; then
+    usage
     exit 1
 fi
+case "$1" in
+    -h|--help) usage; exit 0 ;;
+esac
 
-CIRCUIT="$1"
+CONFIG="$1"
 shift
 
-BB_CIRCUIT=""
-COMMITS=()
+FORCE=0
+ONLY_REF=""
+RUNS_OVERRIDE=""
+DRY_RUN=0
 while [ "$#" -gt 0 ]; do
     case "$1" in
-        --barretenberg)
-            [ -n "$2" ] || { echo "ERROR: --barretenberg requires a circuit name" >&2; exit 1; }
-            BB_CIRCUIT="$2"
-            shift 2
-            ;;
-        --commits)
-            [ -n "$2" ] || { echo "ERROR: --commits requires a comma-separated commit list" >&2; exit 1; }
-            IFS=',' read -r -a _commits <<< "$2"
-            COMMITS+=("${_commits[@]}")
-            shift 2
-            ;;
+        --force)   FORCE=1; shift ;;
+        --only)    ONLY_REF="$2"; shift 2 ;;
+        --runs)    RUNS_OVERRIDE="$2"; shift 2 ;;
+        --dry-run) DRY_RUN=1; shift ;;
+        -h|--help) usage; exit 0 ;;
         *)
             echo "ERROR: unknown argument '$1'" >&2
-            echo "Usage: $0 <circuit_code> [--barretenberg <bb_circuit_code>] [--commits <c1[,c2[,...]]>]" >&2
+            usage
             exit 1
             ;;
     esac
 done
-[ "${#COMMITS[@]}" -eq 0 ] && COMMITS=("HEAD")
 
-OUT_DIR="$REPO_ROOT/benchmarks/$CIRCUIT"
-mkdir -p "$OUT_DIR"
+[ -f "$CONFIG" ] || { echo "ERROR: config file not found: $CONFIG" >&2; exit 1; }
 
-# Point cargo at a single shared target directory (the main working tree's
-# spartan-backend/target) so each benchmarked commit reuses previously compiled
-# dependencies instead of rebuilding from scratch in its throwaway worktree.
-# Only the changed spartan-backend crate itself is recompiled per commit.
-export CARGO_TARGET_DIR="$REPO_ROOT/spartan-backend/target"
-
-if [ -n "$DEVBOX_PACKAGES_DIR" ]; then
-    TIME_BIN="$DEVBOX_PACKAGES_DIR/bin/time"
-else
-    TIME_BIN="$(which time)"
+if [ -n "${DEVBOX_SHELL_ENABLED:-}" ]; then
+    echo "WARNING: running inside a devbox shell; nested devbox environments are unsupported here." >&2
 fi
 
-to_seconds() {
-    local val="$1"
-    local num=$(echo "$val" | sed 's/[a-zA-Z]*$//')
-    local unit=$(echo "$val" | sed 's/^[0-9.]*//')
-    case "$unit" in
-        s)   awk "BEGIN {printf \"%.3f\n\", $num}" ;;
-        ms)  awk "BEGIN {printf \"%.3f\n\", $num / 1000}" ;;
-        us)  awk "BEGIN {printf \"%.3f\n\", $num / 1000000}" ;;
-        ns)  awk "BEGIN {printf \"%.3f\n\", $num / 1000000000}" ;;
-    esac
-}
+# --- §3: restricted-YAML config parser ----------------------------------------
 
-# Run a command N times; stdout is suppressed, stderr passes through.
-# Prints space-separated elapsed times in seconds.
-time_n() {
-    local tmp results=()
-    tmp=$(mktemp)
-    for i in $(seq 1 "$N"); do
-        $TIME_BIN -f '%e' -o "$tmp" "$@" > /dev/null
-        results+=("$(cat "$tmp")")
-    done
-    rm -f "$tmp"
-    echo "${results[@]}"
-}
-
-# Compute "min,max,mean,stddev" from space-separated float values.
-# Stddev uses the population formula (n denominator).
-stats_csv() {
-    echo "$@" | tr ' ' '\n' | awk '
-    NR==1 { min=$1; max=$1 }
-    { sum+=$1; vals[NR]=$1; if($1<min) min=$1; if($1>max) max=$1 }
-    END {
-        n=NR; mean=sum/n; sq=0
-        for(i=1;i<=n;i++) sq+=(vals[i]-mean)^2
-        stddev=(n>1) ? sqrt(sq/n) : 0
-        printf "%.3f,%.3f,%.3f,%.3f", min, max, mean, stddev
-    }'
-}
-
-# --- worktree management ------------------------------------------------------
-# All created worktrees are tracked and removed on exit so a failure mid-run never
-# leaves a dangling worktree behind.
-WORKTREES=()
-BB_TMP=""  # temp dir for Barretenberg proof artifacts (see run_barretenberg)
-
-cleanup() {
-    for wt in "${WORKTREES[@]}"; do
-        git -C "$REPO_ROOT" worktree remove --force "$wt" 2>/dev/null || true
-        rm -rf "$(dirname "$wt")"
-    done
-    [ -n "$BB_TMP" ] && rm -rf "$BB_TMP" || true
-}
-trap cleanup EXIT
-
-# Create a detached worktree for a commit in a fresh temp dir; echoes its path.
-# NOTE: callers must add the returned path to WORKTREES themselves — this runs in
-# a command-substitution subshell, so appending to WORKTREES here would not reach
-# the parent shell and the worktree would never be cleaned up.
-mk_worktree() {
-    local commit="$1" tmp wt
-    tmp=$(mktemp -d)
-    wt="$tmp/wt"
-    git -C "$REPO_ROOT" worktree add --detach "$wt" "$commit" >&2
-    echo "$wt"
-}
-
-# --- order commits oldest -> newest by git history (topological) --------------
-# Committer timestamps can be identical (e.g. after a rebase), so sort by ancestry
-# instead: walk the requested commits + ancestors in reverse-topo (oldest-first)
-# order and keep only the requested ones, preserving that order. Filenames use
-# short shas. (Avoid `mapfile`; /bin/bash on macOS is 3.2 and lacks it.)
-REQUESTED_FULL="$(for c in "${COMMITS[@]}"; do git -C "$REPO_ROOT" rev-parse "$c"; done)"
-ORDERED=()
-while IFS= read -r sha; do
-    [ -n "$sha" ] && ORDERED+=("$(git -C "$REPO_ROOT" rev-parse --short "$sha")")
-done < <(
-    git -C "$REPO_ROOT" rev-list --topo-order --reverse "${COMMITS[@]}" \
-        | grep -Fxf <(printf '%s\n' "$REQUESTED_FULL")
-)
-
-echo "Spartan circuit:      $CIRCUIT"
-echo "Barretenberg circuit: ${BB_CIRCUIT:-<none>}"
-echo "Commits (oldest first): ${ORDERED[*]}"
-echo "Output:    $OUT_DIR"
-echo
-
-# --- Create the oldest commit's worktree (reused by the spartan loop below) ---
-FIRST_WT="$(mk_worktree "${ORDERED[0]}")"
-WORKTREES+=("$FIRST_WT")
-
-if [ ! -d "$FIRST_WT/circuits/$CIRCUIT" ]; then
-    echo "ERROR: circuits/$CIRCUIT not found at commit ${ORDERED[0]}" >&2
+parse_error() {
+    echo "$CONFIG:$1: cannot parse: $2" >&2
     exit 1
-fi
-
-# --- Barretenberg: run ONCE, on $BB_CIRCUIT from the CURRENT working tree ------
-# Barretenberg only handles the standard field and cannot process the t256-only
-# spartan circuits, so it runs on its own circuit ($BB_CIRCUIT). Its timings do not
-# depend on the spartan-backend code, so it uses the current checked-out repo rather
-# than any benchmarked commit. Still best-effort: run it inside a function invoked as
-# an `if` condition, which disables `set -e` for its body, and skip gracefully on any
-# failure (e.g. if $BB_CIRCUIT is also t256). The proof artifacts go to a temp dir so
-# the working tree is not littered with a proof/ directory.
-#
-# `nargo execute --force` is needed to regenerate a valid witness from the circuit's
-# Prover.toml — the committed target/*.gz is a placeholder that does not verify. We
-# compile in place (in the working tree) so relative-path deps like `../eid` still
-# resolve, then restore the tracked target/ afterward so the tree stays clean — but
-# only if it was clean to begin with, so we never clobber uncommitted changes.
-run_barretenberg() {
-    local circuit_dir="$REPO_ROOT/circuits/$BB_CIRCUIT"
-    local target="$circuit_dir/target"
-    local bytecode="$target/$BB_CIRCUIT.json"
-    local witness="$target/$BB_CIRCUIT.gz"
-    BB_TMP="$(mktemp -d)"
-    local proof="$BB_TMP/proof"
-
-    local dirty_before wvk prove verify rc=0
-    dirty_before="$(git -C "$REPO_ROOT" status --porcelain -- "circuits/$BB_CIRCUIT/target")"
-
-    if ( cd "$circuit_dir" && nargo execute --force ); then
-        echo "Writing verifier key ($N runs)"
-        wvk=$(time_n bb write_vk -b "$bytecode" -o "$proof") || rc=1
-        if [ "$rc" -eq 0 ]; then
-            echo "Creating proof ($N runs)"
-            prove=$(time_n bb prove -b "$bytecode" -w "$witness" -k "$proof/vk" -o "$proof") || rc=1
-        fi
-        if [ "$rc" -eq 0 ]; then
-            echo "Verifying proof ($N runs)"
-            verify=$(time_n bb verify -p "$proof/proof" -k "$proof/vk" -i "$proof/public_inputs") || rc=1
-        fi
-    else
-        rc=1
-    fi
-
-    # Restore the working tree's target/ to its committed state if it started clean.
-    if [ -z "$dirty_before" ]; then
-        git -C "$REPO_ROOT" checkout -- "circuits/$BB_CIRCUIT/target" 2>/dev/null || true
-        git -C "$REPO_ROOT" clean -fdq -- "circuits/$BB_CIRCUIT/target" 2>/dev/null || true
-    else
-        echo "NOTE: circuits/$BB_CIRCUIT/target had uncommitted changes; left as-is after recompile." >&2
-    fi
-
-    [ "$rc" -eq 0 ] || return 1
-
-    local csv="$OUT_DIR/stats-00-barretenberg.csv"
-    {
-        echo "metric,min,max,mean,stddev"
-        echo "write_vk,$(stats_csv "$wvk")"
-        echo "prove,$(stats_csv "$prove")"
-        echo "verify,$(stats_csv "$verify")"
-    } > "$csv"
-    echo "--- $csv ---"
-    cat "$csv"
 }
 
-if [ -n "$BB_CIRCUIT" ]; then
-    echo "=== Barretenberg on $BB_CIRCUIT (once, from current working tree) ==="
-    if run_barretenberg; then
-        :
-    else
-        echo "NOTE: skipping Barretenberg for '$BB_CIRCUIT' (not compatible with standard nargo / bb)." >&2
-    fi
-    echo
-fi
+NAME=""
+RUNS_CFG="5"
+NOIR_REFS=(); NOIR_LABELS=(); NOIR_CIRCUITS=()
+SPARTAN_REFS=(); SPARTAN_LABELS=(); SPARTAN_CIRCUITS=()
 
-# --- Spartan: per commit ------------------------------------------------------
-NCOMMITS="${#ORDERED[@]}"
-idx=0
-for commit in "${ORDERED[@]}"; do
-    idx=$(( idx + 1 ))
-    SHA="$commit"
+section=""
+cur_circuit=""
+in_commits=0
+lineno=0
+while IFS= read -r raw_line || [ -n "$raw_line" ]; do
+    lineno=$(( lineno + 1 ))
+    raw_line="${raw_line%$'\r'}"
+    line=$(printf '%s' "$raw_line" | sed 's/[[:space:]]*#.*$//')
 
-    # Reuse the worktree already created for Barretenberg for the oldest commit.
-    if [ "$idx" -eq 1 ]; then
-        WT="$FIRST_WT"
-    else
-        WT="$(mk_worktree "$commit")"
-        WORKTREES+=("$WT")
-    fi
+    [ -z "$line" ] && continue
 
-    OUT_CSV="$OUT_DIR/stats-$(printf '%02d' "$idx")-${SHA}.csv"
-    echo "=== commit $idx / $NCOMMITS: $SHA -> $(basename "$OUT_CSV") ==="
+    case "$line" in
+        '      - '*)
+            [ "$in_commits" -eq 1 ] && [ -n "$cur_circuit" ] || parse_error "$lineno" "$raw_line"
+            text="${line#      - }"
+            ref="${text%% *}"
+            if [ "$ref" = "$text" ]; then
+                label=""
+            else
+                label="${text#* }"
+            fi
+            case "$section" in
+                noir)    NOIR_REFS+=("$ref");    NOIR_LABELS+=("$label");    NOIR_CIRCUITS+=("$cur_circuit") ;;
+                spartan) SPARTAN_REFS+=("$ref"); SPARTAN_LABELS+=("$label"); SPARTAN_CIRCUITS+=("$cur_circuit") ;;
+                *) parse_error "$lineno" "$raw_line" ;;
+            esac
+            ;;
+        '    commits:'*)
+            [ -n "$section" ] && [ -n "$cur_circuit" ] || parse_error "$lineno" "$raw_line"
+            in_commits=1
+            ;;
+        '  - circuit: '*)
+            [ -n "$section" ] || parse_error "$lineno" "$raw_line"
+            cur_circuit="${line#  - circuit: }"
+            in_commits=0
+            ;;
+        *)
+            if [[ "$line" =~ ^(name|runs):[[:space:]]+(.+)$ ]]; then
+                key="${BASH_REMATCH[1]}"
+                value="${BASH_REMATCH[2]}"
+                case "$key" in
+                    name) NAME="$value" ;;
+                    runs) RUNS_CFG="$value" ;;
+                esac
+                section=""
+                cur_circuit=""
+                in_commits=0
+            elif [[ "$line" =~ ^(noir|spartan):[[:space:]]*$ ]]; then
+                section="${BASH_REMATCH[1]}"
+                cur_circuit=""
+                in_commits=0
+            else
+                parse_error "$lineno" "$raw_line"
+            fi
+            ;;
+    esac
+done < "$CONFIG"
 
-    if [ ! -d "$WT/circuits/$CIRCUIT" ]; then
-        echo "WARNING: circuits/$CIRCUIT absent at $SHA, skipping" >&2
-        continue
-    fi
+[ -n "$NAME" ]             || { echo "ERROR: $CONFIG: missing required key 'name'" >&2; exit 1; }
+[ "${#NOIR_REFS[@]}" -ge 1 ] || { echo "ERROR: $CONFIG: 'noir' needs at least one circuit group with commits" >&2; exit 1; }
 
-    CIRCUIT_DIR="$WT/circuits/$CIRCUIT"
-    SPARTAN_DIR="$WT/spartan-backend"
+RUNS="${RUNS_OVERRIDE:-$RUNS_CFG}"
 
-    echo "[commit $idx / $NCOMMITS] stage: compilation"
-    ( cd "$CIRCUIT_DIR" && nargo-t256 compile --force && nargo-t256 execute --force )
+# --- §4 step 1: derive paths ---------------------------------------------------
 
-    echo "[commit $idx / $NCOMMITS] stage: compile (cargo build --release)"
-    ( cd "$SPARTAN_DIR" && NO_COLOR=1 cargo build --release )
+BENCH_DIR="$(cd "$(dirname "$CONFIG")" && pwd)"
+RESULTS_DIR="$BENCH_DIR/results"
+mkdir -p "$RESULTS_DIR"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+CHECKOUT="$REPO_ROOT/benchmarks/checkout"
 
-    echo "[commit $idx / $NCOMMITS] stage: run ($N runs)"
-    SPARTAN_PROOF_TIMES=()
-    SPARTAN_VERIFY_TIMES=()
-    for i in $(seq 1 "$N"); do
-        echo "[commit $idx / $NCOMMITS] run $i / $N"
-        SPARTAN_OUTPUT=$(cd "$SPARTAN_DIR" && NO_COLOR=1 cargo run --release -- -v "$CIRCUIT_DIR" 2>&1) \
-            || { echo "$SPARTAN_OUTPUT"; exit $?; }
-        NORMALIZED=$(echo "$SPARTAN_OUTPUT" | sed 's/µs/us/g')
-        PROOF_BUSY=$(echo "$NORMALIZED" | grep 'proof_creation: spartan_backend: close' | grep -oE 'time\.busy=[^ ]+' | sed 's/time\.busy=//')
-        VERIFY_BUSY=$(echo "$NORMALIZED" | grep 'verification: spartan_backend: close' | grep -oE 'time\.busy=[^ ]+' | sed 's/time\.busy=//')
-        SPARTAN_PROOF_TIMES+=("$(to_seconds "$PROOF_BUSY")")
-        SPARTAN_VERIFY_TIMES+=("$(to_seconds "$VERIFY_BUSY")")
-    done
+# --- §4 step 2: resolve refs ---------------------------------------------------
 
-    # Constraint count (-c) and proof size (-s) are spartan-only and deterministic,
-    # so measure each once. They only exist on commits that added the flags
-    # (count-constraints since 9b86d24, proof-size since 39456cb), so parse
-    # best-effort and skip a metric when its flag is missing on an older commit.
-    echo "Counting constraints"
-    CONS_OUT=$(cd "$SPARTAN_DIR" && NO_COLOR=1 cargo run --release -- -c "$CIRCUIT_DIR" 2>&1) || CONS_OUT=""
-    CONSTRAINTS=$(echo "$CONS_OUT" | grep -oE 'constraints=[0-9]+' | head -1 | sed 's/constraints=//')
-    echo "Measuring proof size"
-    SIZE_OUT=$(cd "$SPARTAN_DIR" && NO_COLOR=1 cargo run --release -- -s "$CIRCUIT_DIR" 2>&1) || SIZE_OUT=""
-    PROOF_SIZE=$(echo "$SIZE_OUT" | grep -oE 'proof_size=[0-9]+' | head -1 | sed 's/proof_size=//')
-    [ -z "$CONSTRAINTS" ] && echo "NOTE: no constraint count for $SHA (flag unsupported?)" >&2 || true
-    [ -z "$PROOF_SIZE" ] && echo "NOTE: no proof size for $SHA (flag unsupported?)" >&2 || true
-
-    {
-        echo "metric,min,max,mean,stddev"
-        echo "spartan_proof,$(stats_csv "${SPARTAN_PROOF_TIMES[@]}")"
-        echo "spartan_verify,$(stats_csv "${SPARTAN_VERIFY_TIMES[@]}")"
-        if [ -n "$CONSTRAINTS" ]; then echo "spartan_constraints,$(stats_csv "$CONSTRAINTS")"; fi
-        if [ -n "$PROOF_SIZE" ]; then echo "spartan_proof_size,$(stats_csv "$PROOF_SIZE")"; fi
-    } > "$OUT_CSV"
-    echo "--- $OUT_CSV ---"
-    cat "$OUT_CSV"
-    echo
+NOIR_FULL=(); NOIR_SHORT=()
+for ((i = 0; i < ${#NOIR_REFS[@]}; i++)); do
+    full=$(git -C "$REPO_ROOT" rev-parse "${NOIR_REFS[$i]}" 2>/dev/null) \
+        || { echo "ERROR: noir_commits ref '${NOIR_REFS[$i]}' does not resolve" >&2; exit 1; }
+    short=$(git -C "$REPO_ROOT" rev-parse --short "${NOIR_REFS[$i]}")
+    NOIR_FULL+=("$full")
+    NOIR_SHORT+=("$short")
+    [ -n "${NOIR_LABELS[$i]}" ] || NOIR_LABELS[$i]="$short"
 done
 
-echo "Done. Results in $OUT_DIR"
+SPARTAN_FULL=(); SPARTAN_SHORT=()
+for ((i = 0; i < ${#SPARTAN_REFS[@]}; i++)); do
+    full=$(git -C "$REPO_ROOT" rev-parse "${SPARTAN_REFS[$i]}" 2>/dev/null) \
+        || { echo "ERROR: spartan_commits ref '${SPARTAN_REFS[$i]}' does not resolve" >&2; exit 1; }
+    short=$(git -C "$REPO_ROOT" rev-parse --short "${SPARTAN_REFS[$i]}")
+    SPARTAN_FULL+=("$full")
+    SPARTAN_SHORT+=("$short")
+    [ -n "${SPARTAN_LABELS[$i]}" ] || SPARTAN_LABELS[$i]="$short"
+done
+
+ONLY_FULL=""
+if [ -n "$ONLY_REF" ]; then
+    ONLY_FULL=$(git -C "$REPO_ROOT" rev-parse "$ONLY_REF" 2>/dev/null) \
+        || { echo "ERROR: --only ref '$ONLY_REF' does not resolve" >&2; exit 1; }
+fi
+
+# --- §4 step 3: build the ordered union (oldest first, topological) -----------
+
+ALL_REFS=("${NOIR_FULL[@]}" "${SPARTAN_FULL[@]}")
+REQUESTED_FULL="$(printf '%s\n' "${ALL_REFS[@]}" | sort -u)"
+ORDERED=()
+while IFS= read -r sha; do
+    [ -n "$sha" ] && ORDERED+=("$sha")
+done < <(git -C "$REPO_ROOT" rev-list --topo-order --reverse "${ALL_REFS[@]}" \
+            | grep -Fxf <(printf '%s\n' "$REQUESTED_FULL"))
+
+# --- §4 step 4: skip completed work / print the plan ---------------------------
+
+EXEC_SHA=(); EXEC_SHORT=(); EXEC_LEGS=(); EXEC_NOIR_LABEL=(); EXEC_SPARTAN_LABEL=()
+EXEC_NOIR_CIRCUIT=(); EXEC_SPARTAN_CIRCUIT=()
+COMMITS_TOTAL="${#ORDERED[@]}"
+LEGS_TOTAL=0
+LEGS_SKIPPED=0
+
+echo "benchmark $NAME: parsing plan..."
+PLAN_LINES=()
+
+for sha in "${ORDERED[@]}"; do
+    short=$(git -C "$REPO_ROOT" rev-parse --short "$sha")
+
+    is_noir=0; noir_label=""; noir_circuit=""
+    for ((i = 0; i < ${#NOIR_FULL[@]}; i++)); do
+        if [ "${NOIR_FULL[$i]}" = "$sha" ]; then
+            is_noir=1
+            noir_label="${NOIR_LABELS[$i]}"
+            noir_circuit="${NOIR_CIRCUITS[$i]}"
+            break
+        fi
+    done
+
+    is_spartan=0; spartan_label=""; spartan_circuit=""
+    for ((i = 0; i < ${#SPARTAN_FULL[@]}; i++)); do
+        if [ "${SPARTAN_FULL[$i]}" = "$sha" ]; then
+            is_spartan=1
+            spartan_label="${SPARTAN_LABELS[$i]}"
+            spartan_circuit="${SPARTAN_CIRCUITS[$i]}"
+            break
+        fi
+    done
+
+    legs_needed=""
+    run_legs=""
+    skip_legs=""
+    legs_display=""
+
+    # When --only is given, every commit other than the requested one is entirely
+    # out of scope for this invocation, regardless of whether its results exist yet.
+    in_scope=1
+    if [ -n "$ONLY_FULL" ] && [ "$ONLY_FULL" != "$sha" ]; then
+        in_scope=0
+    fi
+
+    force_this=0
+    if [ "$in_scope" -eq 1 ] && { [ "$FORCE" -eq 1 ] || [ -n "$ONLY_FULL" ]; }; then
+        force_this=1
+    fi
+
+    if [ "$is_noir" -eq 1 ]; then
+        legs_display="noir"
+        LEGS_TOTAL=$(( LEGS_TOTAL + 1 ))
+        file="$RESULTS_DIR/noir-$short.csv"
+        if [ "$in_scope" -eq 0 ]; then
+            skip_legs="noir"
+        elif [ -f "$file" ] && [ "$force_this" -eq 0 ]; then
+            LEGS_SKIPPED=$(( LEGS_SKIPPED + 1 ))
+            skip_legs="noir"
+        else
+            legs_needed="noir"
+            run_legs="noir"
+        fi
+    fi
+
+    if [ "$is_spartan" -eq 1 ]; then
+        [ -n "$legs_display" ] && legs_display="$legs_display, spartan" || legs_display="spartan"
+        LEGS_TOTAL=$(( LEGS_TOTAL + 1 ))
+        file="$RESULTS_DIR/spartan-$short.csv"
+        if [ "$in_scope" -eq 0 ]; then
+            [ -n "$skip_legs" ] && skip_legs="$skip_legs, spartan" || skip_legs="spartan"
+        elif [ -f "$file" ] && [ "$force_this" -eq 0 ]; then
+            LEGS_SKIPPED=$(( LEGS_SKIPPED + 1 ))
+            [ -n "$skip_legs" ] && skip_legs="$skip_legs, spartan" || skip_legs="spartan"
+        else
+            [ -n "$legs_needed" ] && legs_needed="$legs_needed,spartan" || legs_needed="spartan"
+            [ -n "$run_legs" ] && run_legs="$run_legs, spartan" || run_legs="spartan"
+        fi
+    fi
+
+    if [ -z "$run_legs" ]; then
+        if [ "$in_scope" -eq 0 ]; then
+            status="skip: not selected (--only)"
+        else
+            both="both"
+            [ "$is_noir" -eq 1 ] && [ "$is_spartan" -eq 1 ] || both="present"
+            status="skip: $([ "$both" = "both" ] && echo "both present" || echo "present")"
+        fi
+    elif [ -z "$skip_legs" ]; then
+        status="run"
+    else
+        status="run $run_legs; $skip_legs present"
+    fi
+
+    label="$noir_label"
+    if [ "$is_noir" -eq 1 ] && [ "$is_spartan" -eq 1 ] && [ "$noir_label" != "$spartan_label" ]; then
+        label="$noir_label / $spartan_label"
+    elif [ "$is_noir" -eq 0 ]; then
+        label="$spartan_label"
+    fi
+
+    PLAN_LINES+=("$(printf '  %-10s %-14s legs: %-16s (%s)' "$short" "$label" "$legs_display" "$status")")
+
+    if [ -n "$legs_needed" ]; then
+        EXEC_SHA+=("$sha")
+        EXEC_SHORT+=("$short")
+        EXEC_LEGS+=("$legs_needed")
+        EXEC_NOIR_LABEL+=("$noir_label")
+        EXEC_SPARTAN_LABEL+=("$spartan_label")
+        EXEC_NOIR_CIRCUIT+=("$noir_circuit")
+        EXEC_SPARTAN_CIRCUIT+=("$spartan_circuit")
+    fi
+done
+
+echo "benchmark $NAME: $COMMITS_TOTAL commits in config, $LEGS_TOTAL legs total, $LEGS_SKIPPED already measured"
+for line in "${PLAN_LINES[@]}"; do
+    echo "$line"
+done
+
+if [ "$DRY_RUN" -eq 1 ]; then
+    exit 0
+fi
+
+# --- §4 step 5: per commit — one checkout, one devbox invocation --------------
+
+TOTAL_EXEC="${#EXEC_SHA[@]}"
+for ((idx = 0; idx < TOTAL_EXEC; idx++)); do
+    sha="${EXEC_SHA[$idx]}"
+    short="${EXEC_SHORT[$idx]}"
+    legs_csv="${EXEC_LEGS[$idx]}"
+    noir_label="${EXEC_NOIR_LABEL[$idx]}"
+    spartan_label="${EXEC_SPARTAN_LABEL[$idx]}"
+    noir_circuit="${EXEC_NOIR_CIRCUIT[$idx]}"
+    spartan_circuit="${EXEC_SPARTAN_CIRCUIT[$idx]}"
+
+    echo
+    echo "=== commit $(( idx + 1 )) / $TOTAL_EXEC: $short (legs: $legs_csv) ==="
+
+    [ -d "$CHECKOUT" ] || git -C "$REPO_ROOT" worktree add --detach "$CHECKOUT" "$sha"
+
+    if ! git -C "$CHECKOUT" checkout --detach --force "$sha"; then
+        echo "WARNING: commit $short failed, continuing" >&2
+        continue
+    fi
+    git -C "$CHECKOUT" clean -xdff -e /.devbox -e /spartan-backend/target
+
+    export CARGO_TARGET_DIR="$CHECKOUT/spartan-backend/target"
+
+    if ! ( cd "$CHECKOUT" && devbox run --quiet -- \
+            bash "$SCRIPT_DIR/benchmark_run.sh" \
+                --checkout        "$CHECKOUT" \
+                --results         "$RESULTS_DIR" \
+                --legs            "$legs_csv" \
+                --noir-circuit    "$noir_circuit" \
+                --spartan-circuit "$spartan_circuit" \
+                --sha             "$short" \
+                --full-sha        "$sha" \
+                --noir-label      "$noir_label" \
+                --spartan-label   "$spartan_label" \
+                --runs            "$RUNS" ); then
+        echo "WARNING: commit $short failed, continuing" >&2
+    fi
+done
+
+echo
+echo "Done. Results in $BENCH_DIR/results/"
+echo "Plot with: devbox run plot-commits $CONFIG"

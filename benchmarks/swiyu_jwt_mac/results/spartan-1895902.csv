@@ -1,0 +1,8 @@
+# leg=spartan commit=00ebaa4 full=00ebaa41aaab56eedf481ebef616ea3278e10f62 label=beta26 circuit=c0200_swiyu_jwt
+# runs=5 date=2026-08-12T07:20:32Z host=tsf-460-wpa-1-214.epfl.ch os=Darwin arm64
+# pins=noir:v1_0_0-beta_26 bb:beta_26 t256:t256-v0_26
+metric,min,max,mean,stddev,samples
+spartan_proof,3.770,3.920,3.834,0.060,3.890;3.770;3.920;3.780;3.810
+spartan_verify,2.540,2.600,2.564,0.020,2.560;2.600;2.560;2.560;2.540
+spartan_constraints,1929049.000,1929049.000,1929049.000,0.000,1929049
+spartan_proof_size,150370.000,150370.000,150370.000,0.000,150370

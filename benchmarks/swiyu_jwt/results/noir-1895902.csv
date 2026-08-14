@@ -1,0 +1,9 @@
+# leg=noir commit=00ebaa4 full=00ebaa41aaab56eedf481ebef616ea3278e10f62 label=beta26 circuit=c9200_swiyu_jwt
+# runs=5 date=2026-08-12T06:58:39Z host=simulations os=Linux x86_64
+# pins=noir:v1_0_0-beta_26 bb:beta_26 t256:t256-v0_26
+metric,min,max,mean,stddev,samples
+bb_write_vk,2.627,2.665,2.642,0.013,2.644;2.665;2.636;2.627;2.637
+bb_prove,5.677,5.759,5.720,0.034,5.734;5.748;5.759;5.677;5.684
+bb_verify,0.008,0.008,0.008,0.000,0.008;0.008;0.008;0.008;0.008
+bb_proof_size,14656.000,14656.000,14656.000,0.000,14656
+bb_gates,374629.000,374629.000,374629.000,0.000,374629

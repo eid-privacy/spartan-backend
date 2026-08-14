@@ -1,0 +1,9 @@
+# leg=noir commit=33431cd full=33431cd66843366afe9bc11e35a2a7a50ac5367a label=baseline circuit=c0202_swiyu_jwt_noir
+# runs=5 date=2026-08-12T07:09:46Z host=tsf-460-wpa-1-214.epfl.ch os=Darwin arm64
+# pins=noir:v1_0_0-beta_22 bb:beta_22 t256:t256-v0_22-1
+metric,min,max,mean,stddev,samples
+bb_write_vk,1.048,1.432,1.151,0.144,1.432;1.048;1.067;1.140;1.070
+bb_prove,2.139,2.254,2.187,0.039,2.173;2.139;2.202;2.254;2.168
+bb_verify,0.011,0.013,0.012,0.001,0.013;0.012;0.012;0.011;0.011
+bb_proof_size,14656.000,14656.000,14656.000,0.000,14656
+bb_gates,433751.000,433751.000,433751.000,0.000,433751

@@ -1,0 +1,9 @@
+# leg=noir commit=b45ef92 full=b45ef920c6eae9d5aa048a02bd120dcedb1e2931 label=optimisations circuit=c0202_swiyu_jwt_noir
+# runs=5 date=2026-08-12T06:48:19Z host=simulations os=Linux x86_64
+# pins=noir:v1_0_0-beta_22 bb:beta_22 t256:t256-v0_22-1
+metric,min,max,mean,stddev,samples
+bb_write_vk,2.812,2.881,2.842,0.026,2.832;2.812;2.822;2.881;2.862
+bb_prove,6.337,6.431,6.371,0.033,6.337;6.372;6.431;6.372;6.342
+bb_verify,0.009,0.009,0.009,0.000,0.009;0.009;0.009;0.009;0.009
+bb_proof_size,14656.000,14656.000,14656.000,0.000,14656
+bb_gates,433751.000,433751.000,433751.000,0.000,433751

@@ -1,0 +1,9 @@
+# leg=noir commit=33431cd full=33431cd66843366afe9bc11e35a2a7a50ac5367a label=baseline circuit=c0202_swiyu_jwt_noir
+# runs=5 date=2026-08-11T14:20:59Z host=simulations os=Linux x86_64
+# pins=noir:v1_0_0-beta_22 bb:beta_22 t256:t256-v0_22-1
+metric,min,max,mean,stddev,samples
+bb_write_vk,2.828,2.868,2.845,0.013,2.828;2.843;2.850;2.868;2.838
+bb_prove,6.344,6.444,6.370,0.037,6.356;6.353;6.444;6.344;6.353
+bb_verify,0.008,0.009,0.009,0.000,0.009;0.009;0.009;0.009;0.008
+bb_proof_size,14656.000,14656.000,14656.000,0.000,14656
+bb_gates,433751.000,433751.000,433751.000,0.000,433751
