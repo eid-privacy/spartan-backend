@@ -4,7 +4,6 @@ use sha256::sha256_var;
 use eid::fast_base64::encode_url_into;
 use eid::field_utils::{array_to_field, split_point};
 use eid::move_right;
-// use eid::move_right_simple;
 use std::field::t256::{T256Point, T256Scalar, t256_msm, t256_ec_add};
 
 mod constants;
@@ -90,7 +89,6 @@ fn main(
     dob_value: BoundedVec<u8, DOB_VALUE_MAX_LEN>,
     dob_sd_offset: u32,
     x_offset: u32,
-    // y_offset: u32, UNUSED
     device_signature: [u8; 64],
     // JWT/issuer ECDSA precompute (c0102 "vanilla equation" style):
     // R_jwt and s_inv_jwt s.t. R_jwt = t*s^-1*G + r*s^-1*Q_iss where
@@ -106,15 +104,12 @@ fn main(
     issuer_pub_x: pub [u8; 32],
     issuer_pub_y: pub [u8; 32],
     now_date: pub u32,
-    // challenge_nonce: pub [u8; 32], UNUSED
     // Device ECDSA precompute (c0100 "Crescent" style):
     // T_dev = R_dev*r^-1, U_dev = -e*r^-1*G with e = challenge_nonce,
     // r = device_signature[..32], s = device_signature[32..].
     // These MUST be public: the verifier validates (R_dev, T_dev, U_dev) is
     // consistent with the public challenge_nonce off-circuit; the in-circuit
     // equation only binds device_pub.x to (T*s + U).x.
-    // R_dev_x: pub [u8; 32], UNUSED
-    // R_dev_y: pub [u8; 32], UNUSED
     T_dev_x: pub [u8; 32],
     T_dev_y: pub [u8; 32],
     U_dev_x: pub [u8; 32],
@@ -143,8 +138,6 @@ fn main(
     let header_len = encoded_header.len();
     let mut signing_input_storage =
         move_right::<SIGNING_INPUT_MAX_LEN, HEADER_SHIFT_LOG>(signing_input_storage_scratch, header_len);
-    // let mut signing_input_storage =
-    //     move_right_simple(signing_input_storage_scratch, header_len);
     for i in 0..ENCODED_HEADER_MAX_LEN {
         if i < header_len {
             signing_input_storage[i] = header_storage[i];
@@ -190,7 +183,6 @@ fn main(
     );
 
     let device_key_x_bytes = extract_coord_for_key(payload_storage, x_offset, ASCII_X);
-    // let device_key_y_bytes = extract_coord_for_key(payload_storage, y_offset, ASCII_Y);
 
     let device_pub_x: [u8; 32] = BASE64_URL_DECODER::decode(device_key_x_bytes);
 
