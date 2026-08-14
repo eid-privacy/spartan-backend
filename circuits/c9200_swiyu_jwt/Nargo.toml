@@ -1,5 +1,5 @@
 [package]
-name = "c0202_swiyu_jwt_noir"
+name = "c9200_swiyu_jwt"
 type = "bin"
 
 [dependencies]

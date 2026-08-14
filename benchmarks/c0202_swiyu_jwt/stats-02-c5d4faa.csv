@@ -1,5 +1,0 @@
-metric,min,max,mean,stddev
-spartan_proof,5.230,5.350,5.278,0.049
-spartan_verify,3.810,4.000,3.888,0.065
-spartan_constraints,2264176.000,2264176.000,2264176.000,0.000
-spartan_proof_size,146668.000,146668.000,146668.000,0.000
