@@ -173,66 +173,61 @@ Times in seconds. Rows: ASSERTS; sub-rows per cell: BB prove / Spartan proof / S
 ```
 <!-- BENCHMARK_TABLE_END -->
 
-### Benchmarking one circuit across commits
+### Benchmarking noir/barretenberg vs. spartan across commits
 
 The table above sweeps the parametric `c9000_benchmark` circuit
-(`./scripts/benchmark.sh`). To instead track how spartan-backend changes affect a
-single **fixed** circuit across a history of commits, use
-[`scripts/benchmark_commits.sh`](scripts/benchmark_commits.sh):
+(`./scripts/benchmark.sh`). To instead track two things over the same commit
+timeline — how noir/barretenberg itself improves across the commits that bump the
+`noir-versions`/`barretenberg-versions`/`nargo-t256-versions` flake pins in
+`devbox.json`, and how spartan-backend improves across our own commits — use
+[`scripts/benchmark_commits.sh`](scripts/benchmark_commits.sh), driven by a
+git-tracked config file such as
+[`benchmarks/swiyu_jwt/config.yaml`](benchmarks/swiyu_jwt/config.yaml).
+
+Run the driver from a **plain shell**, not from inside `devbox shell` — nesting
+devbox environments is unsupported. The script itself has no devbox dependency; for
+each commit it checks out a single reused `git worktree` at `benchmarks/checkout/`
+and calls `devbox run` inside it, so every commit is measured with its own pinned
+toolchain:
 
 ```bash
-./scripts/benchmark_commits.sh <bb_circuit_code> <circuit_code> [commit ...]
-# or via devbox:
-devbox run benchmark-commits <bb_circuit_code> <circuit_code> [commit ...]
+./scripts/benchmark_commits.sh benchmarks/swiyu_jwt/config.yaml [options]
 
-# example: spartan on the signature circuit, Barretenberg on a standard-field circuit
-./scripts/benchmark_commits.sh c0000_trivial c0101_signature_pok_zkattest_style 8c257bb 217b46f f605158 16df669
+  --force            re-run every leg, ignoring stored results
+  --only <ref>       run only this commit (both of its legs), ignoring stored results
+  --runs <n>         override `runs:` from the config
+  --dry-run          print the work plan and exit
 ```
 
-* `<circuit_code>` (the spartan circuit) and `<bb_circuit_code>` (the Barretenberg
-  circuit) are directory names under `circuits/`. They are **separate** because
-  Barretenberg cannot process the t256-only spartan circuits, so it needs its own
-  standard-field circuit. Commits may be given in any order; if none are given,
-  `HEAD` is used.
-* Each commit is checked out into a throwaway `git worktree` (in a `mktemp`
-  directory, so your working tree is never touched), spartan-backend is built there,
-  and `<circuit_code>`'s proof/verification is timed `N` times (default `N=5`).
-* Results are written to `benchmarks/<circuit_code>/` (the spartan circuit), one CSV
-  per run, named with a two-digit index so a plain sort follows git history (oldest
-  first). Each file has the schema `metric,min,max,mean,stddev`:
-  * `stats-00-barretenberg.csv` — `write_vk` / `prove` / `verify` for
-    `<bb_circuit_code>`, run **once** from the **current working tree** (not any
-    benchmarked commit), since Barretenberg depends only on the circuit, not the
-    spartan-backend code. The circuit is recompiled in place to get a valid witness
-    and the tracked `target/` is restored afterward. Skipped if `<bb_circuit_code>`
-    is also t256-only and doesn't compile with standard `nargo`.
-  * `stats-01-<sha>.csv`, `stats-02-<sha>.csv`, … — one per commit, oldest first,
-    with the spartan-only metrics: `spartan_proof` / `spartan_verify` (timings),
-    plus `spartan_constraints` (R1CS constraint count, via `--count-constraints`)
-    and `spartan_proof_size` (serialized proof size in bytes, via `--proof-size`).
-    The last two are deterministic single values (stddev `0`) and are recorded only
-    for commits whose backend supports the corresponding flag; they are skipped on
-    older commits that predate it.
+* The config lists two (possibly overlapping) sets of commits — `noir_commits` and
+  `spartan_commits` — plus which circuit under `circuits/` to use for each (a
+  standard-field `noir_circuit` for barretenberg, a t256 `spartan_circuit` for
+  spartan-backend). Add entries over time; already-measured entries are never
+  re-run, and removing an entry from the config only removes it from the plot — its
+  result file on disk is kept.
+* Results are written to `<config_dir>/results/<leg>-<shortsha>.csv` (`leg` is
+  `noir` or `spartan`), one file per (leg, commit), written atomically so an
+  interrupted run never leaves a half-written file behind. Each file has the schema
+  `metric,min,max,mean,stddev,samples`, plus `#`-prefixed metadata lines recording
+  the commit, run count, host, and the checked-out commit's flake pins.
+* A failing commit prints a warning and does not stop the rest of the run.
 
 Plot the collected runs with
-[`scripts/plot_benchmark_commits.py`](scripts/plot_benchmark_commits.py):
+[`scripts/plot_benchmark_commits.py`](scripts/plot_benchmark_commits.py), run from
+**inside devbox** (needs matplotlib + pyyaml):
 
 ```bash
-python3 ./scripts/plot_benchmark_commits.py benchmarks/<circuit_code>
-# or via devbox:
-devbox run plot-commits benchmarks/<circuit_code>
+devbox run plot-commits benchmarks/swiyu_jwt/config.yaml
 ```
 
-This writes `benchmarks/<circuit_code>/benchmarks.png` with commits on the x-axis
-(oldest → newest); values below `1×` are improvements. The timing series
-`spartan_proof`/`spartan_verify` are shown relative to the **first commit's**
-`spartan_proof` mean, and `spartan_proof_size` relative to its **own first available
-value**. `spartan_constraints` is drawn differently — as `frac(log2(c) + 0.5) - 0.5`
-offset onto the baseline, i.e. the signed distance (in log₂ octaves) to the nearest
-power of two, so the line crossing the baseline marks constraints crossing a
-power-of-two boundary (where the R1CS padding jumps). Commits lacking a metric are
-skipped. When a `stats-00-barretenberg.csv` is present, its `prove`/`verify` times
-are drawn as constant horizontal reference lines.
+This writes `benchmarks/swiyu_jwt/benchmarks.png`. The two commit lists share one
+x-axis, the union of both in git topological order (oldest → newest); a commit
+present in both lists sits at a single x position with both series' markers, and
+each series is drawn only where it has a result, without interpolating through
+gaps. The left y-axis is relative to the baseline — the **first** `noir_commits`
+entry's `bb_write_vk` + `bb_prove` mean — with `bb_verify`/`spartan_verify` drawn as
+thin dashed lines. The right y-axis shows `bb_proof_size`/`spartan_proof_size` in
+bytes on a log scale, with spartan points annotated by `spartan_constraints`.
 
 ## Profiling
 

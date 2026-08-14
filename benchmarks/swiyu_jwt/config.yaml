@@ -1,0 +1,38 @@
+# Benchmark: swiyu JWT credential presentation.
+#
+# noir is the plain noir/barretenberg (BN254) implementation.
+# spartan is the t256 implementation using the spartan-backend optimisations.
+#
+# Commits are grouped under the circuit directory name (circuits/<circuit>)
+# they were actually measured with. If a circuit gets renamed, open a new
+# `- circuit:` group for the commits measured after the rename — existing
+# groups (and their stored results) keep referencing the name they were
+# measured under, so renaming never requires rewriting git history.
+#
+# The FIRST commit of the first noir circuit group is the BASELINE: every
+# value in the plot is expressed relative to its (bb_write_vk + bb_prove) time.
+#
+# Each commits entry is "<git-ref> <free-text label>". The label is used for
+# the x tick. Entries may be added over time; already-measured entries are not
+# re-run. Removing an entry only removes it from the plot — its result file
+# is kept.
+
+name: swiyu_jwt
+runs: 5
+
+noir:
+  - circuit: c0202_swiyu_jwt_noir
+    commits:
+      - 33431cd baseline
+      - b45ef92 optimisations
+  - circuit: c9200_swiyu_jwt
+    commits:
+      - 1895902 beta26
+
+spartan:
+  - circuit: c0200_swiyu_jwt
+    commits:
+      - 33431cd baseline
+      - b45ef92 optimisations
+      - 3965965 vega
+      - 1895902 beta26

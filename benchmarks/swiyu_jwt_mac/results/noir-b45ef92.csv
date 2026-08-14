@@ -1,0 +1,9 @@
+# leg=noir commit=b45ef92 full=b45ef920c6eae9d5aa048a02bd120dcedb1e2931 label=optimisations circuit=c0202_swiyu_jwt_noir
+# runs=5 date=2026-08-12T07:12:50Z host=tsf-460-wpa-1-214.epfl.ch os=Darwin arm64
+# pins=noir:v1_0_0-beta_22 bb:beta_22 t256:t256-v0_22-1
+metric,min,max,mean,stddev,samples
+bb_write_vk,1.078,1.120,1.102,0.017,1.087;1.078;1.106;1.120;1.117
+bb_prove,2.167,2.262,2.221,0.031,2.262;2.220;2.233;2.167;2.224
+bb_verify,0.011,0.012,0.012,0.000,0.012;0.012;0.012;0.012;0.011
+bb_proof_size,14656.000,14656.000,14656.000,0.000,14656
+bb_gates,433751.000,433751.000,433751.000,0.000,433751
