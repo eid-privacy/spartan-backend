@@ -11,7 +11,9 @@ Reads `../../circuits/c0201_sicpa_backend/Prover.toml` and computes:
   signature over the JWT signing input.
 - **Device ECDSA Crescent triple** (c0100 style): `R_dev_x/y`, `T_dev_x/y`,
   `U_dev_x/y` — the proof-of-possession triple for the device signature over
-  `challenge_nonce`.
+  `challenge_nonce`, built from its two halves `device_r` and `device_s`. Only
+  `device_s` is a circuit input; `device_r` lives in `Prover.toml` purely for
+  this step, which folds it into `T_dev`/`U_dev`.
 
 The first run consumes the one-time `jwt_signature` field from `Prover.toml`;
 subsequent runs proceed without it.

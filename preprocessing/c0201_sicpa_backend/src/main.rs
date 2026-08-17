@@ -40,7 +40,12 @@ struct ProverToml {
     issuer_pub_y: Vec<u8>,
     x_offset: usize,
     y_offset: usize,
-    device_signature: Vec<u8>,
+    /// The 32-byte r half of the device signature. Preprocessing only: the
+    /// circuit never sees it, it is folded into T_dev/U_dev here.
+    device_r: Vec<u8>,
+    /// The s half of the device signature, as the `0x…` field literal the
+    /// circuit consumes directly.
+    device_s: String,
     challenge_nonce: Vec<u8>,
     now_date: u64,
 }
@@ -64,6 +69,23 @@ fn fmt_field(label: &str, bytes: &FieldRepr) -> String {
 
 fn to_field_repr(v: &[u8]) -> FieldRepr {
     v.try_into().expect("expected exactly 32 bytes")
+}
+
+/// Parse a Noir field literal (`"0x…"`, big-endian, at most 32 bytes) written
+/// in Prover.toml back into its 32-byte big-endian representation.
+fn field_literal_to_repr(literal: &str) -> FieldRepr {
+    let trimmed = literal.trim();
+    let hex_digits = trimmed
+        .strip_prefix("0x")
+        .or_else(|| trimmed.strip_prefix("0X"))
+        .expect("field literal must be 0x-prefixed hexadecimal");
+    let padded = format!("{hex_digits:0>64}");
+    assert_eq!(padded.len(), 64, "field literal exceeds 32 bytes");
+    let value = BigUint::parse_bytes(padded.as_bytes(), 16).expect("invalid hex in field literal");
+    let bytes = value.to_bytes_be();
+    let mut out = [0u8; 32];
+    out[32 - bytes.len()..].copy_from_slice(&bytes);
+    out
 }
 
 /// Strip previously written precompute keys + the now-unused jwt_signature.
@@ -206,10 +228,10 @@ fn main() {
     .expect("device public key is not on curve");
 
     // 5. Device signature recovery (e = challenge_nonce, already 32 bytes).
-    assert_eq!(prover.device_signature.len(), 64);
+    assert_eq!(prover.device_r.len(), 32);
     assert_eq!(prover.challenge_nonce.len(), 32);
-    let r_dev = to_field_repr(&prover.device_signature[..32]);
-    let s_dev = to_field_repr(&prover.device_signature[32..]);
+    let r_dev = to_field_repr(&prover.device_r);
+    let s_dev = field_literal_to_repr(&prover.device_s);
     let e_dev = to_field_repr(&prover.challenge_nonce);
 
     let (R_dev, _s_inv_dev) = ecdsa_recover(&e_dev, &r_dev, &s_dev, &Q_dev);
@@ -266,10 +288,13 @@ fn main() {
 
     fs::write(&toml_path, out).expect("cannot write Prover.toml");
 
-    // 7. Regenerate verifier_input.json. All circuit parameters must appear;
-    //    private ones are null, public ones carry their value. The public
-    //    `encoded_header` BoundedVec flattens to its storage bytes followed by
-    //    its `len` wire (matching the Noir ABI field order).
+    // 7. Regenerate verifier_input.json. Exactly the circuit's ABI parameters
+    //    must appear (the backend asserts the count); private ones are null,
+    //    public ones carry their value. The public `encoded_header` BoundedVec
+    //    flattens to its storage bytes followed by its `len` wire (matching the
+    //    Noir ABI field order). y_offset, challenge_nonce, device_r and
+    //    R_dev_x/y stay in Prover.toml for the preprocessing itself but are not
+    //    ABI parameters, so they must not be emitted here.
     let verifier_path = PathBuf::from("../../circuits/c0201_sicpa_backend/verifier_input.json");
     let json_array = |bytes: &[u8]| -> String {
         let entries: Vec<String> = bytes.iter().map(|b| b.to_string()).collect();
@@ -285,8 +310,7 @@ fn main() {
             "  \"dob_value\": null,\n",
             "  \"dob_sd_offset\": null,\n",
             "  \"x_offset\": null,\n",
-            "  \"y_offset\": null,\n",
-            "  \"device_signature\": null,\n",
+            "  \"device_s\": null,\n",
             "  \"R_jwt_x\": null,\n",
             "  \"R_jwt_y\": null,\n",
             "  \"s_inv_jwt\": null,\n",
@@ -294,9 +318,6 @@ fn main() {
             "  \"issuer_pub_x\": {},\n",
             "  \"issuer_pub_y\": {},\n",
             "  \"now_date\": {},\n",
-            "  \"challenge_nonce\": {},\n",
-            "  \"R_dev_x\": {},\n",
-            "  \"R_dev_y\": {},\n",
             "  \"T_dev_x\": {},\n",
             "  \"T_dev_y\": {},\n",
             "  \"U_dev_x\": {},\n",
@@ -307,9 +328,6 @@ fn main() {
         json_array(&issuer_x),
         json_array(&issuer_y),
         prover.now_date,
-        json_array(&prover.challenge_nonce),
-        json_array(&R_dev_x),
-        json_array(&R_dev_y),
         json_array(&T_dev_x),
         json_array(&T_dev_y),
         json_array(&U_dev_x),

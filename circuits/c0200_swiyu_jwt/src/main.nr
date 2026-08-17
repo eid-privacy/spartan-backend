@@ -2,7 +2,7 @@ use noir_base64::{BASE64_URL_DECODER, BASE64_URL_ENCODER};
 use sha256::sha256_var;
 
 use eid::fast_base64::encode_url_into;
-use eid::field_utils::{array_to_field, split_point};
+use eid::field_utils::array_to_field;
 use std::field::t256::{T256Point, T256Scalar, t256_msm, t256_ec_add};
 
 mod constants;
@@ -88,7 +88,7 @@ fn main(
     dob_value: BoundedVec<u8, DOB_VALUE_MAX_LEN>,
     dob_sd_offset: u32,
     x_offset: u32,
-    device_signature: [u8; 64],
+    device_s: Field,
     // JWT/issuer ECDSA precompute (c0102 "vanilla equation" style):
     // R_jwt and s_inv_jwt s.t. R_jwt = t*s^-1*G + r*s^-1*Q_iss where
     // t = sha256(signing_input), r = R_jwt.x, s = jwt_signature[32..].
@@ -103,7 +103,7 @@ fn main(
     now_date: pub u32,
     // Device ECDSA precompute (c0100 "Crescent" style):
     // T_dev = R_dev*r^-1, U_dev = -e*r^-1*G with e = challenge_nonce,
-    // r = device_signature[..32], s = device_signature[32..].
+    // r = device_r, s = device_s.
     // These MUST be public: the verifier validates (R_dev, T_dev, U_dev) is
     // consistent with the public challenge_nonce off-circuit; the in-circuit
     // equation only binds device_pub.x to (T*s + U).x.
@@ -181,19 +181,13 @@ fn main(
 
     // ECDSA verification of the device signature on challenge_nonce (c0100
     // "Crescent" style). The device pubkey is derived in-circuit from the
-    // private payload, so we keep s in-circuit (split from device_signature)
-    // and only precompute T_dev = R*r^-1 and U_dev = -e*r^-1*G. The .x check
+    // private payload, so we keep s in-circuit (device_s) and only precompute
+    // T_dev = R*r^-1 and U_dev = -e*r^-1*G. The .x check
     // binds the equation to the device pubkey derived above; the .y inputs are
     // used to ensure T_dev and U_dev are well-formed points consumed by
     // t256_msm / t256_ec_add.
     //
-    // Safety: the unconstrained split_point only reinterprets the already
-    // constrained device_signature bytes; the equation below is what enforces
-    // soundness.
-    let s_dev_scalar = unsafe {
-        let (_, s) = split_point(device_signature);
-        T256Scalar { lo: s, hi: 0 }
-    };
+    let s_dev_scalar = T256Scalar { lo: device_s, hi: 0 };
     let T_dev = T256Point { x: array_to_field(T_dev_x), y: array_to_field(T_dev_y) };
     let U_dev = T256Point { x: array_to_field(U_dev_x), y: array_to_field(U_dev_y) };
     let device_pub_x_field = array_to_field(device_pub_x);
@@ -333,12 +327,8 @@ fn test_sdjwt_verification() {
 
     let now_date: u32 = 20240101;
 
-    let device_signature: [u8; 64] = [
-        159, 191, 146, 6, 209, 21, 91, 71, 63, 80, 53, 163, 105, 85, 83, 33, 43, 51, 38, 20, 14, 41,
-        120, 144, 184, 49, 222, 111, 124, 235, 213, 56, 55, 4, 56, 223, 125, 106, 68, 205, 38, 65,
-        127, 200, 246, 83, 93, 178, 171, 203, 116, 47, 218, 16, 222, 189, 3, 137, 112, 7, 164, 68,
-        55, 104,
-    ];
+    // Device signature scalar s (second half of the 64-byte device signature).
+    let device_s: Field = 0x370438df7d6a44cd26417fc8f6535db2abcb742fda10debd03897007a4443768;
 
     // Placeholder precompute values; real ones to be plugged in after running
     // the c0200_siyu_jwt preprocessing crate against this circuit's Prover.toml.
@@ -350,7 +340,7 @@ fn test_sdjwt_verification() {
         dob_value,
         745, // dob_sd_offset
         1471, // x_offset
-        device_signature,
+        device_s,
         zero32, // R_jwt_x
         zero32, // R_jwt_y
         0,      // s_inv_jwt

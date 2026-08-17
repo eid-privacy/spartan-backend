@@ -220,7 +220,10 @@ def write_toml(filename: str) -> None:
         "dob_sd_offset": dob_offset,
         "x_offset": x_offset,
         "y_offset": y_offset,
-        "device_signature": list(holder_signature),
+        # Only s is a circuit input (device_s, a Field); r is kept in the TOML
+        # for the preprocessor, which folds it into T_dev/U_dev.
+        "device_r": list(holder_signature[:32]),
+        "device_s": "0x" + holder_signature[32:].hex(),
         "encoded_header": bounded_vec(encoded_header_bytes, ENCODED_HEADER_MAX_LEN),
         "issuer_pub_x": list(issuer_public_numbers.x.to_bytes(32, 'big')),
         "issuer_pub_y": list(issuer_public_numbers.y.to_bytes(32, 'big')),
