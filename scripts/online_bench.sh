@@ -124,18 +124,21 @@ for ((i = 1; i <= EXTRA; i++)); do
   # 1. fresh prehashed signature
   SIGN_OUT="$(python3 "$ROOT/scripts/sign_prehashed_challenge.py" --circuit "$CIRCUIT_DIR")"
   NONCE_LINE="$(echo "$SIGN_OUT" | grep '^challenge_nonce = ')"
-  SIG_LINE="$(echo "$SIGN_OUT" | grep '^device_signature = ')"
+  R_LINE="$(echo "$SIGN_OUT" | grep '^device_r = ')"
+  S_LINE="$(echo "$SIGN_OUT" | grep '^device_s = ')"
 
-  # 2. patch Prover.toml (replace the two online lines)
-  python3 - "$PROVER_TOML" "$NONCE_LINE" "$SIG_LINE" <<'PY'
+  # 2. patch Prover.toml (replace the three online lines)
+  python3 - "$PROVER_TOML" "$NONCE_LINE" "$R_LINE" "$S_LINE" <<'PY'
 import sys
-path, nonce_line, sig_line = sys.argv[1], sys.argv[2], sys.argv[3]
+path, nonce_line, r_line, s_line = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 out = []
 for line in open(path):
     if line.startswith("challenge_nonce = "):
         out.append(nonce_line + "\n")
-    elif line.startswith("device_signature = "):
-        out.append(sig_line + "\n")
+    elif line.startswith("device_r = "):
+        out.append(r_line + "\n")
+    elif line.startswith("device_s = "):
+        out.append(s_line + "\n")
     else:
         out.append(line)
 open(path, "w").writelines(out)

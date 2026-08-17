@@ -4,7 +4,7 @@
 //!
 //! The manifest lives next to the circuit as `online.json`:
 //! ```json
-//! { "online_params": ["device_signature", "T_dev_x", "T_dev_y"] }
+//! { "online_params": ["device_s", "T_dev_x", "T_dev_y"] }
 //! ```
 //! An absent or empty manifest means *everything is online* — i.e. the original
 //! monolithic behaviour (backward compatible).

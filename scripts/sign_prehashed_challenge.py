@@ -10,7 +10,9 @@ Usage:
     python scripts/sign_prehashed_challenge.py [hex_32_byte_nonce] [--circuit DIR]
 
 Without a nonce a fresh random one (reduced mod the P-256 order) is used. Prints
-TOML-ready `challenge_nonce` and `device_signature` (r||s, canonical low-s).
+TOML-ready `challenge_nonce`, `device_r` and `device_s` (the two halves of the
+canonical low-s signature; only `device_s` is a circuit input, `device_r` is
+consumed by the preprocessor).
 
 The signing key is the device key bound into the credential (the `cnf` JWK of the
 SD-JWT payload), read from `<circuit_dir>/data/holder_private_key.jwk` with
@@ -91,10 +93,10 @@ def main() -> None:
     s = canonicalize_low_s(s)
     r_bytes = r.to_bytes(32, "big")
     s_bytes = s.to_bytes(32, "big")
-    sig = list(r_bytes + s_bytes)
 
     print("challenge_nonce = " + str(list(e_bytes)))
-    print("device_signature = " + str(sig))
+    print("device_r = " + str(list(r_bytes)))
+    print('device_s = "0x' + s_bytes.hex() + '"')
 
 
 if __name__ == "__main__":

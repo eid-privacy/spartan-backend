@@ -10,7 +10,10 @@ Reads `../../circuits/c0200_swiyu_jwt/Prover.toml` and computes:
   recovered `R` point and `s⁻¹` for the issuer's signature over the JWT
   `payload` (with the fixed ES256 header).
 - **Device ECDSA Crescent triple**: `R_dev_x/y`, `T_dev_x/y`, `U_dev_x/y` — the
-  proof-of-possession triple for the device signature.
+  proof-of-possession triple for the device signature, built from its two
+  halves `device_r` and `device_s`. Only `device_s` is a circuit input;
+  `device_r` lives in `Prover.toml` purely for this step, which folds it into
+  `T_dev`/`U_dev`.
 
 The first run consumes the one-time `jwt_signature` field from `Prover.toml`;
 subsequent runs proceed without it.

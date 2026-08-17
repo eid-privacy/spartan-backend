@@ -32,10 +32,10 @@ dependencies = [
 name = "algebra-utils"
 version = "0.1.0"
 dependencies = [
- "num-bigint 0.4.6",
+ "num-bigint 0.5.1",
  "num-traits",
  "p256",
- "spartan2",
+ "vega-prover",
 ]
 
 [[package]]
@@ -602,6 +602,16 @@ dependencies = [
  "num-traits",
  "rand",
  "serde",
+]
+
+[[package]]
+name = "num-bigint"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93e7820bc0a80a0238e650327316f929ba18d5be054b647490a3a6a339f3e7c0"
+dependencies = [
+ "num-integer",
+ "num-traits",
 ]
 
 [[package]]
@@ -1239,6 +1249,41 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
 
 [[package]]
+name = "vega-prover"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8691c2a88dbd870a24115593a27157c68a1c24c3e93a0223f7ca1dceb5631a9e"
+dependencies = [
+ "bellpepper",
+ "bellpepper-core",
+ "bincode",
+ "bitvec",
+ "byteorder",
+ "digest",
+ "ff",
+ "flate2",
+ "generic-array",
+ "getrandom",
+ "group",
+ "halo2curves",
+ "itertools",
+ "num-bigint 0.4.6",
+ "num-integer",
+ "num-traits",
+ "once_cell",
+ "rand",
+ "rand_core",
+ "rayon",
+ "serde",
+ "sha2",
+ "sha3",
+ "subtle",
+ "thiserror 2.0.18",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "version_check"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1361,7 +1406,7 @@ dependencies = [
  "algebra-utils",
  "group",
  "halo2curves",
- "num-bigint 0.4.6",
+ "num-bigint 0.5.1",
  "serde",
  "sha2",
  "spartan2",

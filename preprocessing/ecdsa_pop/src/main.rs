@@ -13,8 +13,12 @@ type FieldRepr = [u8; 32];
 #[derive(Deserialize)]
 struct ProverToml {
     credential_string: String,
-    /// signature_device is 64 bytes: first 32 = r, last 32 = s
-    signature_device: Vec<u8>,
+    /// device_r is the 32-byte r half of the device signature. Preprocessing
+    /// only: the circuit never sees it, it is folded into T and U here.
+    device_r: Vec<u8>,
+    /// device_s is the s half of the device signature, as the `0x…` field
+    /// literal the circuit consumes directly.
+    device_s: String,
     /// challenge_hash is the message digest (32 bytes)
     challenge_hash: Vec<u8>,
 }
@@ -40,6 +44,20 @@ fn decode_hex_32_at(credential_hex: &str, start: usize) -> FieldRepr {
 
 fn to_field_repr(v: &[u8]) -> FieldRepr {
     v.try_into().expect("expected exactly 32 bytes")
+}
+
+/// Parse a Noir field literal (`"0x…"`, big-endian, at most 32 bytes) written
+/// in Prover.toml back into its 32-byte big-endian representation.
+fn field_literal_to_repr(literal: &str) -> FieldRepr {
+    let hex_digits = literal
+        .trim()
+        .strip_prefix("0x")
+        .or_else(|| literal.trim().strip_prefix("0X"))
+        .expect("field literal must be 0x-prefixed hexadecimal");
+    let padded = format!("{hex_digits:0>64}");
+    assert_eq!(padded.len(), 64, "field literal exceeds 32 bytes");
+    let bytes = decode(&padded).expect("invalid hex in field literal");
+    to_field_repr(&bytes)
 }
 
 fn bytes_to_hex(b: &[u8]) -> String {
@@ -104,13 +122,9 @@ fn main() {
         );
     }
 
-    assert_eq!(
-        prover.signature_device.len(),
-        64,
-        "signature_device must be 64 bytes"
-    );
-    let r: FieldRepr = to_field_repr(&prover.signature_device[..32]);
-    let s: FieldRepr = to_field_repr(&prover.signature_device[32..]);
+    assert_eq!(prover.device_r.len(), 32, "device_r must be 32 bytes");
+    let r: FieldRepr = to_field_repr(&prover.device_r);
+    let s: FieldRepr = field_literal_to_repr(&prover.device_s);
 
     let digest_hex = bytes_to_hex(&prover.challenge_hash);
 

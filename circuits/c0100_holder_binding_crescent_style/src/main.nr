@@ -1,11 +1,11 @@
 use eid::{constants, decode_hex_32};
-use eid::field_utils::{array_to_field, split_point};
+use eid::field_utils::array_to_field;
 use std::field::t256::{T256Point, T256Scalar, t256_msm, t256_ec_add};
 
 fn main(
     // Private inputs
     credential_string: str<constants::CREDENTIAL_LEN>,
-    signature_device: [u8; 64],
+    device_s: Field,
     // Public input
     challenge_hash: pub [u8; 32],
     R_x: pub [u8; 32],
@@ -27,14 +27,7 @@ fn main(
         constants::CREDENTIAL_POS_DEVICE_PUB_Y,
     );
 
-    // Safety: this is computation on public inputs, can be verified out-of-circuit
-    let s_scalar = unsafe {
-        let (_, s) = split_point(signature_device);
-        T256Scalar {
-            lo: s,
-            hi: 0,
-        }
-    };
+    let s_scalar = T256Scalar { lo: device_s, hi: 0 };
     let T_point = T256Point { x: array_to_field(T_x), y: array_to_field(T_y) };
     let R_point = T256Point { x: array_to_field(R_x), y: array_to_field(R_y) };
     let U_point = T256Point { x: array_to_field(U_x), y: array_to_field(U_y) };

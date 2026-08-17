@@ -126,7 +126,9 @@ python3 scripts/sign_prehashed_challenge.py <hex_32B_nonce>     # fixed nonce
 python3 scripts/sign_prehashed_challenge.py --circuit <dir>     # another circuit
 ```
 
-It prints TOML-ready `challenge_nonce` and `device_signature` lines. The c0200
+It prints TOML-ready `challenge_nonce`, `device_r` and `device_s` lines
+(`device_s` is the only one the circuit takes; `device_r` is consumed by the
+preprocessor). The c0200
 circuit uses `challenge_nonce` **directly** as the ECDSA message hash `e`, so the
 nonce is signed as an already-computed digest (`Prehashed`), never hashed again.
 

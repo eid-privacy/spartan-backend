@@ -27,7 +27,10 @@ Instead, following `c0200_swiyu_jwt`, it verifies:
   `s_inv_jwt` (private), and
 - the **device signature** on `challenge_nonce` with the "Crescent" style (cf.
   `c0100_holder_binding_crescent_style`), consuming the precomputed public triple
-  `R_dev_x/y`, `T_dev_x/y`, `U_dev_x/y`.
+  `R_dev_x/y`, `T_dev_x/y`, `U_dev_x/y` together with the private scalar
+  `device_s`. The other signature half, `device_r`, is not a circuit input: it
+  is read from `Prover.toml` by the preprocessor and folded into
+  `T_dev`/`U_dev`.
 
 These precomputed witnesses cannot (cheaply) be derived in-circuit, so after
 running `create-prover.py` you must run the off-circuit preprocessor to inject

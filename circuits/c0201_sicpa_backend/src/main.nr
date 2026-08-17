@@ -2,7 +2,7 @@ use noir_base64::{BASE64_URL_DECODER, BASE64_URL_ENCODER};
 use sha256::sha256_var;
 
 use eid::fast_base64::encode_url_into;
-use eid::field_utils::{array_to_field, split_point};
+use eid::field_utils::array_to_field;
 use std::field::t256::{T256Point, T256Scalar, t256_msm, t256_ec_add};
 
 mod constants;
@@ -83,7 +83,7 @@ fn main(
     dob_value: BoundedVec<u8, DOB_VALUE_MAX_LEN>,
     dob_sd_offset: u32,
     x_offset: u32,
-    device_signature: [u8; 64],
+    device_s: Field,
     // JWT/issuer ECDSA precompute (c0102 "vanilla equation" style):
     // R_jwt and s_inv_jwt s.t. R_jwt = t*s^-1*G + r*s^-1*Q_iss where
     // t = sha256(signing_input), r = R_jwt.x, s = jwt_signature[32..].
@@ -100,7 +100,7 @@ fn main(
     now_date: pub u32,
     // Device ECDSA precompute (c0100 "Crescent" style):
     // T_dev = R_dev*r^-1, U_dev = -e*r^-1*G with e = challenge_nonce,
-    // r = device_signature[..32], s = device_signature[32..].
+    // r = device_r, s = device_s.
     // These MUST be public: the verifier validates (R_dev, T_dev, U_dev) is
     // consistent with the public challenge_nonce off-circuit; the in-circuit
     // equation only binds device_pub.x to (T*s + U).x.
@@ -177,17 +177,10 @@ fn main(
 
     // ECDSA verification of the device signature on challenge_nonce (c0100
     // "Crescent" style). The device pubkey is derived in-circuit from the
-    // private payload, so we keep s in-circuit (split from device_signature)
-    // and only precompute T_dev = R*r^-1 and U_dev = -e*r^-1*G. The .x check
-    // binds the equation to the device pubkey derived above.
-    //
-    // Safety: the unconstrained split_point only reinterprets the already
-    // constrained device_signature bytes; the equation below is what enforces
-    // soundness.
-    let s_dev_scalar = unsafe {
-        let (_, s) = split_point(device_signature);
-        T256Scalar { lo: s, hi: 0 }
-    };
+    // private payload, so we keep s in-circuit (device_s) and only precompute
+    // T_dev = R*r^-1 and U_dev = -e*r^-1*G. The .x check binds the equation to
+    // the device pubkey derived above.
+    let s_dev_scalar = T256Scalar { lo: device_s, hi: 0 };
     let T_dev = T256Point { x: array_to_field(T_dev_x), y: array_to_field(T_dev_y) };
     let U_dev = T256Point { x: array_to_field(U_dev_x), y: array_to_field(U_dev_y) };
     let device_pub_x_field = array_to_field(device_pub_x);

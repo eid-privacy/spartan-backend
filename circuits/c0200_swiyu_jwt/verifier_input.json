@@ -4,7 +4,7 @@
   "dob_value": null,
   "dob_sd_offset": null,
   "x_offset": null,
-  "device_signature": null,
+  "device_s": null,
   "R_jwt_x": null,
   "R_jwt_y": null,
   "s_inv_jwt": null,
