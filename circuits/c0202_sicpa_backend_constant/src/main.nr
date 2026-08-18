@@ -3,7 +3,7 @@ use sha256::sha256_var;
 
 use eid::fast_base64::encode_url_into;
 use eid::field_utils::array_to_field;
-use std::field::t256::{T256Point, T256Scalar, t256_msm, t256_ec_add};
+use std::field::t256::{P256Point, T256Scalar, t256_msm, t256_ec_add};
 
 mod constants;
 use constants::{
@@ -11,7 +11,7 @@ use constants::{
     ENCODED_HEADER_LEN, MIN_AGE_YEARS, PAYLOAD_MAX_LEN,
 };
 
-pub global G: T256Point = T256Point {
+pub global G: P256Point = P256Point {
     x: 0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296,
     y: 0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5,
 };
@@ -138,8 +138,8 @@ fn main(
     // prover commits to R_jwt and s_inv off-circuit.
     let signing_digest: [u8; 32] = sha256_var(signing_input_storage, signing_input_len);
     let t_jwt = T256Scalar { hi: 0, lo: array_to_field(signing_digest) };
-    let R_jwt = T256Point { x: array_to_field(R_jwt_x), y: array_to_field(R_jwt_y) };
-    let Q_iss = T256Point { x: array_to_field(issuer_pub_x), y: array_to_field(issuer_pub_y) };
+    let R_jwt = P256Point { x: array_to_field(R_jwt_x), y: array_to_field(R_jwt_y) };
+    let Q_iss = P256Point { x: array_to_field(issuer_pub_x), y: array_to_field(issuer_pub_y) };
     let s_inv_scalar_jwt = T256Scalar { hi: 0, lo: s_inv_jwt };
     let sG_jwt = t256_msm([G], [s_inv_scalar_jwt]);
     let sQ_jwt = t256_msm([Q_iss], [s_inv_scalar_jwt]);
@@ -182,8 +182,8 @@ fn main(
     // Note: device_s is an unverified prover-supplied scalar; the equation
     // below is what enforces soundness.
     let s_dev_scalar = T256Scalar { lo: device_s, hi: 0 };
-    let T_dev = T256Point { x: array_to_field(T_dev_x), y: array_to_field(T_dev_y) };
-    let U_dev = T256Point { x: array_to_field(U_dev_x), y: array_to_field(U_dev_y) };
+    let T_dev = P256Point { x: array_to_field(T_dev_x), y: array_to_field(T_dev_y) };
+    let U_dev = P256Point { x: array_to_field(U_dev_x), y: array_to_field(U_dev_y) };
     let device_pub_x_field = array_to_field(device_pub_x);
     assert(
         device_pub_x_field == t256_ec_add(t256_msm([T_dev], [s_dev_scalar]), U_dev).x,
