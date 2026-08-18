@@ -1,9 +1,9 @@
 use eid::{constants};
 use eid::field_utils::{array_to_field};
-use std::field::t256::{T256Scalar, T256Point, t256_msm, t256_ec_add};
+use std::field::t256::{T256Scalar, P256Point, t256_msm, t256_ec_add};
 use sha256::sha256_var;
 
-pub global G: T256Point = T256Point {
+pub global G: P256Point = P256Point {
     x: 0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296,
     y: 0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5,
 };
@@ -19,8 +19,8 @@ fn main(
     s_inv: Field,
 ) {
 
-    let R = T256Point { x: array_to_field(R_x), y: array_to_field(R_y) };
-    let Q = T256Point { x: array_to_field(pubkey_issuer_x), y: array_to_field(pubkey_issuer_y) };
+    let R = P256Point { x: array_to_field(R_x), y: array_to_field(R_y) };
+    let Q = P256Point { x: array_to_field(pubkey_issuer_x), y: array_to_field(pubkey_issuer_y) };
 
     // Step 1: Calculate the credential hash (scalar t)
     let credential_hash: [u8; 32] =

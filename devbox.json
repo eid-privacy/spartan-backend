@@ -11,7 +11,7 @@
     "python314Packages.pyyaml",
     "github:eid-privacy/flakes#noir-versions.v1_0_0-beta_26",
     "github:eid-privacy/flakes#barretenberg-versions.beta_26",
-    "github:eid-privacy/flakes#nargo-t256-versions.t256-v0_26"
+    "github:eid-privacy/flakes#nargo-t256-versions.t256-v0_26-1"
   ],
   "env": {
     "PROJECT_DIR": "$PWD"
