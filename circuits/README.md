@@ -10,6 +10,10 @@ repository
 using the optimisations
 - `c9000`..`c9999` - circuits used for benchmarking only
 
+Note: circuits involving a verifier-provided nonce for proof-of-possession are designed as-is for implementation
+conciseness. A more robust implementation to avoid public key extraction would involve making sure the nonce is unique
+(e.g., using a timestamp, having the prover append a random value to the verifier nonce, etc.)
+
 ## SICPA-backend circuits c0201-c0203
 
 We have the following circuits for the SICPA backend.
