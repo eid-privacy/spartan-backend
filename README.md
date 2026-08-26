@@ -87,6 +87,24 @@ per such circuit; each reads that circuit's `Prover.toml`, does the elliptic-cur
 math, and injects the precomputed values. See
 [`preprocessing/README.md`](preprocessing/README.md) for the full list and usage.
 
+### c020x verifier helper (stdin proof + Crescent checks)
+
+The `c020x_verifier/` crate verifies c020x proofs by:
+1. Running `spartan-backend` library verification on the base64 proof read from `stdin`
+2. Running extra off-circuit Crescent checks on the public `T_dev_*` / `U_dev_*` points:
+   - point decoding / on-curve validation
+   - non-identity checks
+   - `U_dev == -(challenge_nonce * T_dev_x^{-1}) * G`
+   - `challenge_nonce * T_dev + T_dev_x * U_dev = O`
+
+Example:
+
+```bash
+echo "$PROOF_B64" | cargo run --manifest-path c020x_verifier/Cargo.toml -- \
+  --circuit-dir ../circuits/c0200_swiyu_jwt \
+  --challenge-nonce-hex <64-hex-bytes>
+```
+
 ### Pre-computing the offline phase (`--precompute`)
 
 Proving is split into an offline phase (`setup` + `prep`, which commits the
