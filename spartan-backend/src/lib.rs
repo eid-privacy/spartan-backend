@@ -16,11 +16,16 @@ use tracing::info_span;
 pub use types::{E, Scalar};
 use vega_prover::{errors::VegaError, traits::circuit::VegaCircuit, vega_sc_zkp::VegaZkSNARK};
 
-pub use crate::circuit_instance::{instantiate_circuit_from_dir, instantiate_circuit_with_name};
+pub use crate::circuit_instance::{
+    instantiate_circuit_from_dir, instantiate_circuit_with_name,
+};
 use crate::{
     nizk_prover::prove,
-    nizk_verifier::verify,
-    noir::{circuit::CircuitParameters, synthesis::circuit_synthesizer::NoirCircuitSynthesizer},
+    nizk_verifier::{ExpectedPublicValue, verify},
+    noir::{
+        circuit::CircuitParameters, circuit_reader::types::input_wire::InputWire,
+        synthesis::circuit_synthesizer::NoirCircuitSynthesizer,
+    },
 };
 
 /// Generate a Vega zkSNARK proof for the given Noir circuit parameters.
@@ -74,10 +79,83 @@ pub fn verify_circuit(circuit: &CircuitParameters, proof: VegaZkSNARK<E>) -> Res
             &circuit.online_seeds,
         )
     };
+    let expected_public_values = expected_public_values(&circuit.verifier_inputs);
 
     let _span = info_span!("verification").entered();
-    verify(verifier_circuit, proof)?;
+    verify(verifier_circuit, proof, &expected_public_values)?;
     Ok(())
+}
+
+fn expected_public_values(
+    verifier_inputs: &[InputWire<Option<Scalar>>],
+) -> Vec<ExpectedPublicValue<Scalar>> {
+    let mut public_wires: Vec<InputWire<Option<Scalar>>> = verifier_inputs
+        .iter()
+        .copied()
+        .filter(|wire| wire.public)
+        .collect();
+
+    public_wires.sort_by_key(|wire| wire.witness.witness_index());
+
+    public_wires
+        .into_iter()
+        .enumerate()
+        .map(|(position, wire)| ExpectedPublicValue {
+            position,
+            witness_index: wire.witness.witness_index(),
+            configured_value: wire.value,
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use acir::native_types::Witness;
+    use ff::Field;
+
+    use super::{Scalar, expected_public_values};
+    use crate::noir::circuit_reader::types::input_wire::InputWire;
+
+    #[test]
+    fn expected_public_values_keep_missing_public_slots() {
+        let inputs = vec![
+            InputWire::new(true, Witness(5), None),
+            InputWire::new(false, Witness(2), Some(Scalar::from(7u64))),
+            InputWire::new(true, Witness(1), Some(Scalar::from(11u64))),
+            InputWire::new(true, Witness(9), Some(Scalar::from(13u64))),
+        ];
+
+        let expected = expected_public_values(&inputs);
+        assert_eq!(expected.len(), 3);
+        assert_eq!(expected[0].position, 0);
+        assert_eq!(expected[0].witness_index, 1);
+        assert_eq!(expected[0].configured_value, Some(Scalar::from(11u64)));
+        assert_eq!(expected[1].position, 1);
+        assert_eq!(expected[1].witness_index, 5);
+        assert_eq!(expected[1].configured_value, None);
+        assert_eq!(expected[2].position, 2);
+        assert_eq!(expected[2].witness_index, 9);
+        assert_eq!(expected[2].configured_value, Some(Scalar::from(13u64)));
+    }
+
+    #[test]
+    fn expected_public_values_are_sorted_by_witness_index() {
+        let inputs = vec![
+            InputWire::new(true, Witness(10), Some(Scalar::ONE)),
+            InputWire::new(true, Witness(3), Some(Scalar::from(2u64))),
+            InputWire::new(true, Witness(7), Some(Scalar::from(3u64))),
+        ];
+
+        let expected = expected_public_values(&inputs);
+        assert_eq!(
+            expected.iter().map(|v| v.witness_index).collect::<Vec<_>>(),
+            vec![3, 7, 10]
+        );
+        assert_eq!(
+            expected.iter().map(|v| v.position).collect::<Vec<_>>(),
+            vec![0, 1, 2]
+        );
+    }
 }
 
 /// Runs only the prover for the given circuit and returns the proof as a

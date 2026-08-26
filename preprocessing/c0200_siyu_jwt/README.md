@@ -26,5 +26,4 @@ cargo run --release
 ```
 
 Writes the precomputed fields back into
-`../../circuits/c0200_swiyu_jwt/Prover.toml` and also produces
-`../../circuits/c0200_swiyu_jwt/verifier_input.json`.
+`../../circuits/c0200_swiyu_jwt/Prover.toml`.

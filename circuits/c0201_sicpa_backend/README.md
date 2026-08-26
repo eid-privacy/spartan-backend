@@ -34,7 +34,7 @@ Instead, following `c0200_swiyu_jwt`, it verifies:
 
 These precomputed witnesses cannot (cheaply) be derived in-circuit, so after
 running `create-prover.py` you must run the off-circuit preprocessor to inject
-them into `Prover.toml` and to (re)generate `verifier_input.json`:
+them into `Prover.toml`:
 
 ```bash
 cd ../../preprocessing/c0201_sicpa_backend

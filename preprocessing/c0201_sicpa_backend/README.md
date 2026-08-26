@@ -25,8 +25,7 @@ constant, the SICPA header carries the issuer key and is therefore a **public
 `encoded_header` input** to the circuit. This preprocessor reads
 `encoded_header` from `Prover.toml` to reconstruct the exact signing input
 (`encoded_header || "." || base64url(payload)`) that was hashed and signed, and
-emits `encoded_header` as a public value (flattened to its storage bytes plus
-its `len` wire) in `verifier_input.json`.
+matches the same value used by the circuit.
 
 Note also that `Prover.toml` here is produced by `create-prover.py`
 (`toml.dumps`), which writes the `BoundedVec` inputs as `[table]` sections. The
@@ -41,5 +40,4 @@ cargo run --release
 ```
 
 Writes the precomputed fields back into
-`../../circuits/c0201_sicpa_backend/Prover.toml` and also produces
-`../../circuits/c0201_sicpa_backend/verifier_input.json`.
+`../../circuits/c0201_sicpa_backend/Prover.toml`.
