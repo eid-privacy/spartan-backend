@@ -1,0 +1,17 @@
+[package]
+name = "c020x_verifier"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+algebra-utils = { path = "../algebra-utils" }
+base64 = "0.22"
+bincode = "1.3"
+clap = { version = "4.6.0", features = ["derive"] }
+hex = "0.4"
+noirc_abi = { git = "https://github.com/eid-privacy/noir", tag = "t256-v0.26-1", features = [
+  "t256",
+] }
+p256 = "0.13.2"
+spartan-backend = { path = "../spartan-backend" }
+vega-prover = "0.1.0"
