@@ -23,10 +23,6 @@ dob_value.len = 10
 dob_value.storage = [49, 57, 56, 56, 45, 48, 54, 45, 49, 57, 0, 0, 0, 0, 0, 0]
 
 # Precomputed (c0200_siyu_jwt): JWT (issuer) ECDSA recovery
-
-# Precomputed (c0200_siyu_jwt): device ECDSA Crescent triple
-
-# Precomputed (c0200_siyu_jwt): JWT (issuer) ECDSA recovery
 R_jwt_x = [82, 167, 142, 232, 243, 244, 96, 192, 182, 189, 134, 114, 213, 6, 23, 250, 149, 115, 36, 108, 134, 64, 181, 54, 198, 32, 32, 61, 22, 247, 75, 57]
 R_jwt_y = [145, 188, 215, 95, 10, 39, 61, 88, 19, 159, 123, 135, 121, 227, 219, 149, 101, 109, 141, 168, 189, 114, 217, 145, 34, 52, 133, 79, 24, 129, 69, 179]
 s_inv_jwt = "0x00d69962bd082c343ef05e424b15cfe089d1d98d07fd61096fb5b4cf71e9516d"

@@ -46,7 +46,6 @@ struct ProverToml {
     /// circuit consumes directly.
     device_s: String,
     challenge_nonce: Vec<u8>,
-    now_date: u64,
 }
 
 fn ff_to_be<FF: halo2curves::ff::PrimeField>(f: &FF) -> FieldRepr {
@@ -254,46 +253,5 @@ fn main() {
 
     fs::write(&toml_path, out).expect("cannot write Prover.toml");
 
-    // 7. Regenerate verifier_input.json. Exactly the circuit's ABI parameters
-    //    must appear (the backend asserts the count); private ones are null,
-    //    public ones carry their value. y_offset, challenge_nonce and R_dev_x/y
-    //    stay in Prover.toml for the preprocessing itself but left the ABI.
-    let verifier_path = PathBuf::from("../../circuits/c0200_swiyu_jwt/verifier_input.json");
-    let json_array = |bytes: &[u8]| -> String {
-        let entries: Vec<String> = bytes.iter().map(|b| b.to_string()).collect();
-        format!("[{}]", entries.join(", "))
-    };
-    let verifier_json = format!(
-        concat!(
-            "{{\n",
-            "  \"payload\": null,\n",
-            "  \"dob_salt\": null,\n",
-            "  \"dob_value\": null,\n",
-            "  \"dob_sd_offset\": null,\n",
-            "  \"x_offset\": null,\n",
-            "  \"device_s\": null,\n",
-            "  \"R_jwt_x\": null,\n",
-            "  \"R_jwt_y\": null,\n",
-            "  \"s_inv_jwt\": null,\n",
-            "  \"issuer_pub_x\": {},\n",
-            "  \"issuer_pub_y\": {},\n",
-            "  \"now_date\": {},\n",
-            "  \"T_dev_x\": {},\n",
-            "  \"T_dev_y\": {},\n",
-            "  \"U_dev_x\": {},\n",
-            "  \"U_dev_y\": {}\n",
-            "}}\n",
-        ),
-        json_array(&issuer_x),
-        json_array(&issuer_y),
-        prover.now_date,
-        json_array(&T_dev_x),
-        json_array(&T_dev_y),
-        json_array(&U_dev_x),
-        json_array(&U_dev_y),
-    );
-    fs::write(&verifier_path, verifier_json).expect("cannot write verifier_input.json");
-
     println!("c0200_siyu_jwt: wrote R_jwt, s_inv_jwt, R_dev, T_dev, U_dev to {}", toml_path.display());
-    println!("c0200_siyu_jwt: wrote {}", verifier_path.display());
 }
