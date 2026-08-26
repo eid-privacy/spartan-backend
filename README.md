@@ -52,7 +52,7 @@ pinned automatically.
 
 ### Run proofs and verifications with Spartan
 
-1. Make sure inputs are set in `prover_input.json` and `verifier_input.json` for the circuit(s) you want to run.
+1. Make sure inputs are set in `prover_input.json` for the circuit(s) you want to run. `verifier_input.json` is only required for verifier paths (`--verify` or prove+verify runs), not for `--prove`. For verifier paths, any **missing public values** (`null`) are filled from the proof output and logged explicitly.
 2. In `spartan-backend/`: `cargo run [--release] <circuit_name>` where the circuit name is the directory name within
    the `circuits` directory (or via devbox: `devbox run start` to run all known passing circuits).
 

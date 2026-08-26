@@ -60,7 +60,7 @@ pub fn map_into_field_flat(
 
 pub fn instantiate_circuit_with_name(name: &str) -> CircuitParameters {
     let circuit_settings = CircuitSettings::new(name);
-    instantiate_circuit_with_settings(name, circuit_settings)
+    instantiate_circuit_with_settings(name, circuit_settings, true)
 }
 
 pub fn instantiate_circuit_from_dir(dir: &Path) -> CircuitParameters {
@@ -70,12 +70,28 @@ pub fn instantiate_circuit_from_dir(dir: &Path) -> CircuitParameters {
         .expect("directory path must have a final component")
         .to_str()
         .expect("directory name must be valid UTF-8");
-    instantiate_circuit_with_settings(name, circuit_settings)
+    instantiate_circuit_with_settings(name, circuit_settings, true)
+}
+
+pub fn instantiate_prover_circuit_with_name(name: &str) -> CircuitParameters {
+    let circuit_settings = CircuitSettings::new(name);
+    instantiate_circuit_with_settings(name, circuit_settings, false)
+}
+
+pub fn instantiate_prover_circuit_from_dir(dir: &Path) -> CircuitParameters {
+    let circuit_settings = CircuitSettings::from_directory(dir);
+    let name = dir
+        .file_name()
+        .expect("directory path must have a final component")
+        .to_str()
+        .expect("directory name must be valid UTF-8");
+    instantiate_circuit_with_settings(name, circuit_settings, false)
 }
 
 fn instantiate_circuit_with_settings(
     name: &str,
     circuit_settings: CircuitSettings,
+    require_verifier_inputs: bool,
 ) -> CircuitParameters {
     let program_artifact = read_noir_circuit(circuit_settings.circuit_file.as_str()).expect(
         format!(
@@ -99,13 +115,17 @@ fn instantiate_circuit_with_settings(
             .all(|input_wire| input_wire.value.is_some())
     );
 
-    // map verifier inputs from json
-    let mapped_verifier_input = read_verifier_inputs(
-        &program_artifact,
-        circuit_settings.verifier_inputs_file.as_str(),
-    );
-    tracing::debug!("Verifier inputs: {:?}", mapped_verifier_input);
-    let field_verifier_input = map_into_field_flat(&mapped_verifier_input);
+    let field_verifier_input = if require_verifier_inputs {
+        // map verifier inputs from json
+        let mapped_verifier_input = read_verifier_inputs(
+            &program_artifact,
+            circuit_settings.verifier_inputs_file.as_str(),
+        );
+        tracing::debug!("Verifier inputs: {:?}", mapped_verifier_input);
+        map_into_field_flat(&mapped_verifier_input)
+    } else {
+        Vec::new()
+    };
 
     // An absent manifest yields no seeds, i.e. the monolithic behaviour.
     let manifest = OnlineManifest::load_from_dir(&circuit_settings.manifest_dir);
