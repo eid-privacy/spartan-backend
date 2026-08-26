@@ -18,6 +18,7 @@ use vega_prover::{errors::VegaError, traits::circuit::VegaCircuit, vega_sc_zkp::
 
 pub use crate::circuit_instance::{
     instantiate_circuit_from_dir, instantiate_circuit_with_name,
+    instantiate_prover_circuit_from_dir, instantiate_prover_circuit_with_name,
 };
 use crate::{
     nizk_prover::prove,

@@ -3,6 +3,7 @@ use std::{env, path::PathBuf, time::Instant};
 use clap::Parser;
 use spartan_backend::{
     E, instantiate_circuit_from_dir, instantiate_circuit_with_name,
+    instantiate_prover_circuit_from_dir, instantiate_prover_circuit_with_name,
     noir::{circuit::CircuitParameters, synthesis::circuit_synthesizer::NoirCircuitSynthesizer},
     online_prover::OnlineProver,
     precompute, proof_to_base64, prove_circuit, prove_circuit_to_base64, report_proof_size,
@@ -48,6 +49,44 @@ struct Cli {
     verify: Option<String>,
 }
 
+/// Which operation the CLI was asked to perform, resolved once from [`Cli`].
+enum Mode {
+    /// Default: full prove + verify cycle. Circuit includes verifier inputs.
+    ProveAndVerify,
+    /// `--count-constraints`: synthesize and report R1CS sizes only.
+    CountConstraints,
+    /// `--precompute`: run offline phase and persist to disk.
+    Precompute,
+    /// `--proof-size`: prove and report serialized proof size.
+    ProofSize,
+    /// `--prove`: produce a base64 proof on stdout. No verifier inputs needed.
+    Prove,
+    /// `--verify <b64>`: verify the given proof. Circuit includes verifier inputs.
+    Verify(String),
+}
+
+impl Mode {
+    fn from_cli(cli: &Cli) -> Self {
+        if cli.count_constraints {
+            Mode::CountConstraints
+        } else if cli.precompute {
+            Mode::Precompute
+        } else if cli.proof_size {
+            Mode::ProofSize
+        } else if cli.prove {
+            Mode::Prove
+        } else if let Some(proof) = cli.verify.clone() {
+            Mode::Verify(proof)
+        } else {
+            Mode::ProveAndVerify
+        }
+    }
+
+    fn needs_verifier_inputs(&self) -> bool {
+        matches!(self, Mode::ProveAndVerify | Mode::Verify(_))
+    }
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
@@ -70,49 +109,67 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
         .init();
 
-    let circuits: Vec<CircuitParameters> = match cli.circuit_dir {
-        Some(dir) => {
-            vec![instantiate_circuit_from_dir(&dir)]
-        }
-        None => {
-            let default_circuits = [
-                "c0000_trivial",
-                "c0001_trivial_with_range",
-                "c0002_trivial_with_strings",
-                "c0003_trivial_with_brillig",
-                "c0004_trivial_elliptic_curve_add",
-                "c0005_trivial_msm",
-                "c0100_holder_binding_crescent_style",
-            ];
-            default_circuits
-                .map(|name| instantiate_circuit_with_name(name))
-                .into()
-        }
-    };
+    let mode = Mode::from_cli(&cli);
+    let circuits = load_circuits(&cli.circuit_dir, mode.needs_verifier_inputs());
 
     for circuit in circuits {
-        if cli.count_constraints {
-            count_constraints(circuit);
-        } else if cli.precompute {
-            run_precompute(&circuit);
-        } else if cli.proof_size {
-            report_proof_size(circuit);
-        } else if cli.prove {
+        run_mode(&mode, circuit);
+    }
+
+    Ok(())
+}
+
+fn load_circuits(
+    circuit_dir: &Option<PathBuf>,
+    with_verifier_inputs: bool,
+) -> Vec<CircuitParameters> {
+    const DEFAULT_CIRCUITS: [&str; 7] = [
+        "c0000_trivial",
+        "c0001_trivial_with_range",
+        "c0002_trivial_with_strings",
+        "c0003_trivial_with_brillig",
+        "c0004_trivial_elliptic_curve_add",
+        "c0005_trivial_msm",
+        "c0100_holder_binding_crescent_style",
+    ];
+
+    let load_by_dir = if with_verifier_inputs {
+        instantiate_circuit_from_dir
+    } else {
+        instantiate_prover_circuit_from_dir
+    };
+    let load_by_name = if with_verifier_inputs {
+        instantiate_circuit_with_name
+    } else {
+        instantiate_prover_circuit_with_name
+    };
+
+    match circuit_dir {
+        Some(dir) => vec![load_by_dir(dir)],
+        None => DEFAULT_CIRCUITS.map(load_by_name).into(),
+    }
+}
+
+fn run_mode(mode: &Mode, circuit: CircuitParameters) {
+    match mode {
+        Mode::CountConstraints => count_constraints(circuit),
+        Mode::Precompute => run_precompute(&circuit),
+        Mode::ProofSize => report_proof_size(circuit),
+        Mode::Prove => {
             let proof_b64 = prove_with_precompute(&circuit);
             println!("{}", proof_b64);
-        } else if let Some(proof_base64) = &cli.verify {
+        }
+        Mode::Verify(proof_base64) => {
             verify_circuit_from_base64(&circuit, proof_base64).expect("Proof verification failed");
             tracing::info!("Verification successful.");
-        } else {
+        }
+        Mode::ProveAndVerify => {
             tracing::info!("Running circuit {}", circuit.name);
             let proof = prove_circuit(&circuit).expect("Proof creation failed");
-
             verify_circuit(&circuit, proof).expect("Proof verification failed");
             tracing::info!("Verification successful.");
         }
     }
-
-    Ok(())
 }
 
 /// Synthesizes the circuit into a [`ShapeCS`] and reports the resulting R1CS
