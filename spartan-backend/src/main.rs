@@ -1,4 +1,4 @@
-use std::{env, path::PathBuf, time::Instant};
+use std::{env, io::Write, path::PathBuf, time::Instant};
 
 use clap::Parser;
 use spartan_backend::{
@@ -157,7 +157,8 @@ fn run_mode(mode: &Mode, circuit: CircuitParameters) {
         Mode::ProofSize => report_proof_size(circuit),
         Mode::Prove => {
             let proof_b64 = prove_with_precompute(&circuit);
-            println!("{}", proof_b64);
+            // compared to println! this avoids a BrokenPipe once the verifier closes the stream
+            let _ = writeln!(std::io::stdout(), "{}", proof_b64);
         }
         Mode::Verify => {
             let mut proof_base64 = String::new();
