@@ -1,12 +1,11 @@
-use std::{env, path::PathBuf, time::Instant};
+use std::{env, path::PathBuf};
 
 use clap::Parser;
 use spartan_backend::{
     E, instantiate_circuit_from_dir, instantiate_circuit_with_name,
     noir::{circuit::CircuitParameters, synthesis::circuit_synthesizer::NoirCircuitSynthesizer},
-    online_prover::OnlineProver,
-    precompute, proof_to_base64, prove_circuit, prove_circuit_to_base64, report_proof_size,
-    verify_circuit, verify_circuit_from_base64,
+    prove_circuit, prove_with_precompute, report_proof_size, run_precompute, verify_circuit,
+    verify_circuit_from_base64,
 };
 use tracing::info_span;
 use vega_prover::bellpepper::{r1cs::VegaShape, shape_cs::ShapeCS};
@@ -94,7 +93,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if cli.count_constraints {
             count_constraints(circuit);
         } else if cli.precompute {
-            run_precompute(&circuit);
+            run_precompute(&circuit).expect("Precomputation failed");
         } else if cli.proof_size {
             report_proof_size(circuit);
         } else if cli.prove {
@@ -172,47 +171,4 @@ fn count_constraints(circuit: CircuitParameters) {
         num_public,
         num_challenges,
     );
-}
-
-/// Runs the offline phase (`setup` + `prep_prove`) once and persists it to
-/// `<circuit_dir>/target/precompute.bin`, which `--prove` then picks up.
-fn run_precompute(circuit: &CircuitParameters) {
-    let _span = info_span!("precompute", circuit = ?circuit.name).entered();
-
-    if circuit.online_seeds.is_empty() {
-        println!(
-            "{}: no online.json — every witness lands in the rest segment, so only `setup` \
-             is saved and the witness commitment is redone on every proof.",
-            circuit.name
-        );
-    }
-
-    let t_setup = Instant::now();
-    let prover = OnlineProver::setup(circuit).expect("precompute (setup + prep) failed");
-    let setup_elapsed = t_setup.elapsed();
-
-    let (path, size) = precompute::save(circuit, &prover).expect("failed to write precompute.bin");
-
-    println!(
-        "{}: precompute = {:.3?}, wrote {} ({:.1} MiB)",
-        circuit.name,
-        setup_elapsed,
-        path.display(),
-        size as f64 / (1024.0 * 1024.0),
-    );
-}
-
-/// Produces a base64 proof, reusing `target/precompute.bin` when it is present
-/// and still matches the circuit, otherwise falling back to monolithic proving.
-fn prove_with_precompute(circuit: &CircuitParameters) -> String {
-    match precompute::load(circuit) {
-        Some(mut prover) => {
-            let _span = info_span!("prove_precomputed", circuit = ?circuit.name).entered();
-            let proof = prover
-                .prove_online(circuit)
-                .expect("Proof creation from precomputed state failed.");
-            proof_to_base64(&proof)
-        }
-        None => prove_circuit_to_base64(circuit).expect("Proof creation failed."),
-    }
 }

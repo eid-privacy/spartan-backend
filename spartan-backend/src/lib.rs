@@ -1,4 +1,5 @@
 mod circuit_instance;
+mod errors;
 mod nizk_prover;
 mod nizk_verifier;
 pub mod noir;
@@ -8,7 +9,7 @@ mod trivial_circuit;
 pub mod types;
 mod utils;
 
-use std::env;
+use std::{env, time::Instant};
 
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use bellpepper_core::{ConstraintSystem, num::AllocatedNum, test_cs::TestConstraintSystem};
@@ -18,10 +19,57 @@ use vega_prover::{errors::VegaError, traits::circuit::VegaCircuit, vega_sc_zkp::
 
 pub use crate::circuit_instance::{instantiate_circuit_from_dir, instantiate_circuit_with_name};
 use crate::{
+    errors::BackendError,
     nizk_prover::prove,
     nizk_verifier::verify,
     noir::{circuit::CircuitParameters, synthesis::circuit_synthesizer::NoirCircuitSynthesizer},
+    online_prover::OnlineProver,
 };
+
+/// Runs the offline phase (`setup` + `prep_prove`) once and persists it to
+/// `<circuit_dir>/target/precompute.bin`, which `--prove` then picks up.
+pub fn run_precompute(circuit: &CircuitParameters) -> Result<(), BackendError> {
+    let _span = info_span!("precompute", circuit = ?circuit.name).entered();
+
+    if circuit.online_seeds.is_empty() {
+        println!(
+            "{}: no online.json — every witness lands in the rest segment, so only `setup` \
+             is saved and the witness commitment is redone on every proof.",
+            circuit.name
+        );
+    }
+
+    let t_setup = Instant::now();
+    let prover = OnlineProver::setup(circuit)?;
+    let setup_elapsed = t_setup.elapsed();
+
+    let (path, size) = precompute::save(circuit, &prover)?;
+
+    tracing::info!(
+        "{}: precompute = {:.3?}, wrote {} ({:.1} MiB)",
+        circuit.name,
+        setup_elapsed,
+        path.display(),
+        size as f64 / (1024.0 * 1024.0),
+    );
+
+    Ok(())
+}
+
+/// Produces a base64 proof, reusing `target/precompute.bin` when it is present
+/// and still matches the circuit, otherwise falling back to monolithic proving.
+pub fn prove_with_precompute(circuit: &CircuitParameters) -> String {
+    match precompute::load(circuit) {
+        Some(mut prover) => {
+            let _span = info_span!("prove_precomputed", circuit = ?circuit.name).entered();
+            let proof = prover
+                .prove_online(circuit)
+                .expect("Proof creation from precomputed state failed.");
+            proof_to_base64(&proof)
+        }
+        None => prove_circuit_to_base64(circuit).expect("Proof creation failed."),
+    }
+}
 
 /// Generate a Vega zkSNARK proof for the given Noir circuit parameters.
 pub fn prove_circuit(circuit: &CircuitParameters) -> Result<VegaZkSNARK<E>, VegaError> {
