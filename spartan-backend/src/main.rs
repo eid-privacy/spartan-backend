@@ -1,4 +1,4 @@
-use std::{env, path::PathBuf, time::Instant};
+use std::{env, io::Write, path::PathBuf, time::Instant};
 
 use clap::Parser;
 use spartan_backend::{
@@ -43,10 +43,10 @@ struct Cli {
     #[arg(long = "precompute")]
     precompute: bool,
 
-    /// Only run the verifier against a base64-encoded (bincode) proof passed as
-    /// the value (as produced by `--prove`); skip prove.
-    #[arg(long = "verify", value_name = "BASE64_PROOF")]
-    verify: Option<String>,
+    /// Only run the verifier against a base64-encoded (bincode) proof read from
+    /// stdin (as produced by `--prove`); skip prove.
+    #[arg(long = "verify")]
+    verify: bool,
 }
 
 /// Which operation the CLI was asked to perform, resolved once from [`Cli`].
@@ -61,8 +61,8 @@ enum Mode {
     ProofSize,
     /// `--prove`: produce a base64 proof on stdout. No verifier inputs needed.
     Prove,
-    /// `--verify <b64>`: verify the given proof. Circuit includes verifier inputs.
-    Verify(String),
+    /// `--verify`: verify the proof given on stdin. Circuit includes verifier inputs.
+    Verify,
 }
 
 impl Mode {
@@ -75,15 +75,15 @@ impl Mode {
             Mode::ProofSize
         } else if cli.prove {
             Mode::Prove
-        } else if let Some(proof) = cli.verify.clone() {
-            Mode::Verify(proof)
+        } else if cli.verify {
+            Mode::Verify
         } else {
             Mode::ProveAndVerify
         }
     }
 
     fn needs_verifier_inputs(&self) -> bool {
-        matches!(self, Mode::ProveAndVerify | Mode::Verify(_))
+        matches!(self, Mode::ProveAndVerify | Mode::Verify)
     }
 }
 
@@ -157,10 +157,14 @@ fn run_mode(mode: &Mode, circuit: CircuitParameters) {
         Mode::ProofSize => report_proof_size(circuit),
         Mode::Prove => {
             let proof_b64 = prove_with_precompute(&circuit);
-            println!("{}", proof_b64);
+            // compared to println! this avoids a BrokenPipe once the verifier closes the stream
+            let _ = writeln!(std::io::stdout(), "{}", proof_b64);
         }
-        Mode::Verify(proof_base64) => {
-            verify_circuit_from_base64(&circuit, proof_base64).expect("Proof verification failed");
+        Mode::Verify => {
+            let mut proof_base64 = String::new();
+            std::io::Read::read_to_string(&mut std::io::stdin(), &mut proof_base64)
+                .expect("Failed to read proof from stdin");
+            verify_circuit_from_base64(&circuit, &proof_base64).expect("Proof verification failed");
             tracing::info!("Verification successful.");
         }
         Mode::ProveAndVerify => {
