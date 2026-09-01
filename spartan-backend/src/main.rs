@@ -43,8 +43,8 @@ struct Cli {
     #[arg(long = "precompute")]
     precompute: bool,
 
-    /// Only run the verifier against a base64-encoded (bincode) proof passed as
-    /// the value (as produced by `--prove`); skip prove.
+    /// Only run the verifier against a base64-encoded (bincode) proof read from
+    /// stdin (as produced by `--prove`); skip prove.
     #[arg(long = "verify")]
     verify: bool,
 }
