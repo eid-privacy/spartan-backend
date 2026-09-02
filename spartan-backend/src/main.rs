@@ -4,6 +4,7 @@ use clap::Parser;
 use spartan_backend::{
     E, instantiate_circuit_from_dir, instantiate_circuit_with_name,
     instantiate_prover_circuit_from_dir, instantiate_prover_circuit_with_name,
+    instantiate_verifier_circuit_from_dir, instantiate_verifier_circuit_with_name,
     noir::{circuit::CircuitParameters, synthesis::circuit_synthesizer::NoirCircuitSynthesizer},
     online_prover::OnlineProver,
     precompute, proof_to_base64, prove_circuit, prove_circuit_to_base64, report_proof_size,
@@ -85,6 +86,16 @@ impl Mode {
     fn needs_verifier_inputs(&self) -> bool {
         matches!(self, Mode::ProveAndVerify | Mode::Verify)
     }
+
+    /// Whether the prover's `.gz` witness file is needed. `Verify` and
+    /// `CountConstraints` only ever synthesize with `verifier_inputs`, so they
+    /// can load a circuit without the `.gz` file being present at all.
+    fn needs_prover_inputs(&self) -> bool {
+        matches!(
+            self,
+            Mode::ProveAndVerify | Mode::Prove | Mode::Precompute | Mode::ProofSize
+        )
+    }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -110,7 +121,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .init();
 
     let mode = Mode::from_cli(&cli);
-    let circuits = load_circuits(&cli.circuit_dir, mode.needs_verifier_inputs());
+    let circuits = load_circuits(
+        &cli.circuit_dir,
+        mode.needs_verifier_inputs(),
+        mode.needs_prover_inputs(),
+    );
 
     for circuit in circuits {
         run_mode(&mode, circuit);
@@ -122,6 +137,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 fn load_circuits(
     circuit_dir: &Option<PathBuf>,
     with_verifier_inputs: bool,
+    with_prover_inputs: bool,
 ) -> Vec<CircuitParameters> {
     const DEFAULT_CIRCUITS: [&str; 7] = [
         "c0000_trivial",
@@ -133,15 +149,24 @@ fn load_circuits(
         "c0100_holder_binding_crescent_style",
     ];
 
-    let load_by_dir = if with_verifier_inputs {
-        instantiate_circuit_from_dir
-    } else {
-        instantiate_prover_circuit_from_dir
+    // Only one of these ever needs both the prover .gz witness and the
+    // verifier_input.json at the same time (ProveAndVerify); everything else
+    // reads only the file(s) it actually needs.
+    let load_by_dir: fn(&std::path::Path) -> CircuitParameters = match (
+        with_prover_inputs,
+        with_verifier_inputs,
+    ) {
+        (true, true) => instantiate_circuit_from_dir,
+        (true, false) => instantiate_prover_circuit_from_dir,
+        (false, true) => instantiate_verifier_circuit_from_dir,
+        (false, false) => instantiate_verifier_circuit_from_dir,
     };
-    let load_by_name = if with_verifier_inputs {
-        instantiate_circuit_with_name
-    } else {
-        instantiate_prover_circuit_with_name
+    let load_by_name: fn(&str) -> CircuitParameters = match (with_prover_inputs, with_verifier_inputs)
+    {
+        (true, true) => instantiate_circuit_with_name,
+        (true, false) => instantiate_prover_circuit_with_name,
+        (false, true) => instantiate_verifier_circuit_with_name,
+        (false, false) => instantiate_verifier_circuit_with_name,
     };
 
     match circuit_dir {
