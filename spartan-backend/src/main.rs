@@ -83,18 +83,39 @@ impl Mode {
         }
     }
 
-    fn needs_verifier_inputs(&self) -> bool {
-        matches!(self, Mode::ProveAndVerify | Mode::Verify)
+    fn circuit_load_mode(&self) -> CircuitLoadMode {
+        match self {
+            Mode::ProveAndVerify => CircuitLoadMode::ProverAndVerifier,
+            Mode::CountConstraints => CircuitLoadMode::Verifier,
+            Mode::Precompute => CircuitLoadMode::Prover,
+            Mode::ProofSize => CircuitLoadMode::Prover,
+            Mode::Prove => CircuitLoadMode::Prover,
+            Mode::Verify => CircuitLoadMode::Verifier,
+        }
+    }
+}
+
+enum CircuitLoadMode {
+    Prover,
+    Verifier,
+    ProverAndVerifier,
+}
+
+impl CircuitLoadMode {
+    fn load_by_dir(&self, dir: &std::path::Path) -> CircuitParameters {
+        match self {
+            CircuitLoadMode::ProverAndVerifier => instantiate_circuit_from_dir(dir),
+            CircuitLoadMode::Prover => instantiate_prover_circuit_from_dir(dir),
+            CircuitLoadMode::Verifier => instantiate_verifier_circuit_from_dir(dir),
+        }
     }
 
-    /// Whether the prover's `.gz` witness file is needed. `Verify` and
-    /// `CountConstraints` only ever synthesize with `verifier_inputs`, so they
-    /// can load a circuit without the `.gz` file being present at all.
-    fn needs_prover_inputs(&self) -> bool {
-        matches!(
-            self,
-            Mode::ProveAndVerify | Mode::Prove | Mode::Precompute | Mode::ProofSize
-        )
+    fn load_by_name(&self, name: &str) -> CircuitParameters {
+        match self {
+            CircuitLoadMode::ProverAndVerifier => instantiate_circuit_with_name(name),
+            CircuitLoadMode::Prover => instantiate_prover_circuit_with_name(name),
+            CircuitLoadMode::Verifier => instantiate_verifier_circuit_with_name(name),
+        }
     }
 }
 
@@ -121,11 +142,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .init();
 
     let mode = Mode::from_cli(&cli);
-    let circuits = load_circuits(
-        &cli.circuit_dir,
-        mode.needs_verifier_inputs(),
-        mode.needs_prover_inputs(),
-    );
+    let circuits = load_circuits(&cli.circuit_dir, mode.circuit_load_mode());
 
     for circuit in circuits {
         run_mode(&mode, circuit);
@@ -136,8 +153,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn load_circuits(
     circuit_dir: &Option<PathBuf>,
-    with_verifier_inputs: bool,
-    with_prover_inputs: bool,
+    circuit_load_mode: CircuitLoadMode,
 ) -> Vec<CircuitParameters> {
     const DEFAULT_CIRCUITS: [&str; 7] = [
         "c0000_trivial",
@@ -149,29 +165,11 @@ fn load_circuits(
         "c0100_holder_binding_crescent_style",
     ];
 
-    // Only one of these ever needs both the prover .gz witness and the
-    // verifier_input.json at the same time (ProveAndVerify); everything else
-    // reads only the file(s) it actually needs.
-    let load_by_dir: fn(&std::path::Path) -> CircuitParameters = match (
-        with_prover_inputs,
-        with_verifier_inputs,
-    ) {
-        (true, true) => instantiate_circuit_from_dir,
-        (true, false) => instantiate_prover_circuit_from_dir,
-        (false, true) => instantiate_verifier_circuit_from_dir,
-        (false, false) => instantiate_verifier_circuit_from_dir,
-    };
-    let load_by_name: fn(&str) -> CircuitParameters = match (with_prover_inputs, with_verifier_inputs)
-    {
-        (true, true) => instantiate_circuit_with_name,
-        (true, false) => instantiate_prover_circuit_with_name,
-        (false, true) => instantiate_verifier_circuit_with_name,
-        (false, false) => instantiate_verifier_circuit_with_name,
-    };
-
     match circuit_dir {
-        Some(dir) => vec![load_by_dir(dir)],
-        None => DEFAULT_CIRCUITS.map(load_by_name).into(),
+        Some(dir) => vec![circuit_load_mode.load_by_dir(dir)],
+        None => DEFAULT_CIRCUITS
+            .map(|name| circuit_load_mode.load_by_name(name))
+            .into(),
     }
 }
 
