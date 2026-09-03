@@ -16,7 +16,7 @@ use p256::{
     },
 };
 use spartan_backend::{
-    E, Scalar, instantiate_circuit_from_dir,
+    E, Scalar, instantiate_verifier_circuit_from_dir,
     noir::{circuit::CircuitParameters, synthesis::circuit_synthesizer::NoirCircuitSynthesizer},
     verify_circuit_from_base64,
 };
@@ -39,7 +39,7 @@ struct Cli {
 
 fn main() -> Result<(), String> {
     let cli = Cli::parse();
-    let circuit = instantiate_circuit_from_dir(&cli.circuit_dir);
+    let circuit = instantiate_verifier_circuit_from_dir(&cli.circuit_dir);
 
     let mut proof_base64 = String::new();
     std::io::stdin()
