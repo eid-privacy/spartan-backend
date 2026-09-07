@@ -450,7 +450,7 @@ where
         mut cs: CS,
         s: &AllocatedNum<Scalar>,
     ) -> Result<Self, SynthesisError> {
-        let scalar_bits = s.to_bits_le(cs.namespace(|| "scalar_bits"))?;
+        let scalar_bits = s.to_bits_le_strict(cs.namespace(|| "scalar_bits"))?;
 
         let split_len = core::cmp::min(scalar_bits.len(), (Scalar::NUM_BITS - 2) as usize);
         let (incomplete_bits, complete_bits) = scalar_bits.split_at(split_len);
@@ -579,7 +579,7 @@ where
         base: &ConstantPoint<Scalar>,
         s: &AllocatedNum<Scalar>,
     ) -> Result<Self, SynthesisError> {
-        let bits = s.to_bits_le(cs.namespace(|| "scalar_bits"))?;
+        let bits = s.to_bits_le_strict(cs.namespace(|| "scalar_bits"))?;
         let nbits = bits.len();
         assert!(
             nbits % 2 == 0,
@@ -1036,7 +1036,7 @@ mod tests {
         w: usize,
     ) -> Result<AllocatedPoint<Scalar>, SynthesisError> {
         assert!(w >= 1, "window width must be at least 1");
-        let bits = s.to_bits_le(cs.namespace(|| "scalar_bits"))?;
+        let bits = s.to_bits_le_strict(cs.namespace(|| "scalar_bits"))?;
         let nbits = bits.len();
         let num_windows = nbits.div_ceil(w);
 
