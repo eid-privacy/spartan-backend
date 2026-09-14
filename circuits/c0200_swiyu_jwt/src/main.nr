@@ -112,6 +112,11 @@ fn main(
     U_dev_x: pub [u8; 32],
     U_dev_y: pub [u8; 32],
 ) {
+    // sanity checking prover-provided offsets
+    // TODO: can we find a tighter bound ?
+    assert(dob_sd_offset < payload.len() - COORD_BASE64_LEN);
+    // 49 bytes = COORD_BASE634_LEN + len("x":") + closing quote
+    assert(x_offset < payload.len() - 49);
     // Constructing the signing input directly into a fixed-size buffer.
     //
     // We bypass `BASE64_URL_ENCODER::encode_var` and `BoundedVec::extend_from_*`
