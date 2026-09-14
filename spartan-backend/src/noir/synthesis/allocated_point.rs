@@ -149,6 +149,28 @@ where
             &other.y,
         )?;
 
+        let both_finite = AllocatedBit::alloc(
+            cs.namespace(|| "check both points are finite"),
+            match (self.is_infinity.get_value(), other.is_infinity.get_value()) {
+                (Some(self_inf), Some(other_inf)) => {
+                    Some(self_inf == Scalar::ZERO && other_inf == Scalar::ZERO)
+                }
+                _ => None,
+            },
+        )?;
+        cs.enforce(
+            || "both finite = (1-self.inf) * (1-other.inf)",
+            |lc| lc + CS::one() - self.is_infinity.get_variable(),
+            |lc| lc + CS::one() - other.is_infinity.get_variable(),
+            |lc| lc + both_finite.get_variable(),
+        );
+
+        let equal_x = AllocatedBit::and(
+            cs.namespace(|| "gate equal_x by finiteness"),
+            &equal_x,
+            &both_finite,
+        )?;
+
         // Compute the result of the addition and the result of double self
         let result_from_add =
             self.add_internal(cs.namespace(|| "add internal"), other, &equal_x)?;
@@ -170,12 +192,86 @@ where
             &Boolean::from(equal_y),
         )?;
 
-        AllocatedPoint::conditionally_select(
+        let finite_result = AllocatedPoint::conditionally_select(
             cs.namespace(|| "equal ? result_from_double : result_from_add"),
             &result_for_equal_x,
             &result_from_add,
             &Boolean::from(equal_x),
-        )
+        )?;
+
+        let self_inf_or_finite = AllocatedPoint {
+            x: conditionally_select2(
+                cs.namespace(|| "self.is_infinity ? other.x : finite.x"),
+                &other.x,
+                &finite_result.x,
+                &self.is_infinity,
+            )?,
+            y: conditionally_select2(
+                cs.namespace(|| "self.is_infinity ? other.y : finite.y"),
+                &other.y,
+                &finite_result.y,
+                &self.is_infinity,
+            )?,
+            is_infinity: conditionally_select2(
+                cs.namespace(|| "self.is_infinity ? other.inf : finite.inf"),
+                &other.is_infinity,
+                &finite_result.is_infinity,
+                &self.is_infinity,
+            )?,
+        };
+
+        let result = AllocatedPoint {
+            x: conditionally_select2(
+                cs.namespace(|| "other.is_infinity ? self.x : prev.x"),
+                &self.x,
+                &self_inf_or_finite.x,
+                &other.is_infinity,
+            )?,
+            y: conditionally_select2(
+                cs.namespace(|| "other.is_infinity ? self.y : prev.y"),
+                &self.y,
+                &self_inf_or_finite.y,
+                &other.is_infinity,
+            )?,
+            is_infinity: conditionally_select2(
+                cs.namespace(|| "other.is_infinity ? self.inf : prev.inf"),
+                &self.is_infinity,
+                &self_inf_or_finite.is_infinity,
+                &other.is_infinity,
+            )?,
+        };
+
+        let both_infinity = AllocatedNum::alloc(cs.namespace(|| "both infinity"), || {
+            Ok(*self.is_infinity.get_value().get()? * *other.is_infinity.get_value().get()?)
+        })?;
+        cs.enforce(
+            || "check both infinity",
+            |lc| lc + self.is_infinity.get_variable(),
+            |lc| lc + other.is_infinity.get_variable(),
+            |lc| lc + both_infinity.get_variable(),
+        );
+
+        let infinity = Self::default(cs.namespace(|| "canonical infinity"))?;
+        Ok(AllocatedPoint {
+            x: conditionally_select2(
+                cs.namespace(|| "both infinity ? infinity.x : result.x"),
+                &infinity.x,
+                &result.x,
+                &both_infinity,
+            )?,
+            y: conditionally_select2(
+                cs.namespace(|| "both infinity ? infinity.y : result.y"),
+                &infinity.y,
+                &result.y,
+                &both_infinity,
+            )?,
+            is_infinity: conditionally_select2(
+                cs.namespace(|| "both infinity ? infinity.inf : result.inf"),
+                &infinity.is_infinity,
+                &result.is_infinity,
+                &both_infinity,
+            )?,
+        })
     }
 
     /// Adds other point to this point and returns the result. Assumes that the
@@ -1342,6 +1438,38 @@ mod tests {
     }
 
     #[test]
+    fn add_handles_infinity_ordering() {
+        let g = generator();
+        let mut cs = TestConstraintSystem::<Scalar>::new();
+
+        let gx = AllocatedNum::alloc(cs.namespace(|| "gx"), || Ok(g.x)).unwrap();
+        let gy = AllocatedNum::alloc(cs.namespace(|| "gy"), || Ok(g.y)).unwrap();
+        let g_point = AllocatedPoint {
+            x: gx,
+            y: gy,
+            is_infinity: alloc_zero(cs.namespace(|| "g inf")).unwrap(),
+        };
+        let inf = AllocatedPoint::default(cs.namespace(|| "inf")).unwrap();
+
+        let inf_plus_g = inf.add(cs.namespace(|| "inf + g"), &g_point).unwrap();
+        assert_eq!(inf_plus_g.x.get_value().unwrap(), g.x);
+        assert_eq!(inf_plus_g.y.get_value().unwrap(), g.y);
+        assert_eq!(inf_plus_g.is_infinity.get_value().unwrap(), Scalar::ZERO);
+
+        let g_plus_inf = g_point.add(cs.namespace(|| "g + inf"), &inf).unwrap();
+        assert_eq!(g_plus_inf.x.get_value().unwrap(), g.x);
+        assert_eq!(g_plus_inf.y.get_value().unwrap(), g.y);
+        assert_eq!(g_plus_inf.is_infinity.get_value().unwrap(), Scalar::ZERO);
+
+        let inf_plus_inf = inf.add(cs.namespace(|| "inf + inf"), &inf).unwrap();
+        assert_eq!(inf_plus_inf.x.get_value().unwrap(), Scalar::ZERO);
+        assert_eq!(inf_plus_inf.y.get_value().unwrap(), Scalar::ZERO);
+        assert_eq!(inf_plus_inf.is_infinity.get_value().unwrap(), Scalar::ONE);
+
+        assert!(cs.is_satisfied(), "infinity ordering regression failed");
+    }
+
+    #[test]
     fn fixed_base_constraint_count() {
         let g = generator();
         let s = Scalar::from(0xdead_beef_u64);
@@ -1397,7 +1525,7 @@ mod tests {
         }
         println!("window-width constraint counts: {counts:?}");
         let w2 = counts.iter().find(|(w, _)| *w == 2).unwrap().1;
-        assert!(w2 <= 850, "w=2 count {w2} over budget");
+        assert!(w2 <= 950, "w=2 count {w2} over budget");
         assert!(
             counts.iter().all(|(_, c)| w2 <= *c),
             "w=2 is not the minimum: {counts:?}"
