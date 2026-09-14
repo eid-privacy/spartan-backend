@@ -2,7 +2,7 @@ use noir_base64::{BASE64_URL_DECODER, BASE64_URL_ENCODER};
 use sha256::sha256_var;
 
 use eid::fast_base64::encode_url_into;
-use eid::field_utils::array_to_field;
+use eid::field_utils::{array_to_field, enforce_ecdsa_parameters};
 use std::field::t256::{P256Point, T256Scalar, t256_msm, t256_ec_add};
 
 mod constants;
@@ -145,11 +145,17 @@ fn main(
     // We assert that R_jwt = t*s^-1*G + r*s^-1*Q_iss with r := R_jwt.x. Equivalent
     // to standard ECDSA: it binds R_jwt.x to the signature root, given the
     // prover commits to R_jwt and s_inv off-circuit.
+    // setup values
     let signing_digest: [u8; 32] = sha256_var(signing_input_storage, signing_input_len);
     let t_jwt = T256Scalar { hi: 0, lo: array_to_field(signing_digest) };
     let R_jwt = P256Point { x: array_to_field(R_jwt_x), y: array_to_field(R_jwt_y) };
     let Q_iss = P256Point { x: array_to_field(issuer_pub_x), y: array_to_field(issuer_pub_y) };
     let s_inv_scalar_jwt = T256Scalar { hi: 0, lo: s_inv_jwt };
+
+    // enforce ECDSA restrictions
+    enforce_ecdsa_parameters(s_inv_jwt, R_jwt);
+
+    // verification itself
     let sG_jwt = t256_msm([G], [s_inv_scalar_jwt]);
     let sQ_jwt = t256_msm([Q_iss], [s_inv_scalar_jwt]);
     let tsG_jwt = t256_msm([sG_jwt], [t_jwt]);
