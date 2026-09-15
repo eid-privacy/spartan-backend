@@ -1,4 +1,4 @@
-use std::{env, io::Write, path::PathBuf, time::Instant};
+use std::{env, io::Write, path::PathBuf};
 
 use clap::Parser;
 use spartan_backend::{
@@ -172,17 +172,15 @@ fn load_circuits(
     }
 }
 
-    for circuit in circuits {
-        if cli.count_constraints {
-            count_constraints(circuit);
-        } else if cli.precompute {
-            run_precompute(&circuit);
-        } else if cli.proof_size {
-            report_proof_size(circuit);
-        } else if cli.prove {
+fn run_mode(mode: &Mode, circuit: CircuitParameters) {
+    match mode {
+        Mode::CountConstraints => count_constraints(circuit),
+        Mode::Precompute => run_precompute(&circuit).expect("Precomputatin failed"),
+        Mode::ProofSize => report_proof_size(circuit),
+        Mode::Prove => {
             let proof_b64 = prove_with_precompute(&circuit);
             // compared to println! this avoids a BrokenPipe once the verifier closes the stream
-            let _ = writeln!(std::io::stdout(), "{}", proof_b64);
+            let _ = writeln!(std::io::stdout(), "{:?}", proof_b64);
         }
         Mode::Verify => {
             let mut proof_base64 = String::new();

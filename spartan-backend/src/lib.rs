@@ -65,16 +65,16 @@ pub fn run_precompute(circuit: &CircuitParameters) -> Result<(), BackendError> {
 
 /// Produces a base64 proof, reusing `target/precompute.bin` when it is present
 /// and still matches the circuit, otherwise falling back to monolithic proving.
-pub fn prove_with_precompute(circuit: &CircuitParameters) -> String {
+pub fn prove_with_precompute(circuit: &CircuitParameters) -> Result<String, BackendError> {
     match precompute::load(circuit) {
         Some(mut prover) => {
             let _span = info_span!("prove_precomputed", circuit = ?circuit.name).entered();
             let proof = prover
                 .prove_online(circuit)
-                .expect("Proof creation from precomputed state failed.");
-            proof_to_base64(&proof)
+                .map_err(|e| BackendError::from(e))?;
+            Ok(proof_to_base64(&proof))
         }
-        None => prove_circuit_to_base64(circuit).expect("Proof creation failed."),
+        None => prove_circuit_to_base64(circuit).map_err(|e| e.into()),
     }
 }
 
