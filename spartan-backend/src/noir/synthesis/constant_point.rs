@@ -97,6 +97,26 @@ impl<F: PrimeField> ConstantPoint<F> {
         }
         panic!("derive_offset: no suitable point found within the attempt bound");
     }
+
+    /// The standard P-256 generator `G`.
+    ///
+    /// `G` is on-curve, has `y != 0` and has prime order `n`, which makes it a
+    /// safe dummy base for the incomplete-addition ladder: no accumulator
+    /// state in the ladder can collide with a multiple of `G`, so the
+    /// incomplete formulas stay well defined.
+    ///
+    /// Only meaningful when `F` is the P-256 base field, which the rest of this
+    /// module already assumes (`a = -3`).
+    pub fn p256_generator() -> Self {
+        Self::new(
+            algebra_utils::hex_to_ff(
+                "6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296",
+            ),
+            algebra_utils::hex_to_ff(
+                "4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5",
+            ),
+        )
+    }
 }
 
 #[cfg(test)]
@@ -107,10 +127,7 @@ mod tests {
     use crate::types::Scalar;
 
     fn generator() -> ConstantPoint<Scalar> {
-        ConstantPoint::new(
-            hex_to_ff("6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296"),
-            hex_to_ff("4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5"),
-        )
+        ConstantPoint::p256_generator()
     }
 
     #[test]

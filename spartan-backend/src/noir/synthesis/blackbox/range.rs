@@ -72,6 +72,7 @@ pub fn powers_of_two<Scalar: PrimeField>(n: usize) -> Vec<Scalar> {
     powers
 }
 
+#[cfg(test)]
 mod test {
     use std::collections::{BTreeMap, BTreeSet, HashSet};
 
