@@ -24,8 +24,8 @@ global ENCODED_PAYLOAD_MAX_LEN: u32 = ((PAYLOAD_MAX_LEN + 2) / 3) * 4;
 global SIGNING_INPUT_MAX_LEN: u32 = ENCODED_HEADER_MAX_LEN + 1 + ENCODED_PAYLOAD_MAX_LEN;
 
 // Number of binary-decomposition steps `move_right` needs to cover any shift
-// up to ENCODED_HEADER_MAX_LEN (128 = 2^7, so 8 bits).
-global HEADER_SHIFT_LOG: u32 = 8;
+// up to ENCODED_HEADER_MAX_LEN (256 = 2^8, so 9 bits).
+global HEADER_SHIFT_LOG: u32 = 9;
 
 global ASCII_DOT: u8 = 46;
 global ASCII_X: u8 = 120; // 'x'
