@@ -1,18 +1,14 @@
-use acir::{FieldElement, circuit::opcodes::FunctionInput, native_types::Witness};
+use acir::native_types::Witness;
 use bellpepper_core::{ConstraintSystem, SynthesisError};
 
 use crate::{
     noir::synthesis::{
-        allocated_point::AllocatedPoint,
         allocation_support::{AllocatedWire, WitnessMap},
-        blackbox::function_input::{allocate_or_get, get_witness_assignment},
-        constraints_utils::alloc_zero,
+        blackbox::function_input::{WrappedPoint, get_witness_assignment, unwrap_point},
     },
     types::Scalar,
     utils::enforce_equal,
 };
-
-type WrappedPoint = Box<[FunctionInput<FieldElement>; 2]>;
 
 pub fn handle_ec_add<CS: ConstraintSystem<Scalar>>(
     allocation_store: &WitnessMap<AllocatedWire<Scalar>>,
@@ -32,27 +28,4 @@ pub fn handle_ec_add<CS: ConstraintSystem<Scalar>>(
     enforce_equal(cs.namespace(|| "ec add: y is correct"), &sum.y, &expected_y);
 
     Ok(())
-}
-
-fn unwrap_point<CS: ConstraintSystem<Scalar>>(
-    allocation_store: &WitnessMap<AllocatedWire<Scalar>>,
-    cs: &mut CS,
-    point: &WrappedPoint,
-    label: &str,
-) -> Result<AllocatedPoint<Scalar>, SynthesisError> {
-    let x = allocate_or_get(
-        allocation_store,
-        &mut cs.namespace(|| format!("{label} x")),
-        &point[0],
-    )?;
-    let y = allocate_or_get(
-        allocation_store,
-        &mut cs.namespace(|| format!("{label} y")),
-        &point[1],
-    )?;
-    Ok(AllocatedPoint {
-        x,
-        y,
-        is_infinity: alloc_zero(cs.namespace(|| format!("{label} is_infinity")))?,
-    })
 }

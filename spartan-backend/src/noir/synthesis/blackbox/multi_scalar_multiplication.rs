@@ -8,9 +8,8 @@ use crate::{
         synthesis::{
             allocated_point::AllocatedPoint,
             allocation_support::{AllocatedWire, WitnessMap},
-            blackbox::function_input::{allocate_or_get, get_witness_assignment},
+            blackbox::function_input::{allocate_or_get, get_witness_assignment, unwrap_point},
             constant_point::ConstantPoint,
-            constraints_utils::alloc_zero,
         },
     },
     types::Scalar,
@@ -86,21 +85,12 @@ pub fn handle_msm<CS: ConstraintSystem<Scalar>>(
         }
     }
 
-    let x = allocate_or_get(
+    let point = unwrap_point(
         allocation_store,
-        &mut cs.namespace(|| "point x"),
-        &points[0],
+        &mut *cs,
+        points.first_chunk().ok_or(SynthesisError::Unsatisfiable)?,
+        "MSM point",
     )?;
-    let y = allocate_or_get(
-        allocation_store,
-        &mut cs.namespace(|| "point y"),
-        &points[1],
-    )?;
-    let point = AllocatedPoint {
-        x,
-        y,
-        is_infinity: alloc_zero(cs.namespace(|| "point is_infinity"))?,
-    };
 
     let scalar = allocate_or_get(
         allocation_store,
@@ -124,4 +114,120 @@ pub fn handle_msm<CS: ConstraintSystem<Scalar>>(
     );
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::{BTreeMap, BTreeSet, HashSet};
+
+    use acir::circuit::{Circuit, Opcode, Program, PublicInputs, opcodes::BlackBoxFuncCall};
+    use bellpepper_core::{ConstraintSystem, num::AllocatedNum, test_cs::TestConstraintSystem};
+    use noirc_abi::Abi;
+    use noirc_artifacts::{debug::ProgramDebugInfo, program::ProgramArtifact};
+    use vega_prover::traits::circuit::VegaCircuit;
+
+    use super::*;
+    use crate::noir::{
+        circuit_reader::types::input_wire::InputWire,
+        synthesis::circuit_synthesizer::NoirCircuitSynthesizer,
+    };
+
+    const BASE_X_W: Witness = Witness(0);
+    const BASE_Y_W: Witness = Witness(1);
+    const SCALAR_W: Witness = Witness(2);
+    const OUTPUT_X_W: Witness = Witness(3);
+    const OUTPUT_Y_W: Witness = Witness(4);
+
+    /// Variable-base MSM over witness coordinates, forcing the generic path.
+    fn artifact() -> ProgramArtifact {
+        let circuit = Circuit {
+            function_name: "msm_on_infinity".to_owned(),
+            opcodes: vec![Opcode::BlackBoxFuncCall(BlackBoxFuncCall::MultiScalarMul {
+                points: vec![
+                    FunctionInput::Witness(BASE_X_W),
+                    FunctionInput::Witness(BASE_Y_W),
+                ],
+                scalars: vec![
+                    FunctionInput::Witness(SCALAR_W),
+                    FunctionInput::Constant(FieldElement::from(0u128)),
+                ],
+                predicate: FunctionInput::Constant(FieldElement::from(1u128)),
+                outputs: (OUTPUT_X_W, OUTPUT_Y_W),
+            })],
+            private_parameters: BTreeSet::new(),
+            public_parameters: PublicInputs(BTreeSet::from([
+                BASE_X_W, BASE_Y_W, SCALAR_W, OUTPUT_X_W, OUTPUT_Y_W,
+            ])),
+            return_values: PublicInputs::default(),
+            assert_messages: vec![],
+        };
+
+        ProgramArtifact {
+            noir_version: "infinity-regression".to_owned(),
+            hash: 0,
+            abi: Abi::default(),
+            bytecode: Program {
+                functions: vec![circuit],
+                unconstrained_functions: vec![],
+            },
+            debug_symbols: ProgramDebugInfo::default(),
+            file_map: BTreeMap::new(),
+        }
+    }
+
+    fn synthesize(scalar: Scalar, out_x: Scalar, out_y: Scalar) -> TestConstraintSystem<Scalar> {
+        let synth = NoirCircuitSynthesizer::new(
+            artifact(),
+            vec![
+                // ACIR's canonical point at infinity.
+                InputWire::new(true, BASE_X_W, Some(Scalar::ZERO)),
+                InputWire::new(true, BASE_Y_W, Some(Scalar::ZERO)),
+                InputWire::new(true, SCALAR_W, Some(scalar)),
+                InputWire::new(true, OUTPUT_X_W, Some(out_x)),
+                InputWire::new(true, OUTPUT_Y_W, Some(out_y)),
+            ],
+            &HashSet::new(),
+        );
+
+        let mut cs = TestConstraintSystem::<Scalar>::new();
+        let shared: Vec<AllocatedNum<Scalar>> =
+            synth.shared(&mut cs.namespace(|| "shared")).unwrap();
+        let pre = synth
+            .precommitted(&mut cs.namespace(|| "pre"), &shared)
+            .unwrap();
+        synth
+            .synthesize(&mut cs.namespace(|| "online"), &shared, &pre, None)
+            .unwrap();
+        cs
+    }
+
+    #[test]
+    fn msm_on_infinity_yields_canonical_infinity() {
+        for scalar in [
+            Scalar::ZERO,
+            Scalar::ONE,
+            Scalar::from(2),
+            Scalar::from(0xdead_beef_u64),
+        ] {
+            let cs = synthesize(scalar, Scalar::ZERO, Scalar::ZERO);
+            assert!(
+                cs.is_satisfied(),
+                "k * infinity must be provable for k = {scalar:?}, unsatisfied: {:?}",
+                cs.which_is_unsatisfied()
+            );
+        }
+    }
+
+    #[test]
+    fn msm_on_infinity_rejects_a_finite_output() {
+        // The dummy base must not leak into the result: claiming the generator
+        // (the dummy) as the output of 1 * infinity has to be rejected.
+        let dummy =
+            crate::noir::synthesis::constant_point::ConstantPoint::<Scalar>::p256_generator();
+        let cs = synthesize(Scalar::ONE, dummy.x, dummy.y);
+        assert!(
+            !cs.is_satisfied(),
+            "a finite output for k * infinity must be rejected"
+        );
+    }
 }
