@@ -1,5 +1,4 @@
 use eid::{constants, decode_hex_32};
-use eid::field_utils::array_to_field;
 use std::field::t256::{P256Point, T256Scalar, t256_msm, t256_ec_add};
 
 fn main(
@@ -28,10 +27,10 @@ fn main(
     );
 
     let s_scalar = T256Scalar { lo: device_s, hi: 0 };
-    let T_point = P256Point { x: array_to_field(T_x), y: array_to_field(T_y) };
-    let U_point = P256Point { x: array_to_field(U_x), y: array_to_field(U_y) };
+    let T_point = P256Point { x: Field::from_be_bytes(T_x), y: Field::from_be_bytes(T_y) };
+    let U_point = P256Point { x: Field::from_be_bytes(U_x), y: Field::from_be_bytes(U_y) };
 
-    let pubkey_x_field = array_to_field(pubkey_device_x);
+    let pubkey_x_field = Field::from_be_bytes(pubkey_device_x);
     // The core verification equation from Crescent: T^sU = Q, Crescent impl. checks only x coordinate
     assert(pubkey_x_field == t256_ec_add(t256_msm([T_point], [s_scalar]), U_point).x);
 }
