@@ -70,16 +70,25 @@ pub fn encode_url_into<let IN_LEN: u32, let OUT_LEN: u32>(
 ) -> u32 {
     // Number of 3-byte input chunks, rounded up so the final partial chunk
     // (if any) is still processed.
+    assert(in_len <= IN_LEN);
     let num_chunks: u32 = (IN_LEN + 2) / 3;
+
     for c in 0..num_chunks {
         let i0 = c * 3;
-        // The `i0 + k < IN_LEN` predicates are compile-time constants because
-        // both `i0` (loop-unrolled) and `IN_LEN` (generic) are known at
-        // monomorphization. Noir prunes the dead branches, so each chunk's
-        // accesses become static witness references -- never a memory op.
-        let b0 = if i0 < IN_LEN { input[i0] } else { 0 };
-        let b1 = if i0 + 1 < IN_LEN { input[i0 + 1] } else { 0 };
-        let b2 = if i0 + 2 < IN_LEN { input[i0 + 2] } else { 0 };
+        // The `i0 + k < in_len` predicates compare against the runtime
+        // logical length, not the compile-time capacity IN_LEN, so bytes
+        // beyond in_len (including the rest of a partial final chunk) are
+        // always treated as 0 rather than read from `input`. This closes a
+        // bug where the final chunk's encoding could depend on
+        // prover-controlled bytes outside the logical payload. `i0` itself
+        // stays a compile-time constant (loop-unrolled), so the array read
+        // is still a static witness reference -- never a memory op -- but
+        // the comparison and select are now genuine per-chunk witness
+        // operations instead of being dead-code-eliminated at compile time.
+        // Measured cost on c0200_swiyu_jwt: +7,643 ACIR opcodes (+6.0%).
+        let b0 = if i0 < in_len { input[i0] } else { 0 };
+        let b1 = if i0 + 1 < in_len { input[i0 + 1] } else { 0 };
+        let b2 = if i0 + 2 < in_len { input[i0 + 2] } else { 0 };
 
         // Pure arithmetic decomposition of the 24 input bits into 4 6-bit
         // values. We avoid bitwise `&`, `|`, `<<`, `>>` because
