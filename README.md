@@ -91,19 +91,32 @@ math, and injects the precomputed values. See
 
 The `c020x_verifier/` crate verifies c020x proofs by:
 1. Running `spartan-backend` library verification on the base64 proof read from `stdin`
-2. Running extra off-circuit Crescent checks on the public `T_dev_*` / `U_dev_*` points:
-   - point decoding / on-curve validation
-   - non-identity checks
-   - `U_dev == -(challenge_nonce * T_dev_x^{-1}) * G`
-   - `challenge_nonce * T_dev + T_dev_x * U_dev = O`
+2. Running the off-circuit Crescent device-binding check on the public
+   `R_dev_*` / `T_dev_*` / `U_dev_*` points:
+   - point decoding / on-curve validation and non-identity checks
+   - `r = f(R_dev) = R_dev.x`, reduced mod the group order
+   - `T_dev == R_dev * r^-1`
+   - `U_dev == G * (-M * r^-1)`
+
+   `R_dev` is the point the prover reveals (it is random, so revealing it
+   preserves unlinkability). It is a **public circuit input**, so the verifier
+   takes `R_dev_x` / `R_dev_y` straight out of the proof's public values — no
+   prover-side file is needed. The circuit itself never reads `R_dev`; it is
+   carried purely for this check, so do not drop it as an unused parameter.
+   `M` is the *hashed* challenge, i.e. the value the circuits call
+   `challenge_nonce`, not its pre-image.
 
 Example:
 
 ```bash
 echo "$PROOF_B64" | cargo run --manifest-path c020x_verifier/Cargo.toml -- \
   --circuit-dir ../circuits/c0200_swiyu_jwt \
-  --challenge-nonce-hex <64-hex-bytes>
+  --challenge-hash-hex <64-hex-bytes>
 ```
+
+`--challenge-hash-hex` is the challenge the verifier itself issued to the
+device; it must be the one this proof was made for, as each c020x circuit
+carries its own `challenge_nonce`.
 
 ### Pre-computing the offline phase (`--precompute`)
 

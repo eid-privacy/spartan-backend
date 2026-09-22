@@ -104,6 +104,10 @@ fn main(
     // These MUST be public: the verifier validates (R_dev, T_dev, U_dev) is
     // consistent with the public challenge_nonce off-circuit; the in-circuit
     // equation only binds device_pub.x to (T*s + U).x.
+    // R_dev is unused in-circuit but MUST stay public: the verifier needs it to
+    // recompute T_dev/U_dev off-circuit. Do not remove.
+    R_dev_x: pub [u8; 32],
+    R_dev_y: pub [u8; 32],
     T_dev_x: pub [u8; 32],
     T_dev_y: pub [u8; 32],
     U_dev_x: pub [u8; 32],
