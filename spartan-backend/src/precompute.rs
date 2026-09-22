@@ -111,8 +111,8 @@ pub fn save(circuit: &CircuitParameters, prover: &OnlineProver) -> io::Result<(P
 ///
 /// Returns `None` — after logging the reason — when the file is absent, stale or
 /// unreadable; callers then fall back to the regular proving path.
-pub fn load(circuit: &CircuitParameters) -> Option<OnlineProver> {
-    let path = path_for(circuit);
+pub fn load(circuit: &CircuitParameters, path: Option<PathBuf>) -> Option<OnlineProver> {
+    let path = path.unwrap_or(path_for(circuit));
     let started = std::time::Instant::now();
 
     let bytes = match std::fs::read(&path) {

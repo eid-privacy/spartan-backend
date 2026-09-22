@@ -9,7 +9,7 @@ mod trivial_circuit;
 pub mod types;
 mod utils;
 
-use std::{env, time::Instant};
+use std::{env, time::Instant, path::PathBuf};
 
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use bellpepper_core::{ConstraintSystem, num::AllocatedNum, test_cs::TestConstraintSystem};
@@ -35,7 +35,7 @@ use crate::{
 
 /// Runs the offline phase (`setup` + `prep_prove`) once and persists it to
 /// `<circuit_dir>/target/precompute.bin`, which `--prove` then picks up.
-pub fn run_precompute(circuit: &CircuitParameters) -> Result<(), BackendError> {
+pub fn run_precompute(circuit: &CircuitParameters) -> Result<PathBuf, BackendError> {
     let _span = info_span!("precompute", circuit = ?circuit.name).entered();
 
     if circuit.online_seeds.is_empty() {
@@ -60,13 +60,13 @@ pub fn run_precompute(circuit: &CircuitParameters) -> Result<(), BackendError> {
         size as f64 / (1024.0 * 1024.0),
     );
 
-    Ok(())
+    Ok(path)
 }
 
 /// Produces a base64 proof, reusing `target/precompute.bin` when it is present
 /// and still matches the circuit, otherwise falling back to monolithic proving.
-pub fn prove_with_precompute(circuit: &CircuitParameters) -> Result<String, BackendError> {
-    match precompute::load(circuit) {
+pub fn prove_with_precompute(circuit: &CircuitParameters, path: Option<PathBuf>) -> Result<String, BackendError> {
+    match precompute::load(circuit, path) {
         Some(mut prover) => {
             let _span = info_span!("prove_precomputed", circuit = ?circuit.name).entered();
             let proof = prover
