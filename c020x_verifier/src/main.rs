@@ -86,7 +86,7 @@ fn extract_public_values_from_proof(
 /// r = f(R) = R.x    T = R * r^-1    U = G * (-M * r^-1)
 /// ```
 ///
-/// `R` is revealed by the prover as the public inputs `R_dev_x` / `R_dev_y`
+/// `R` is revealed by the prover as the public inputs `_R_dev_x` / `_R_dev_y`
 /// carried by the proof itself, and the verifier recomputes `T` and `U`,
 /// comparing them against the public `T_dev` / `U_dev`.
 fn verify_crescent_triple_checks(
@@ -100,8 +100,8 @@ fn verify_crescent_triple_checks(
         extract_public_param_32(public_values, &ranges, "T_dev_y")?,
         extract_public_param_32(public_values, &ranges, "U_dev_x")?,
         extract_public_param_32(public_values, &ranges, "U_dev_y")?,
-        extract_public_param_32(public_values, &ranges, "R_dev_x")?,
-        extract_public_param_32(public_values, &ranges, "R_dev_y")?,
+        extract_public_param_32(public_values, &ranges, "_R_dev_x")?,
+        extract_public_param_32(public_values, &ranges, "_R_dev_y")?,
     ];
 
     check_crescent_triple(tx, ty, ux, uy, r_dev_x, r_dev_y, challenge_hash)
@@ -306,8 +306,8 @@ mod tests {
             ty: get("T_dev_y"),
             ux: get("U_dev_x"),
             uy: get("U_dev_y"),
-            rx: get("R_dev_x"),
-            ry: get("R_dev_y"),
+            rx: get("_R_dev_x"),
+            ry: get("_R_dev_y"),
             challenge_hash: get("challenge_nonce"),
         }
     }

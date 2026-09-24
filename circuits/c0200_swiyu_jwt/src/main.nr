@@ -109,8 +109,8 @@ fn main(
     // equation only binds device_pub.x to (T*s + U).x.
     // R_dev is unused in-circuit but MUST stay public: the verifier needs it to
     // recompute T_dev/U_dev off-circuit. Do not remove.
-    R_dev_x: pub [u8; 32],
-    R_dev_y: pub [u8; 32],
+    _R_dev_x: pub [u8; 32],
+    _R_dev_y: pub [u8; 32],
     T_dev_x: pub [u8; 32],
     T_dev_y: pub [u8; 32],
     U_dev_x: pub [u8; 32],
@@ -334,9 +334,41 @@ fn test_sdjwt_verification() {
     // Device signature scalar s (second half of the 64-byte device signature).
     let device_s: Field = 0x370438df7d6a44cd26417fc8f6535db2abcb742fda10debd03897007a4443768;
 
-    // Placeholder precompute values; real ones to be plugged in after running
-    // the c0200_siyu_jwt preprocessing crate against this circuit's Prover.toml.
-    let zero32: [u8; 32] = [0; 32];
+    // Precomputed (c0200_siyu_jwt) values from Prover.toml.
+    let r_jwt_x: [u8; 32] = [
+        82, 167, 142, 232, 243, 244, 96, 192, 182, 189, 134, 114, 213, 6, 23, 250, 149, 115, 36,
+        108, 134, 64, 181, 54, 198, 32, 32, 61, 22, 247, 75, 57,
+    ];
+    let r_jwt_y: [u8; 32] = [
+        145, 188, 215, 95, 10, 39, 61, 88, 19, 159, 123, 135, 121, 227, 219, 149, 101, 109, 141,
+        168, 189, 114, 217, 145, 34, 52, 133, 79, 24, 129, 69, 179,
+    ];
+    let s_inv_jwt: Field = 0x00d69962bd082c343ef05e424b15cfe089d1d98d07fd61096fb5b4cf71e9516d;
+
+    let r_dev_x: [u8; 32] = [
+        159, 191, 146, 6, 209, 21, 91, 71, 63, 80, 53, 163, 105, 85, 83, 33, 43, 51, 38, 20, 14,
+        41, 120, 144, 184, 49, 222, 111, 124, 235, 213, 56,
+    ];
+    let r_dev_y: [u8; 32] = [
+        69, 107, 240, 32, 127, 219, 57, 31, 203, 82, 129, 177, 123, 103, 182, 213, 113, 235, 71,
+        250, 187, 155, 159, 175, 15, 56, 173, 104, 253, 201, 94, 23,
+    ];
+    let t_dev_x: [u8; 32] = [
+        7, 137, 24, 117, 200, 58, 127, 161, 85, 45, 26, 28, 204, 114, 68, 152, 247, 112, 120, 57,
+        170, 222, 126, 196, 81, 174, 6, 134, 39, 238, 191, 191,
+    ];
+    let t_dev_y: [u8; 32] = [
+        227, 219, 98, 88, 222, 129, 17, 166, 103, 185, 118, 9, 111, 130, 209, 109, 151, 5, 42,
+        166, 78, 224, 170, 75, 8, 176, 104, 150, 232, 247, 113, 60,
+    ];
+    let u_dev_x: [u8; 32] = [
+        132, 231, 210, 253, 225, 41, 133, 122, 49, 111, 110, 84, 83, 212, 215, 51, 41, 8, 28, 77,
+        236, 116, 10, 165, 24, 88, 154, 179, 198, 49, 50, 184,
+    ];
+    let u_dev_y: [u8; 32] = [
+        161, 97, 56, 198, 50, 232, 126, 215, 171, 61, 29, 120, 113, 5, 34, 24, 253, 51, 46, 103,
+        220, 217, 211, 60, 181, 76, 31, 70, 51, 250, 13, 107,
+    ];
 
     main(
         payload,
@@ -345,18 +377,18 @@ fn test_sdjwt_verification() {
         745, // dob_sd_offset
         1471, // x_offset
         device_s,
-        zero32, // R_jwt_x
-        zero32, // R_jwt_y
-        0,      // s_inv_jwt
+        r_jwt_x,
+        r_jwt_y,
+        s_inv_jwt,
         issuer_x,
         issuer_y,
         now_date,
-        zero32, // R_dev_x
-        zero32, // R_dev_y
-        zero32, // T_dev_x
-        zero32, // T_dev_y
-        zero32, // U_dev_x
-        zero32, // U_dev_y
+        r_dev_x,
+        r_dev_y,
+        t_dev_x,
+        t_dev_y,
+        u_dev_x,
+        u_dev_y,
     )
 }
 

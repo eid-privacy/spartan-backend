@@ -32,6 +32,7 @@
       "build": "cd spartan-backend && cargo build --release",
       "build-check": "cd spartan-backend && RUSTFLAGS=\"-D warnings\" cargo build --all-targets",
       "start": "./scripts/compile_and_execute.sh && cd spartan-backend && RUST_LOG=info cargo run",
+      "circuits-check": "./scripts/check_circuit_warnings.sh",
       "test": "cd spartan-backend && cargo test -- --show-output",
       "fmt-check": "cd spartan-backend && cargo +nightly-2026-06-30 fmt --check",
       "fmt": "cd spartan-backend && cargo +nightly-2026-06-30 fmt",

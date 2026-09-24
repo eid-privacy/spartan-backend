@@ -93,8 +93,8 @@ fn strip_precomputed_fields(content: &str) -> String {
         "R_jwt_x =",
         "R_jwt_y =",
         "s_inv_jwt =",
-        "R_dev_x =",
-        "R_dev_y =",
+        "_R_dev_x =",
+        "_R_dev_y =",
         "T_dev_x =",
         "T_dev_y =",
         "U_dev_x =",
@@ -244,8 +244,8 @@ fn main() {
     out.push_str(&fmt_array("R_jwt_y", &R_jwt_y));
     out.push_str(&fmt_field("s_inv_jwt", &ff_to_be::<Fq>(&s_inv_jwt)));
     out.push_str("\n# Precomputed (c0200_siyu_jwt): device ECDSA Crescent triple\n");
-    out.push_str(&fmt_array("R_dev_x", &R_dev_x));
-    out.push_str(&fmt_array("R_dev_y", &R_dev_y));
+    out.push_str(&fmt_array("_R_dev_x", &R_dev_x));
+    out.push_str(&fmt_array("_R_dev_y", &R_dev_y));
     out.push_str(&fmt_array("T_dev_x", &T_dev_x));
     out.push_str(&fmt_array("T_dev_y", &T_dev_y));
     out.push_str(&fmt_array("U_dev_x", &U_dev_x));
