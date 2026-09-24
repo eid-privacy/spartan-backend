@@ -34,6 +34,8 @@
       "start": "./scripts/compile_and_execute.sh && cd spartan-backend && RUST_LOG=info cargo run",
       "circuits-check": "./scripts/check_circuit_warnings.sh",
       "test": "cd spartan-backend && cargo test -- --show-output",
+      "test-crates": "./scripts/test_crates.sh",
+      "e2e-verifier-test": "./scripts/e2e_verifier_test.sh",
       "fmt-check": "cd spartan-backend && cargo +nightly-2026-06-30 fmt --check",
       "fmt": "cd spartan-backend && cargo +nightly-2026-06-30 fmt",
       "build-docs": "cd spartan-backend && cargo doc",

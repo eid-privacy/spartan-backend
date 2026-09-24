@@ -1,4 +1,4 @@
-name: CI
+name: Crate tests
 
 on:
   push:
@@ -6,13 +6,8 @@ on:
   pull_request:
 
 jobs:
-  formatting:
+  test:
     runs-on: ubuntu-latest
-    env:
-      # Treat warnings as errors for every cargo invocation in this job. Set at
-      # the job level (not per-step) so the build and run steps share one
-      # compilation fingerprint and can reuse the same cached artifacts.
-      RUSTFLAGS: "-D warnings"
     steps:
       - uses: actions/checkout@v4
 
@@ -27,13 +22,21 @@ jobs:
       - name: Cache Cargo registry and build artifacts
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: spartan-backend
+          workspaces: |
+            spartan-backend
+            algebra-utils
+            c020x_verifier
+            preprocessing/c0200_siyu_jwt
+            preprocessing/c0201_sicpa_backend
+            preprocessing/ecdsa_pop
+            preprocessing/ecdsa_pok
+            preprocessing/zkattest_pok
 
-      - name: Check Rust formatting
-        run: devbox run fmt-check
+      - name: Run circuits
+        run: devbox run start
 
-      - name: Build spartan-backend (deny warnings)
-        run: devbox run build-check
+      - name: Test all standalone crates (deny warnings)
+        run: devbox run test-crates
 
-      - name: Check circuits (deny warnings)
-        run: devbox run circuits-check
+      - name: End-to-end c020x_verifier test (c0200, c0202)
+        run: devbox run e2e-verifier-test
