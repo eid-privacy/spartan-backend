@@ -22,9 +22,9 @@
   },
   "shell": {
     "init_hook": [
-      "rustup default stable",
+      "rustup show",
       ". $VENV_DIR/bin/activate",
-      "rustup toolchain install nightly --component rustfmt"
+      "rustup toolchain install nightly-2026-06-30 --component rustfmt"
     ],
     "scripts": {
       "fetch": "( cd spartan-backend && cargo fetch )",
@@ -33,8 +33,8 @@
       "build-check": "cd spartan-backend && RUSTFLAGS=\"-D warnings\" cargo build --all-targets",
       "start": "./scripts/compile_and_execute.sh && cd spartan-backend && RUST_LOG=info cargo run",
       "test": "cd spartan-backend && cargo test -- --show-output",
-      "fmt-check": "cd spartan-backend && cargo +nightly fmt --check",
-      "fmt": "cd spartan-backend && cargo +nightly fmt",
+      "fmt-check": "cd spartan-backend && cargo +nightly-2026-06-30 fmt --check",
+      "fmt": "cd spartan-backend && cargo +nightly-2026-06-30 fmt",
       "build-docs": "cd spartan-backend && cargo doc",
       "stats-table": "python3 scripts/stats_table.py --update-readme README.md",
       "benchmark": "./scripts/benchmark.sh",
