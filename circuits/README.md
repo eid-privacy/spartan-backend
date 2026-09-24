@@ -29,4 +29,3 @@ a header which contains the public key of the issuer.
   a variable-length header input, with only a modest
   10% increase in the number of constraints compared to
   `c0200_swiyu_jwt`.
->>>>>>> 1c312bf (Adding some READMEs)
