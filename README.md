@@ -92,7 +92,7 @@ math, and injects the precomputed values. See
 The `c020x_verifier/` crate verifies c020x proofs by:
 1. Running `spartan-backend` library verification on the base64 proof read from `stdin`
 2. Running the off-circuit Crescent device-binding check on the public
-   `R_dev_*` / `T_dev_*` / `U_dev_*` points:
+   `_R_dev_*` / `T_dev_*` / `U_dev_*` points:
    - point decoding / on-curve validation and non-identity checks
    - `r = f(R_dev) = R_dev.x`, reduced mod the group order
    - `T_dev == R_dev * r^-1`
@@ -100,7 +100,7 @@ The `c020x_verifier/` crate verifies c020x proofs by:
 
    `R_dev` is the point the prover reveals (it is random, so revealing it
    preserves unlinkability). It is a **public circuit input**, so the verifier
-   takes `R_dev_x` / `R_dev_y` straight out of the proof's public values — no
+   takes `_R_dev_x` / `_R_dev_y` straight out of the proof's public values — no
    prover-side file is needed. The circuit itself never reads `R_dev`; it is
    carried purely for this check, so do not drop it as an unused parameter.
    `M` is the *hashed* challenge, i.e. the value the circuits call

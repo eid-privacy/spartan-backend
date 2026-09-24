@@ -35,5 +35,8 @@ jobs:
       - name: Build spartan-backend (deny warnings)
         run: devbox run build-check
 
+      - name: Check circuits (deny warnings)
+        run: devbox run circuits-check
+
       - name: Run circuits
         run: devbox run start

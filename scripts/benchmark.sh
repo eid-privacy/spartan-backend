@@ -18,6 +18,25 @@ BENCHMARK_WITNESS="$BENCHMARK_TARGET/$CIRCUIT.gz"
 BENCHMARK_PROOF="$BENCHMARK_DIR/proof"
 SPARTAN_DIR="$PWD/spartan-backend"
 
+write_consts() {
+    local input_size="$1" asserts="$2"
+    echo "pub global NBR_INPUTS_PRIVATE: u32 = $input_size;" > "$BENCHMARK_CONSTS"
+    echo "pub global NBR_ASSERTS: u32 = $asserts;" >> "$BENCHMARK_CONSTS"
+}
+
+# --write-consts-only [INPUT_SIZE] [ASSERTS]: just (re)write const.nr and
+# exit, skipping the actual benchmark sweep. const.nr is gitignored (it's
+# rewritten per sweep step below), so anything that needs c9000_benchmark to
+# compile on a fresh checkout (e.g. a CI warnings check) needs this to
+# materialize it first.
+if [ "$1" = "--write-consts-only" ]; then
+    input_size="${2:-10}"
+    asserts="${3:-$input_size}"
+    write_consts "$input_size" "$asserts"
+    echo "Wrote $BENCHMARK_CONSTS (NBR_INPUTS_PRIVATE=$input_size, NBR_ASSERTS=$asserts)"
+    exit 0
+fi
+
 if [ -n "$DEVBOX_PACKAGES_DIR" ]; then
     TIME_BIN="$DEVBOX_PACKAGES_DIR/bin/time"
 else
@@ -75,8 +94,7 @@ for input_size in $STEPS_INPUT_SIZES; do
     for asserts in $ASSERTS; do
         [[ $asserts -gt $input_size ]] && continue
         echo "INPUT_SIZE: $input_size -- ASSERTS: $asserts"
-        echo "pub global NBR_INPUTS_PRIVATE: u32 = $input_size;" > $BENCHMARK_CONSTS
-        echo "pub global NBR_ASSERTS: u32 = $asserts;" >> $BENCHMARK_CONSTS
+        write_consts "$input_size" "$asserts"
 
         sum=0
 	echo -n "private_numbers = [0" > $BENCHMARK_PROVER
