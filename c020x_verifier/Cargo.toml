@@ -15,3 +15,6 @@ noirc_abi = { git = "https://github.com/eid-privacy/noir", tag = "t256-v0.26-1",
 p256 = "0.13.2"
 spartan-backend = { path = "../spartan-backend" }
 vega-prover = "0.1.0"
+
+[dev-dependencies]
+toml = "0.8"

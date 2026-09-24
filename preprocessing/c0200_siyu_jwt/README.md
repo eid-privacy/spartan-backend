@@ -15,6 +15,13 @@ Reads `../../circuits/c0200_swiyu_jwt/Prover.toml` and computes:
   `device_r` lives in `Prover.toml` purely for this step, which folds it into
   `T_dev`/`U_dev`.
 
+> **Verifier-facing contract — do not remove `R_dev_x`/`R_dev_y`.**
+> They are **public circuit inputs** even though the circuit itself never reads
+> them: `R_dev` is the value the Crescent paper has the prover *reveal* so the
+> verifier can recompute `T = R·r⁻¹` and `U = G·(−M·r⁻¹)` with `r = R.x`.
+> [`c020x_verifier`](../../c020x_verifier) takes them from the proof's public
+> inputs.
+
 The first run consumes the one-time `jwt_signature` field from `Prover.toml`;
 subsequent runs proceed without it.
 
