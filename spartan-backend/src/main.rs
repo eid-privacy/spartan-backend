@@ -178,9 +178,9 @@ fn run_mode(mode: &Mode, circuit: CircuitParameters) {
         Mode::Precompute => run_precompute(&circuit).expect("Precomputatin failed"),
         Mode::ProofSize => report_proof_size(circuit),
         Mode::Prove => {
-            let proof_b64 = prove_with_precompute(&circuit);
+            let proof_b64 = prove_with_precompute(&circuit).expect("Proof creation failed");
             // compared to println! this avoids a BrokenPipe once the verifier closes the stream
-            let _ = writeln!(std::io::stdout(), "{:?}", proof_b64);
+            let _ = writeln!(std::io::stdout(), "{}", proof_b64);
         }
         Mode::Verify => {
             let mut proof_base64 = String::new();

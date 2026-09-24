@@ -682,6 +682,7 @@ dependencies = [
  "noirc_abi",
  "p256 0.13.2",
  "spartan-backend",
+ "toml",
  "vega-prover",
 ]
 
