@@ -15,6 +15,16 @@
 # it only *calls* `devbox run` inside a per-commit checkout so every commit is
 # measured with its own pinned toolchain. No yq/jq/python, no devbox shellenv.
 #
+# A commits entry's ref is normally a git ref (hash/branch/tag). It may
+# instead be the literal "commit-msg", in which case the entry's label is used
+# to find the commit by searching all refs for a commit whose message has a
+# line "Benchmark: <label>" — e.g. "commit-msg optimisations" resolves to
+# whichever commit currently carries "Benchmark: optimisations" in its
+# message. Rebasing/rewriting a commit doesn't change that message, so the
+# config never needs its hash updated afterwards. If several commits carry the
+# same trailer, the most recently committed one is used and a warning is
+# printed listing the dates of the others.
+#
 # Usage:
 #   scripts/benchmark_commits.sh <config.yaml> [options]
 #
@@ -161,11 +171,67 @@ CHECKOUT="$REPO_ROOT/benchmarks/checkout"
 
 # --- §4 step 2: resolve refs ---------------------------------------------------
 
+# resolve_ref <ref> <label> -> prints the resolved full SHA on stdout.
+# A plain <ref> is passed straight to `git rev-parse`. The literal ref
+# "commit-msg" instead searches all refs for the commit(s) whose message
+# contains the line "Benchmark: <label>". If more than one commit matches,
+# the most recently committed one is used and a warning listing the other
+# matching commits' dates is printed to stderr.
+resolve_ref() {
+    local ref="$1" label="$2"
+    if [ "$ref" != "commit-msg" ]; then
+        git -C "$REPO_ROOT" rev-parse "$ref" 2>/dev/null
+        return
+    fi
+
+    [ -n "$label" ] \
+        || { echo "ERROR: $CONFIG: 'commit-msg' ref requires a label to search for (matched as 'Benchmark: <label>')" >&2; exit 1; }
+
+    local escaped
+    escaped=$(printf '%s' "$label" | sed -E 's/[.[\*^$(){}+?|]/\\&/g; s/\]/\\]/g')
+
+    local hits=() ts=() disp=() sha t d
+    while IFS='|' read -r sha t d; do
+        [ -n "$sha" ] && { hits+=("$sha"); ts+=("$t"); disp+=("$d"); }
+    done < <(git -C "$REPO_ROOT" log --all -E --grep="^Benchmark: ${escaped}\$" --format='%H|%ct|%cI')
+
+    if [ "${#hits[@]}" -eq 0 ]; then
+        echo "ERROR: $CONFIG: no commit found with message trailer 'Benchmark: $label'" >&2
+        exit 1
+    fi
+
+    if [ "${#hits[@]}" -eq 1 ]; then
+        printf '%s\n' "${hits[0]}"
+        return
+    fi
+
+    # Multiple commits carry this trailer: take the most recently committed one
+    # (by committer date) and warn, listing the dates of the ones not chosen, so
+    # a stale duplicate doesn't silently win forever and the ambiguity is visible.
+    local combined=() k
+    for ((k = 0; k < ${#hits[@]}; k++)); do
+        combined+=("${ts[$k]}|${hits[$k]}|${disp[$k]}")
+    done
+    local sorted
+    sorted=$(printf '%s\n' "${combined[@]}" | sort -t'|' -k1,1nr)
+
+    local chosen_sha chosen_disp
+    chosen_sha=$(printf '%s\n' "$sorted" | head -n1 | cut -d'|' -f2)
+    chosen_disp=$(printf '%s\n' "$sorted" | head -n1 | cut -d'|' -f3)
+
+    echo "WARNING: $CONFIG: multiple commits found with message trailer 'Benchmark: $label'; using the most recent, $chosen_sha ($chosen_disp). Other commits with this trailer:" >&2
+    printf '%s\n' "$sorted" | tail -n +2 | while IFS='|' read -r t sha d; do
+        echo "  $sha ($d)" >&2
+    done
+
+    printf '%s\n' "$chosen_sha"
+}
+
 NOIR_FULL=(); NOIR_SHORT=()
 for ((i = 0; i < ${#NOIR_REFS[@]}; i++)); do
-    full=$(git -C "$REPO_ROOT" rev-parse "${NOIR_REFS[$i]}" 2>/dev/null) \
+    full=$(resolve_ref "${NOIR_REFS[$i]}" "${NOIR_LABELS[$i]}") \
         || { echo "ERROR: noir_commits ref '${NOIR_REFS[$i]}' does not resolve" >&2; exit 1; }
-    short=$(git -C "$REPO_ROOT" rev-parse --short "${NOIR_REFS[$i]}")
+    short=$(git -C "$REPO_ROOT" rev-parse --short "$full")
     NOIR_FULL+=("$full")
     NOIR_SHORT+=("$short")
     [ -n "${NOIR_LABELS[$i]}" ] || NOIR_LABELS[$i]="$short"
@@ -173,9 +239,9 @@ done
 
 SPARTAN_FULL=(); SPARTAN_SHORT=()
 for ((i = 0; i < ${#SPARTAN_REFS[@]}; i++)); do
-    full=$(git -C "$REPO_ROOT" rev-parse "${SPARTAN_REFS[$i]}" 2>/dev/null) \
+    full=$(resolve_ref "${SPARTAN_REFS[$i]}" "${SPARTAN_LABELS[$i]}") \
         || { echo "ERROR: spartan_commits ref '${SPARTAN_REFS[$i]}' does not resolve" >&2; exit 1; }
-    short=$(git -C "$REPO_ROOT" rev-parse --short "${SPARTAN_REFS[$i]}")
+    short=$(git -C "$REPO_ROOT" rev-parse --short "$full")
     SPARTAN_FULL+=("$full")
     SPARTAN_SHORT+=("$short")
     [ -n "${SPARTAN_LABELS[$i]}" ] || SPARTAN_LABELS[$i]="$short"
