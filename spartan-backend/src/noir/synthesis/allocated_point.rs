@@ -149,6 +149,28 @@ where
             &other.y,
         )?;
 
+        let both_finite = AllocatedBit::alloc(
+            cs.namespace(|| "check both points are finite"),
+            match (self.is_infinity.get_value(), other.is_infinity.get_value()) {
+                (Some(self_inf), Some(other_inf)) => {
+                    Some(self_inf == Scalar::ZERO && other_inf == Scalar::ZERO)
+                }
+                _ => None,
+            },
+        )?;
+        cs.enforce(
+            || "both finite = (1-self.inf) * (1-other.inf)",
+            |lc| lc + CS::one() - self.is_infinity.get_variable(),
+            |lc| lc + CS::one() - other.is_infinity.get_variable(),
+            |lc| lc + both_finite.get_variable(),
+        );
+
+        let equal_x = AllocatedBit::and(
+            cs.namespace(|| "gate equal_x by finiteness"),
+            &equal_x,
+            &both_finite,
+        )?;
+
         // Compute the result of the addition and the result of double self
         let result_from_add =
             self.add_internal(cs.namespace(|| "add internal"), other, &equal_x)?;
@@ -170,12 +192,86 @@ where
             &Boolean::from(equal_y),
         )?;
 
-        AllocatedPoint::conditionally_select(
+        let finite_result = AllocatedPoint::conditionally_select(
             cs.namespace(|| "equal ? result_from_double : result_from_add"),
             &result_for_equal_x,
             &result_from_add,
             &Boolean::from(equal_x),
-        )
+        )?;
+
+        let self_inf_or_finite = AllocatedPoint {
+            x: conditionally_select2(
+                cs.namespace(|| "self.is_infinity ? other.x : finite.x"),
+                &other.x,
+                &finite_result.x,
+                &self.is_infinity,
+            )?,
+            y: conditionally_select2(
+                cs.namespace(|| "self.is_infinity ? other.y : finite.y"),
+                &other.y,
+                &finite_result.y,
+                &self.is_infinity,
+            )?,
+            is_infinity: conditionally_select2(
+                cs.namespace(|| "self.is_infinity ? other.inf : finite.inf"),
+                &other.is_infinity,
+                &finite_result.is_infinity,
+                &self.is_infinity,
+            )?,
+        };
+
+        let result = AllocatedPoint {
+            x: conditionally_select2(
+                cs.namespace(|| "other.is_infinity ? self.x : prev.x"),
+                &self.x,
+                &self_inf_or_finite.x,
+                &other.is_infinity,
+            )?,
+            y: conditionally_select2(
+                cs.namespace(|| "other.is_infinity ? self.y : prev.y"),
+                &self.y,
+                &self_inf_or_finite.y,
+                &other.is_infinity,
+            )?,
+            is_infinity: conditionally_select2(
+                cs.namespace(|| "other.is_infinity ? self.inf : prev.inf"),
+                &self.is_infinity,
+                &self_inf_or_finite.is_infinity,
+                &other.is_infinity,
+            )?,
+        };
+
+        let both_infinity = AllocatedNum::alloc(cs.namespace(|| "both infinity"), || {
+            Ok(*self.is_infinity.get_value().get()? * *other.is_infinity.get_value().get()?)
+        })?;
+        cs.enforce(
+            || "check both infinity",
+            |lc| lc + self.is_infinity.get_variable(),
+            |lc| lc + other.is_infinity.get_variable(),
+            |lc| lc + both_infinity.get_variable(),
+        );
+
+        let infinity = Self::default(cs.namespace(|| "canonical infinity"))?;
+        Ok(AllocatedPoint {
+            x: conditionally_select2(
+                cs.namespace(|| "both infinity ? infinity.x : result.x"),
+                &infinity.x,
+                &result.x,
+                &both_infinity,
+            )?,
+            y: conditionally_select2(
+                cs.namespace(|| "both infinity ? infinity.y : result.y"),
+                &infinity.y,
+                &result.y,
+                &both_infinity,
+            )?,
+            is_infinity: conditionally_select2(
+                cs.namespace(|| "both infinity ? infinity.inf : result.inf"),
+                &infinity.is_infinity,
+                &result.is_infinity,
+                &both_infinity,
+            )?,
+        })
     }
 
     /// Adds other point to this point and returns the result. Assumes that the
@@ -450,14 +546,35 @@ where
         mut cs: CS,
         s: &AllocatedNum<Scalar>,
     ) -> Result<Self, SynthesisError> {
-        let scalar_bits = s.to_bits_le(cs.namespace(|| "scalar_bits"))?;
+        let scalar_bits = s.to_bits_le_strict(cs.namespace(|| "scalar_bits"))?;
+
+        // The ladder below uses incomplete affine formulas
+        // Substitute a safe finite dummy base before the ladder and select the
+        // canonical infinity result after it.
+        let dummy = ConstantPoint::<Scalar>::p256_generator();
+        let dummy_x = alloc_constant(cs.namespace(|| "infinity dummy x"), dummy.x)?;
+        let dummy_y = alloc_constant(cs.namespace(|| "infinity dummy y"), dummy.y)?;
+        let effective_self = AllocatedPoint {
+            x: conditionally_select2(
+                cs.namespace(|| "replace infinity x with dummy"),
+                &dummy_x,
+                &self.x,
+                &self.is_infinity,
+            )?,
+            y: conditionally_select2(
+                cs.namespace(|| "replace infinity y with dummy"),
+                &dummy_y,
+                &self.y,
+                &self.is_infinity,
+            )?,
+            // Result of the incomplete ladder is unconditionally finite
+            is_infinity: alloc_zero(cs.namespace(|| "effective point is finite"))?,
+        };
 
         let split_len = core::cmp::min(scalar_bits.len(), (Scalar::NUM_BITS - 2) as usize);
         let (incomplete_bits, complete_bits) = scalar_bits.split_at(split_len);
 
-        // we convert AllocatedPoint into AllocatedPointNonInfinity; we deal with
-        // the case where self.is_infinity = 1 below
-        let mut p = AllocatedPointNonInfinity::from_allocated_point(self);
+        let mut p = AllocatedPointNonInfinity::from_allocated_point(&effective_self);
 
         // we assume the first bit to be 1, so we must initialize acc to self and
         // double it we remove this assumption below
@@ -480,13 +597,12 @@ where
 
         // convert back to AllocatedPoint
         let res = {
-            // we set acc.is_infinity = self.is_infinity
-            let acc = acc.to_allocated_point(&self.is_infinity)?;
+            let acc = acc.to_allocated_point(&effective_self.is_infinity)?;
 
             // we remove the initial slack if bits[0] is as not as assumed (i.e., it
             // is not 1)
             let acc_minus_initial = {
-                let neg = self.negate(cs.namespace(|| "negate"))?;
+                let neg = effective_self.negate(cs.namespace(|| "negate"))?;
                 acc.add(cs.namespace(|| "res minus self"), &neg)
             }?;
 
@@ -498,31 +614,9 @@ where
             )?
         };
 
-        // when self.is_infinity = 1, return the default point, else return res
-        // we already set res.is_infinity to be self.is_infinity, so we do not need
-        // to set it here
-        let default = Self::default(cs.namespace(|| "default"))?;
-        let x = conditionally_select2(
-            cs.namespace(|| "check if self.is_infinity is zero (x)"),
-            &default.x,
-            &res.x,
-            &self.is_infinity,
-        )?;
-
-        let y = conditionally_select2(
-            cs.namespace(|| "check if self.is_infinity is zero (y)"),
-            &default.y,
-            &res.y,
-            &self.is_infinity,
-        )?;
-
-        // we now perform the remaining scalar mul using complete addition law
-        let mut acc = AllocatedPoint {
-            x,
-            y,
-            is_infinity: res.is_infinity,
-        };
-        let mut p_complete = p.to_allocated_point(&self.is_infinity)?;
+        // perform the remaining scalar mul using complete addition law
+        let mut acc = res;
+        let mut p_complete = p.to_allocated_point(&effective_self.is_infinity)?;
 
         for (i, bit) in complete_bits.iter().enumerate() {
             let temp = acc.add(cs.namespace(|| format!("add_complete {i}")), &p_complete)?;
@@ -536,7 +630,29 @@ where
             p_complete = p_complete.double(cs.namespace(|| format!("double_complete {i}")))?;
         }
 
-        Ok(acc)
+        // Discard the dummy run and return canonical infinity when the input was
+        // infinity, since k * O = O for every k.
+        let default = Self::default(cs.namespace(|| "infinity result"))?;
+        Ok(Self {
+            x: conditionally_select2(
+                cs.namespace(|| "select infinity result x"),
+                &default.x,
+                &acc.x,
+                &self.is_infinity,
+            )?,
+            y: conditionally_select2(
+                cs.namespace(|| "select infinity result y"),
+                &default.y,
+                &acc.y,
+                &self.is_infinity,
+            )?,
+            is_infinity: conditionally_select2(
+                cs.namespace(|| "select infinity result flag"),
+                &default.is_infinity,
+                &acc.is_infinity,
+                &self.is_infinity,
+            )?,
+        })
     }
 
     /// Scalar multiplication `s * base` for a base point whose coordinates are
@@ -579,7 +695,7 @@ where
         base: &ConstantPoint<Scalar>,
         s: &AllocatedNum<Scalar>,
     ) -> Result<Self, SynthesisError> {
-        let bits = s.to_bits_le(cs.namespace(|| "scalar_bits"))?;
+        let bits = s.to_bits_le_strict(cs.namespace(|| "scalar_bits"))?;
         let nbits = bits.len();
         assert!(
             nbits % 2 == 0,
@@ -1036,7 +1152,7 @@ mod tests {
         w: usize,
     ) -> Result<AllocatedPoint<Scalar>, SynthesisError> {
         assert!(w >= 1, "window width must be at least 1");
-        let bits = s.to_bits_le(cs.namespace(|| "scalar_bits"))?;
+        let bits = s.to_bits_le_strict(cs.namespace(|| "scalar_bits"))?;
         let nbits = bits.len();
         let num_windows = nbits.div_ceil(w);
 
@@ -1207,10 +1323,7 @@ mod tests {
     }
 
     fn generator() -> ConstantPoint<Scalar> {
-        ConstantPoint::new(
-            hex_to_ff("6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296"),
-            hex_to_ff("4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5"),
-        )
+        ConstantPoint::p256_generator()
     }
 
     /// Little-endian bit decomposition of `s` from its canonical representation.
@@ -1342,6 +1455,63 @@ mod tests {
     }
 
     #[test]
+    fn add_handles_infinity_ordering() {
+        let g = generator();
+        let mut cs = TestConstraintSystem::<Scalar>::new();
+
+        let gx = AllocatedNum::alloc(cs.namespace(|| "gx"), || Ok(g.x)).unwrap();
+        let gy = AllocatedNum::alloc(cs.namespace(|| "gy"), || Ok(g.y)).unwrap();
+        let g_point = AllocatedPoint {
+            x: gx,
+            y: gy,
+            is_infinity: alloc_zero(cs.namespace(|| "g inf")).unwrap(),
+        };
+        let inf = AllocatedPoint::default(cs.namespace(|| "inf")).unwrap();
+
+        let inf_plus_g = inf.add(cs.namespace(|| "inf + g"), &g_point).unwrap();
+        assert_eq!(inf_plus_g.x.get_value().unwrap(), g.x);
+        assert_eq!(inf_plus_g.y.get_value().unwrap(), g.y);
+        assert_eq!(inf_plus_g.is_infinity.get_value().unwrap(), Scalar::ZERO);
+
+        let g_plus_inf = g_point.add(cs.namespace(|| "g + inf"), &inf).unwrap();
+        assert_eq!(g_plus_inf.x.get_value().unwrap(), g.x);
+        assert_eq!(g_plus_inf.y.get_value().unwrap(), g.y);
+        assert_eq!(g_plus_inf.is_infinity.get_value().unwrap(), Scalar::ZERO);
+
+        let inf_plus_inf = inf.add(cs.namespace(|| "inf + inf"), &inf).unwrap();
+        assert_eq!(inf_plus_inf.x.get_value().unwrap(), Scalar::ZERO);
+        assert_eq!(inf_plus_inf.y.get_value().unwrap(), Scalar::ZERO);
+        assert_eq!(inf_plus_inf.is_infinity.get_value().unwrap(), Scalar::ONE);
+
+        assert!(cs.is_satisfied(), "infinity ordering regression failed");
+    }
+
+    #[test]
+    fn variable_base_scalar_mul_on_infinity_returns_infinity() {
+        // The group law requires k * O = O for every k. The incomplete ladder
+        // must therefore never be evaluated on infinity's (0, 0) coordinates.
+        for s in test_scalars() {
+            let mut cs = TestConstraintSystem::<Scalar>::new();
+            let inf = AllocatedPoint::default(cs.namespace(|| "inf")).unwrap();
+            let s_alloc = AllocatedNum::alloc(cs.namespace(|| "s"), || Ok(s)).unwrap();
+            let res = inf.scalar_mul(cs.namespace(|| "mul"), &s_alloc).unwrap();
+
+            assert!(
+                cs.is_satisfied(),
+                "k * infinity is unsatisfiable for s = {s:?}, unsatisfied: {:?}",
+                cs.which_is_unsatisfied()
+            );
+            assert_eq!(res.x.get_value().unwrap(), Scalar::ZERO, "x s = {s:?}");
+            assert_eq!(res.y.get_value().unwrap(), Scalar::ZERO, "y s = {s:?}");
+            assert_eq!(
+                res.is_infinity.get_value().unwrap(),
+                Scalar::ONE,
+                "is_infinity s = {s:?}"
+            );
+        }
+    }
+
+    #[test]
     fn fixed_base_constraint_count() {
         let g = generator();
         let s = Scalar::from(0xdead_beef_u64);
@@ -1397,7 +1567,7 @@ mod tests {
         }
         println!("window-width constraint counts: {counts:?}");
         let w2 = counts.iter().find(|(w, _)| *w == 2).unwrap().1;
-        assert!(w2 <= 850, "w=2 count {w2} over budget");
+        assert!(w2 <= 950, "w=2 count {w2} over budget");
         assert!(
             counts.iter().all(|(_, c)| w2 <= *c),
             "w=2 is not the minimum: {counts:?}"
