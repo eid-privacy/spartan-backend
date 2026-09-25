@@ -1,0 +1,4 @@
+# Packages not available as nix packages (see devbox.json for everything
+# else). Used by circuits/*/create-prover.py to issue SD-JWT test
+# credentials for the sicpa_backend circuits.
+sd-jwt==0.10.4

@@ -142,6 +142,14 @@
         }
       }
     },
+    "python314Packages.cryptography": {
+      "resolved": "github:NixOS/nixpkgs/d482ef84049d9b7276b83a06e4e4d76983830097?narHash=sha256-we5zDEFfn8TgzeWKjKDMIjeQZ59omEPl23NIF%2B13%2Fys%3D#python314Packages.cryptography",
+      "source": "nixpkg"
+    },
+    "python314Packages.jwcrypto": {
+      "resolved": "github:NixOS/nixpkgs/d482ef84049d9b7276b83a06e4e4d76983830097?narHash=sha256-we5zDEFfn8TgzeWKjKDMIjeQZ59omEPl23NIF%2B13%2Fys%3D#python314Packages.jwcrypto",
+      "source": "nixpkg"
+    },
     "python314Packages.matplotlib": {
       "resolved": "github:NixOS/nixpkgs/89570f24e97e614aa34aa9ab1c927b6578a43775?narHash=sha256-EMzXKmnOtBQ2MnvpiNOm7E%2BkOMvdPrIKaeg52Tip2Uk%3D#python314Packages.matplotlib",
       "source": "nixpkg",
@@ -208,6 +216,10 @@
     },
     "python314Packages.pyyaml": {
       "resolved": "github:NixOS/nixpkgs/d482ef84049d9b7276b83a06e4e4d76983830097?narHash=sha256-we5zDEFfn8TgzeWKjKDMIjeQZ59omEPl23NIF%2B13%2Fys%3D#python314Packages.pyyaml",
+      "source": "nixpkg"
+    },
+    "python314Packages.toml": {
+      "resolved": "github:NixOS/nixpkgs/d482ef84049d9b7276b83a06e4e4d76983830097?narHash=sha256-we5zDEFfn8TgzeWKjKDMIjeQZ59omEPl23NIF%2B13%2Fys%3D#python314Packages.toml",
       "source": "nixpkg"
     },
     "python@3.14": {
