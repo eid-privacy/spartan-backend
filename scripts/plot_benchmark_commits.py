@@ -52,6 +52,9 @@ BARRETENBERG_STYLE = {"color": "#f28e2b", "label": "barretenberg write_vk + prov
 SPARTAN_STYLE = {"color": "#4e79a7", "label": "spartan_proof"}
 CONSTRAINTS_STYLE = {"color": "#59a14f", "label": "spartan_constraints (pow2 distance)"}
 
+# Horizontal width (in inches) allotted per commit on the x-axis.
+COMMIT_X_SPACING = 0.8
+
 
 def pow2_distance(v):
     """1.0 exactly on a power of two; 0.5/1.5 at the midpoint to the neighboring one."""
@@ -90,13 +93,59 @@ def load_config(path):
     }
 
 
-def resolve(repo_root, ref):
-    full = subprocess.run(
-        ["git", "-C", repo_root, "rev-parse", ref],
+def resolve_commit_msg(repo_root, label):
+    """Resolve the literal ref "commit-msg" by searching all refs for a commit
+    whose message has a line "Benchmark: <label>". If several match, the most
+    recently committed one is used and a warning is printed listing the others.
+    """
+    if not label:
+        print(
+            "ERROR: 'commit-msg' ref requires a label to search for "
+            "(matched as 'Benchmark: <label>')",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    out = subprocess.run(
+        [
+            "git", "-C", repo_root, "log", "--all", "-E",
+            f"--grep=^Benchmark: {label}$",
+            "--format=%H|%ct|%cI",
+        ],
         capture_output=True, text=True, check=True,
-    ).stdout.strip()
+    ).stdout.splitlines()
+    hits = [line.split("|", 2) for line in out if line]
+    if not hits:
+        print(
+            f"ERROR: no commit found with message trailer 'Benchmark: {label}'",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    hits.sort(key=lambda h: int(h[1]), reverse=True)
+    chosen_sha, _, chosen_disp = hits[0]
+    if len(hits) > 1:
+        print(
+            f"WARNING: multiple commits found with message trailer 'Benchmark: {label}'; "
+            f"using the most recent, {chosen_sha} ({chosen_disp}). Other commits with this trailer:",
+            file=sys.stderr,
+        )
+        for sha, _, disp in hits[1:]:
+            print(f"  {sha} ({disp})", file=sys.stderr)
+
+    return chosen_sha
+
+
+def resolve(repo_root, ref, label=""):
+    if ref == "commit-msg":
+        full = resolve_commit_msg(repo_root, label)
+    else:
+        full = subprocess.run(
+            ["git", "-C", repo_root, "rev-parse", ref],
+            capture_output=True, text=True, check=True,
+        ).stdout.strip()
     short = subprocess.run(
-        ["git", "-C", repo_root, "rev-parse", "--short", ref],
+        ["git", "-C", repo_root, "rev-parse", "--short", full],
         capture_output=True, text=True, check=True,
     ).stdout.strip()
     return full, short
@@ -150,14 +199,21 @@ def main():
     results_dir = config_path.parent / "results"
     repo_root = find_repo_root(config_path)
 
+    if repo_root is None and any(
+        ref == "commit-msg"
+        for ref, _ in cfg["noir_commits"] + cfg["spartan_commits"]
+    ):
+        print("ERROR: 'commit-msg' refs require running inside a git repo", file=sys.stderr)
+        sys.exit(1)
+
     # Resolve every configured ref to a full + short sha.
     noir_entries = []  # (full, short, label)
     for ref, label in cfg["noir_commits"]:
-        full, short = resolve(repo_root, ref) if repo_root else (ref, ref[:7])
+        full, short = resolve(repo_root, ref, label) if repo_root else (ref, ref[:7])
         noir_entries.append((full, short, label or short))
     spartan_entries = []
     for ref, label in cfg["spartan_commits"]:
-        full, short = resolve(repo_root, ref) if repo_root else (ref, ref[:7])
+        full, short = resolve(repo_root, ref, label) if repo_root else (ref, ref[:7])
         spartan_entries.append((full, short, label or short))
 
     noir_by_full = {full: (short, label) for full, short, label in noir_entries}
@@ -237,7 +293,7 @@ def main():
         sys.exit(1)
     baseline = baseline_data["bb_write_vk"]["mean"] + baseline_data["bb_prove"]["mean"]
 
-    fig, ax = plt.subplots(figsize=(max(8, n * 1.8), 6))
+    fig, ax = plt.subplots(figsize=(max(8, n * COMMIT_X_SPACING), 6))
 
     ax.axhline(1.0, color="#333333", linewidth=1.2, linestyle="-", zorder=2)
     ax.text(
