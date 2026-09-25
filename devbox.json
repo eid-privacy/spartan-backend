@@ -9,6 +9,9 @@
     "python314Packages.matplotlib",
     "python314Packages.numpy@latest",
     "python314Packages.pyyaml",
+    "python314Packages.cryptography",
+    "python314Packages.jwcrypto",
+    "python314Packages.toml",
     "github:eid-privacy/flakes#noir-versions.v1_0_0-beta_26",
     "github:eid-privacy/flakes#barretenberg-versions.beta_26",
     "github:eid-privacy/flakes#nargo-t256-versions.t256-v0_26-1"
@@ -24,7 +27,7 @@
     "init_hook": [
       "rustup show",
       ". $VENV_DIR/bin/activate",
-      "rustup toolchain install nightly-2026-06-30 --component rustfmt"
+      "pip install -r requirements.txt"
     ],
     "scripts": {
       "fetch": "( cd spartan-backend && cargo fetch )",
@@ -36,8 +39,9 @@
       "test": "cd spartan-backend && cargo test -- --show-output",
       "test-crates": "./scripts/test_crates.sh",
       "e2e-verifier-test": "./scripts/e2e_verifier_test.sh",
-      "fmt-check": "cd spartan-backend && cargo +nightly-2026-06-30 fmt --check",
-      "fmt": "cd spartan-backend && cargo +nightly-2026-06-30 fmt",
+      "rust-nightly": "rustup toolchain install nightly-2026-06-30 --component rustfmt",
+      "fmt-check": "devbox run rust-nightly && cd spartan-backend && cargo +nightly-2026-06-30 fmt --check",
+      "fmt": "devbox run rust-nightly && cd spartan-backend && cargo +nightly-2026-06-30 fmt",
       "build-docs": "cd spartan-backend && cargo doc",
       "stats-table": "python3 scripts/stats_table.py --update-readme README.md",
       "benchmark": "./scripts/benchmark.sh",

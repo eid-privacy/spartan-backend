@@ -56,7 +56,7 @@ HALF_N = N // 2
 PAYLOAD_MAX_LEN = 2048
 DOB_SALT_MAX_LEN = 32
 DOB_VALUE_MAX_LEN = 16
-ENCODED_HEADER_MAX_LEN = 128
+ENCODED_HEADER_MAX_LEN = 256
 
 # -----------------------------------------------------------------------------
 # Monkey-patch sd_jwt JSON dumps to produce compact JSON (no extra spaces)

@@ -24,7 +24,7 @@ a header which contains the public key of the issuer.
   constant size, and only the content of the public key
   changes, this is the simplest solution to get back to a
   similar number of constraints as `c0200_swiyu_jwt`
-- `c0202_sicpa_backend_move` - a proposal by Claude to change
+- `c0203_sicpa_backend_move` - a proposal by Claude to change
   the way the conversion to base64 is done allows to keep
   a variable-length header input, with only a modest
   10% increase in the number of constraints compared to
