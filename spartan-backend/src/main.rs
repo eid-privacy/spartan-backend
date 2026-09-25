@@ -177,8 +177,8 @@ fn run_mode(mode: &Mode, circuit: CircuitParameters) {
         Mode::CountConstraints => count_constraints(circuit),
         Mode::ProofSize => report_proof_size(circuit),
         Mode::ProveWithPrecompute => {
-            run_precompute(&circuit).expect("Precomputatin failed"),
-            let proof_b64 = prove_with_precompute(&circuit).expect("Proof creation failed");
+            let path = run_precompute(&circuit).expect("Precomputatin failed"),
+            let proof_b64 = prove_with_precompute(&circuit, path).expect("Proof creation failed");
             // compared to println! this avoids a BrokenPipe once the verifier closes the stream
             let _ = writeln!(std::io::stdout(), "{}", proof_b64);
         }
