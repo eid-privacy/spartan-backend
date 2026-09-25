@@ -50,14 +50,17 @@ pub fn run_precompute(circuit: &CircuitParameters) -> Result<PathBuf, BackendErr
     let prover = OnlineProver::setup(circuit)?;
     let setup_elapsed = t_setup.elapsed();
 
+    let t_write = Instant::now();
     let (path, size) = precompute::save(circuit, &prover)?;
+    let write_elapsed = t_write.elapsed();
 
+    tracing::info!("{}: precompute = {:.3?}", circuit.name, setup_elapsed);
     tracing::info!(
-        "{}: precompute = {:.3?}, wrote {} ({:.1} MiB)",
+        "{}: wrote {} ({:.1} MiB) to disk in {:.3?}",
         circuit.name,
-        setup_elapsed,
         path.display(),
         size as f64 / (1024.0 * 1024.0),
+        write_elapsed,
     );
 
     Ok(path)
@@ -66,7 +69,11 @@ pub fn run_precompute(circuit: &CircuitParameters) -> Result<PathBuf, BackendErr
 /// Produces a base64 proof, reusing `target/precompute.bin` when it is present
 /// and still matches the circuit, otherwise falling back to monolithic proving.
 pub fn prove_with_precompute(circuit: &CircuitParameters, path: PathBuf) -> Result<String, BackendError> {
-    match precompute::load(circuit, path) {
+    let t_read = Instant::now();
+    let loaded = precompute::load(circuit, path.clone());
+    let read_elapsed = t_read.elapsed();
+    tracing::info!("{}: read {} from disk in {:.3?}", circuit.name, path.display(), read_elapsed);
+    match loaded {
         Some(mut prover) => {
             let _span = info_span!("prove_precomputed", circuit = ?circuit.name).entered();
             let proof = prover
