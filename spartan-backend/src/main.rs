@@ -175,10 +175,15 @@ fn load_circuits(
 fn run_mode(mode: &Mode, circuit: CircuitParameters) {
     match mode {
         Mode::CountConstraints => count_constraints(circuit),
-        Mode::Precompute => run_precompute(&circuit).expect("Precomputatin failed"),
         Mode::ProofSize => report_proof_size(circuit),
-        Mode::Prove => {
+        Mode::ProveWithPrecompute => {
+            run_precompute(&circuit).expect("Precomputatin failed"),
             let proof_b64 = prove_with_precompute(&circuit).expect("Proof creation failed");
+            // compared to println! this avoids a BrokenPipe once the verifier closes the stream
+            let _ = writeln!(std::io::stdout(), "{}", proof_b64);
+        }
+        Mode::Prove => {
+            let proof_b64 = prove_circuit_to_base64(circuit).expect("Proof creation failed");
             // compared to println! this avoids a BrokenPipe once the verifier closes the stream
             let _ = writeln!(std::io::stdout(), "{}", proof_b64);
         }
