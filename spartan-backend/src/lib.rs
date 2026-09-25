@@ -9,7 +9,7 @@ mod trivial_circuit;
 pub mod types;
 mod utils;
 
-use std::{env, time::Instant};
+use std::{env, time::Instant, io::{Error, ErrorKind}};
 
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use bellpepper_core::{ConstraintSystem, num::AllocatedNum, test_cs::TestConstraintSystem};
@@ -74,9 +74,17 @@ pub fn prove_with_precompute(circuit: &CircuitParameters) -> Result<String, Back
                 .map_err(|e| BackendError::from(e))?;
             Ok(proof_to_base64(&proof))
         }
-        None => prove_circuit_to_base64(circuit).map_err(|e| e.into()),
+        None => {
+            let msg = format!(
+                "{}: no precomputed prover available",
+                circuit.name
+            );
+            tracing::error!(msg);
+            Err(BackendError::from(Error::new(ErrorKind::Other, msg)))
+        }
     }
 }
+
 
 /// Generate a Vega zkSNARK proof for the given Noir circuit parameters.
 pub fn prove_circuit(circuit: &CircuitParameters) -> Result<VegaZkSNARK<E>, VegaError> {
