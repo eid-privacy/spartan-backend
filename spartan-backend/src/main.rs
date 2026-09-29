@@ -1,14 +1,7 @@
 use std::{env, io::Write, path::PathBuf};
 
 use clap::Parser;
-use spartan_backend::{
-    E, instantiate_circuit_from_dir, instantiate_circuit_with_name,
-    instantiate_prover_circuit_from_dir, instantiate_prover_circuit_with_name,
-    instantiate_verifier_circuit_from_dir, instantiate_verifier_circuit_with_name,
-    noir::{circuit::CircuitParameters, synthesis::circuit_synthesizer::NoirCircuitSynthesizer},
-    prove_circuit, prove_with_precompute, report_proof_size, run_precompute, verify_circuit,
-    verify_circuit_from_base64,
-};
+use spartan_backend::{instantiate_circuit_from_dir, instantiate_circuit_with_name, instantiate_prover_circuit_from_dir, instantiate_prover_circuit_with_name, instantiate_verifier_circuit_from_dir, instantiate_verifier_circuit_with_name, noir::{circuit::CircuitParameters, synthesis::circuit_synthesizer::NoirCircuitSynthesizer}, prove_circuit, prove_circuit_to_base64, prove_with_precompute, report_proof_size, run_precompute, verify_circuit, verify_circuit_from_base64, E};
 use tracing::info_span;
 use vega_prover::bellpepper::{r1cs::VegaShape, shape_cs::ShapeCS};
 
@@ -176,14 +169,14 @@ fn run_mode(mode: &Mode, circuit: CircuitParameters) {
     match mode {
         Mode::CountConstraints => count_constraints(circuit),
         Mode::ProofSize => report_proof_size(circuit),
-        Mode::ProveWithPrecompute => {
-            let path = run_precompute(&circuit).expect("Precomputatin failed"),
+        Mode::Precompute => {
+            let path = run_precompute(&circuit).expect("Precomputation failed");
             let proof_b64 = prove_with_precompute(&circuit, path).expect("Proof creation failed");
             // compared to println! this avoids a BrokenPipe once the verifier closes the stream
             let _ = writeln!(std::io::stdout(), "{}", proof_b64);
         }
         Mode::Prove => {
-            let proof_b64 = prove_circuit_to_base64(circuit).expect("Proof creation failed");
+            let proof_b64 = prove_circuit_to_base64(&circuit).expect("Proof creation failed");
             // compared to println! this avoids a BrokenPipe once the verifier closes the stream
             let _ = writeln!(std::io::stdout(), "{}", proof_b64);
         }
