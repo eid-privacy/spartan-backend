@@ -10,7 +10,12 @@ mod trivial_circuit;
 pub mod types;
 mod utils;
 
-use std::{env, time::Instant};
+use std::{
+    env,
+    io::{Error, ErrorKind},
+    path::PathBuf,
+    time::Instant,
+};
 
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use bellpepper_core::{ConstraintSystem, num::AllocatedNum, test_cs::TestConstraintSystem};
@@ -36,7 +41,7 @@ use crate::{
 
 /// Runs the offline phase (`setup` + `prep_prove`) once and persists it to
 /// `<circuit_dir>/target/precompute.bin`, which `--prove` then picks up.
-pub fn run_precompute(circuit: &CircuitParameters) -> Result<(), BackendError> {
+pub fn run_precompute(circuit: &CircuitParameters) -> Result<PathBuf, BackendError> {
     let _span = info_span!("precompute", circuit = ?circuit.name).entered();
 
     if circuit.online_seeds.is_empty() {
@@ -51,23 +56,38 @@ pub fn run_precompute(circuit: &CircuitParameters) -> Result<(), BackendError> {
     let prover = OnlineProver::setup(circuit)?;
     let setup_elapsed = t_setup.elapsed();
 
+    let t_write = Instant::now();
     let (path, size) = precompute::save(circuit, &prover)?;
+    let write_elapsed = t_write.elapsed();
 
+    tracing::info!("{}: precompute = {:.3?}", circuit.name, setup_elapsed);
     tracing::info!(
-        "{}: precompute = {:.3?}, wrote {} ({:.1} MiB)",
+        "{}: wrote {} ({:.1} MiB) to disk in {:.3?}",
         circuit.name,
-        setup_elapsed,
         path.display(),
         size as f64 / (1024.0 * 1024.0),
+        write_elapsed,
     );
 
-    Ok(())
+    Ok(path)
 }
 
 /// Produces a base64 proof, reusing `target/precompute.bin` when it is present
 /// and still matches the circuit, otherwise falling back to monolithic proving.
-pub fn prove_with_precompute(circuit: &CircuitParameters) -> Result<String, BackendError> {
-    match precompute::load(circuit) {
+pub fn prove_with_precompute(
+    circuit: &CircuitParameters,
+    path: PathBuf,
+) -> Result<String, BackendError> {
+    let t_read = Instant::now();
+    let loaded = precompute::load(circuit, path.clone());
+    let read_elapsed = t_read.elapsed();
+    tracing::info!(
+        "{}: read {} from disk in {:.3?}",
+        circuit.name,
+        path.display(),
+        read_elapsed
+    );
+    match loaded {
         Some(mut prover) => {
             let _span = info_span!("prove_precomputed", circuit = ?circuit.name).entered();
             let proof = prover
@@ -75,7 +95,11 @@ pub fn prove_with_precompute(circuit: &CircuitParameters) -> Result<String, Back
                 .map_err(|e| BackendError::from(e))?;
             Ok(proof_to_base64(&proof))
         }
-        None => prove_circuit_to_base64(circuit).map_err(|e| e.into()),
+        None => {
+            let msg = format!("{}: no precomputed prover available", circuit.name);
+            tracing::error!(msg);
+            Err(BackendError::from(Error::new(ErrorKind::Other, msg)))
+        }
     }
 }
 
