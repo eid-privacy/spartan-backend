@@ -62,6 +62,11 @@ pub fn handle_msm<CS: ConstraintSystem<Scalar>>(
         (&points[0], &points[1], &scalars[0])
     {
         let base = ConstantPoint::new(to_spartan_scalar(px), to_spartan_scalar(py));
+        let is_infinity = base.x == Scalar::ZERO && base.y == Scalar::ZERO;
+        if !is_infinity && !base.is_on_p256_curve() {
+            tracing::error!("MSM with an off-curve constant base point is unsupported");
+            return Err(SynthesisError::Unsatisfiable);
+        }
         // y == 0 covers the (0, 0) infinity encoding and order-2 points, whose
         // native doubling chain is undefined; fall through to the generic path.
         if base.y != Scalar::ZERO {
@@ -175,13 +180,18 @@ mod tests {
         }
     }
 
-    fn synthesize(scalar: Scalar, out_x: Scalar, out_y: Scalar) -> TestConstraintSystem<Scalar> {
+    fn synthesize(
+        base_x: Scalar,
+        base_y: Scalar,
+        scalar: Scalar,
+        out_x: Scalar,
+        out_y: Scalar,
+    ) -> TestConstraintSystem<Scalar> {
         let synth = NoirCircuitSynthesizer::new(
             artifact(),
             vec![
-                // ACIR's canonical point at infinity.
-                InputWire::new(true, BASE_X_W, Some(Scalar::ZERO)),
-                InputWire::new(true, BASE_Y_W, Some(Scalar::ZERO)),
+                InputWire::new(true, BASE_X_W, Some(base_x)),
+                InputWire::new(true, BASE_Y_W, Some(base_y)),
                 InputWire::new(true, SCALAR_W, Some(scalar)),
                 InputWire::new(true, OUTPUT_X_W, Some(out_x)),
                 InputWire::new(true, OUTPUT_Y_W, Some(out_y)),
@@ -209,7 +219,13 @@ mod tests {
             Scalar::from(2),
             Scalar::from(0xdead_beef_u64),
         ] {
-            let cs = synthesize(scalar, Scalar::ZERO, Scalar::ZERO);
+            let cs = synthesize(
+                Scalar::ZERO,
+                Scalar::ZERO,
+                scalar,
+                Scalar::ZERO,
+                Scalar::ZERO,
+            );
             assert!(
                 cs.is_satisfied(),
                 "k * infinity must be provable for k = {scalar:?}, unsatisfied: {:?}",
@@ -224,10 +240,59 @@ mod tests {
         // (the dummy) as the output of 1 * infinity has to be rejected.
         let dummy =
             crate::noir::synthesis::constant_point::ConstantPoint::<Scalar>::p256_generator();
-        let cs = synthesize(Scalar::ONE, dummy.x, dummy.y);
+        let cs = synthesize(Scalar::ZERO, Scalar::ZERO, Scalar::ONE, dummy.x, dummy.y);
         assert!(
             !cs.is_satisfied(),
             "a finite output for k * infinity must be rejected"
         );
+    }
+
+    #[test]
+    fn variable_base_msm_rejects_off_curve_point() {
+        let cs = synthesize(
+            Scalar::ONE,
+            Scalar::ONE,
+            Scalar::ZERO,
+            Scalar::ZERO,
+            Scalar::ZERO,
+        );
+        assert!(
+            !cs.is_satisfied(),
+            "variable-base MSM must reject an off-curve input point"
+        );
+    }
+
+    #[test]
+    fn fixed_base_msm_rejects_off_curve_constant() {
+        use crate::noir::synthesis::allocation_support::{WitnessMap, allocate_witness};
+
+        let mut cs = TestConstraintSystem::<Scalar>::new();
+        let mut allocations = WitnessMap::new(OUTPUT_Y_W.witness_index());
+        for (witness, value) in [
+            (SCALAR_W, Scalar::ONE),
+            (OUTPUT_X_W, Scalar::ZERO),
+            (OUTPUT_Y_W, Scalar::ZERO),
+        ] {
+            allocations.insert(
+                witness.witness_index(),
+                allocate_witness(&mut cs, witness, Some(value)).unwrap(),
+            );
+        }
+
+        let result = handle_msm(
+            &allocations,
+            &mut cs.namespace(|| "MSM"),
+            &[
+                FunctionInput::Constant(FieldElement::from(1u128)),
+                FunctionInput::Constant(FieldElement::from(1u128)),
+            ],
+            &[
+                FunctionInput::Witness(SCALAR_W),
+                FunctionInput::Constant(FieldElement::from(0u128)),
+            ],
+            &(OUTPUT_X_W, OUTPUT_Y_W),
+        );
+
+        assert!(matches!(result, Err(SynthesisError::Unsatisfiable)));
     }
 }

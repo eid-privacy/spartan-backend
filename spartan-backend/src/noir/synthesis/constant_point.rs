@@ -40,6 +40,16 @@ impl<F: PrimeField> ConstantPoint<F> {
         self.y * self.y - x * x * x + F::from(3) * x
     }
 
+    /// The standard P-256 curve coefficient `b`.
+    pub fn p256_b() -> F {
+        algebra_utils::hex_to_ff("5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b")
+    }
+
+    /// Returns whether this finite affine point lies on P-256.
+    pub fn is_on_p256_curve(&self) -> bool {
+        self.recover_b() == Self::p256_b()
+    }
+
     /// Tangent doubling with `a = -3`: `lambda = (3x^2 - 3) / (2y)`.
     /// Panics if `y == 0` (an order-2 point); the dispatcher guarantees
     /// `y != 0`, and the doubling chain of an odd-order point never produces
@@ -132,9 +142,8 @@ mod tests {
 
     #[test]
     fn recover_b_matches_p256() {
-        let b: Scalar =
-            hex_to_ff("5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b");
-        assert_eq!(generator().recover_b(), b);
+        assert_eq!(generator().recover_b(), ConstantPoint::p256_b());
+        assert!(generator().is_on_p256_curve());
     }
 
     #[test]
