@@ -77,5 +77,7 @@ pub fn unwrap_point<CS: ConstraintSystem<Scalar>>(
 
     let is_infinity = x_is_zero.mul(cs.namespace(|| format!("{label} is_infinity")), &y_is_zero)?;
 
-    Ok(AllocatedPoint { x, y, is_infinity })
+    let point = AllocatedPoint { x, y, is_infinity };
+    point.enforce_p256_valid(cs.namespace(|| format!("{label} is valid P-256")))?;
+    Ok(point)
 }

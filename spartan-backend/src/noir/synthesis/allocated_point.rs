@@ -111,6 +111,57 @@ where
         (&self.x, &self.y, &self.is_infinity)
     }
 
+    /// Enforces that this is either canonical infinity or a finite P-256 point.
+    pub fn enforce_p256_valid<CS: ConstraintSystem<Scalar>>(
+        &self,
+        mut cs: CS,
+    ) -> Result<(), SynthesisError> {
+        let x_squared = AllocatedNum::alloc(cs.namespace(|| "x squared"), || {
+            let x = self
+                .x
+                .get_value()
+                .ok_or(SynthesisError::AssignmentMissing)?;
+            Ok(x * x)
+        })?;
+        cs.enforce(
+            || "x squared is correct",
+            |lc| lc + self.x.get_variable(),
+            |lc| lc + self.x.get_variable(),
+            |lc| lc + x_squared.get_variable(),
+        );
+
+        let x_cubed = AllocatedNum::alloc(cs.namespace(|| "x cubed"), || {
+            let x_squared = x_squared
+                .get_value()
+                .ok_or(SynthesisError::AssignmentMissing)?;
+            let x = self
+                .x
+                .get_value()
+                .ok_or(SynthesisError::AssignmentMissing)?;
+            Ok(x_squared * x)
+        })?;
+        cs.enforce(
+            || "x cubed is correct",
+            |lc| lc + x_squared.get_variable(),
+            |lc| lc + self.x.get_variable(),
+            |lc| lc + x_cubed.get_variable(),
+        );
+
+        let b = ConstantPoint::<Scalar>::p256_b();
+        cs.enforce(
+            || "point satisfies P-256 curve equation or is infinity",
+            |lc| lc + self.y.get_variable(),
+            |lc| lc + self.y.get_variable(),
+            |lc| {
+                lc + x_cubed.get_variable() - (Scalar::from(3), self.x.get_variable())
+                    + (b, CS::one())
+                    - (b, self.is_infinity.get_variable())
+            },
+        );
+
+        Ok(())
+    }
+
     /// Negates the provided point
     pub fn negate<CS: ConstraintSystem<Scalar>>(&self, mut cs: CS) -> Result<Self, SynthesisError> {
         let y = AllocatedNum::alloc(cs.namespace(|| "y"), || Ok(-*self.y.get_value().get()?))?;
