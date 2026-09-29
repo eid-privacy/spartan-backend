@@ -9,7 +9,12 @@ mod trivial_circuit;
 pub mod types;
 mod utils;
 
-use std::{env, time::Instant, path::PathBuf, io::{Error, ErrorKind}};
+use std::{
+    env,
+    io::{Error, ErrorKind},
+    path::PathBuf,
+    time::Instant,
+};
 
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use bellpepper_core::{ConstraintSystem, num::AllocatedNum, test_cs::TestConstraintSystem};
@@ -68,11 +73,19 @@ pub fn run_precompute(circuit: &CircuitParameters) -> Result<PathBuf, BackendErr
 
 /// Produces a base64 proof, reusing `target/precompute.bin` when it is present
 /// and still matches the circuit, otherwise falling back to monolithic proving.
-pub fn prove_with_precompute(circuit: &CircuitParameters, path: PathBuf) -> Result<String, BackendError> {
+pub fn prove_with_precompute(
+    circuit: &CircuitParameters,
+    path: PathBuf,
+) -> Result<String, BackendError> {
     let t_read = Instant::now();
     let loaded = precompute::load(circuit, path.clone());
     let read_elapsed = t_read.elapsed();
-    tracing::info!("{}: read {} from disk in {:.3?}", circuit.name, path.display(), read_elapsed);
+    tracing::info!(
+        "{}: read {} from disk in {:.3?}",
+        circuit.name,
+        path.display(),
+        read_elapsed
+    );
     match loaded {
         Some(mut prover) => {
             let _span = info_span!("prove_precomputed", circuit = ?circuit.name).entered();
@@ -82,16 +95,12 @@ pub fn prove_with_precompute(circuit: &CircuitParameters, path: PathBuf) -> Resu
             Ok(proof_to_base64(&proof))
         }
         None => {
-            let msg = format!(
-                "{}: no precomputed prover available",
-                circuit.name
-            );
+            let msg = format!("{}: no precomputed prover available", circuit.name);
             tracing::error!(msg);
             Err(BackendError::from(Error::new(ErrorKind::Other, msg)))
         }
     }
 }
-
 
 /// Generate a Vega zkSNARK proof for the given Noir circuit parameters.
 pub fn prove_circuit(circuit: &CircuitParameters) -> Result<VegaZkSNARK<E>, VegaError> {

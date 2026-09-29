@@ -1,7 +1,14 @@
 use std::{env, io::Write, path::PathBuf};
 
 use clap::Parser;
-use spartan_backend::{instantiate_circuit_from_dir, instantiate_circuit_with_name, instantiate_prover_circuit_from_dir, instantiate_prover_circuit_with_name, instantiate_verifier_circuit_from_dir, instantiate_verifier_circuit_with_name, noir::{circuit::CircuitParameters, synthesis::circuit_synthesizer::NoirCircuitSynthesizer}, prove_circuit, prove_circuit_to_base64, prove_with_precompute, report_proof_size, run_precompute, verify_circuit, verify_circuit_from_base64, E};
+use spartan_backend::{
+    E, instantiate_circuit_from_dir, instantiate_circuit_with_name,
+    instantiate_prover_circuit_from_dir, instantiate_prover_circuit_with_name,
+    instantiate_verifier_circuit_from_dir, instantiate_verifier_circuit_with_name,
+    noir::{circuit::CircuitParameters, synthesis::circuit_synthesizer::NoirCircuitSynthesizer},
+    prove_circuit, prove_circuit_to_base64, prove_with_precompute, report_proof_size,
+    run_precompute, verify_circuit, verify_circuit_from_base64,
+};
 use tracing::info_span;
 use vega_prover::bellpepper::{r1cs::VegaShape, shape_cs::ShapeCS};
 
