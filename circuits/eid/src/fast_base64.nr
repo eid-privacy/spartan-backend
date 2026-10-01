@@ -123,6 +123,37 @@ pub fn encode_url_into<let IN_LEN: u32, let OUT_LEN: u32>(
     (in_len * 4 + 2) / 3
 }
 
+/// Encode exactly 32 bytes (a SHA-256 digest, or a P-256/secp256r1-sized
+/// field element) to base64url, returning the full 43-character result
+/// (`ceil(32 * 4 / 3)`). Lookup-free, same approach as [`encode_url_into`].
+pub fn encode_32_bytes_url(bytes: [u8; 32]) -> [u8; 43] {
+    let mut padded: [u8; 33] = [0; 33];
+    for i in 0..32 {
+        padded[i] = bytes[i];
+    }
+    let mut out: [u8; 44] = [0; 44];
+    let _ = encode_url_into(padded, 32, &mut out, 0);
+    let mut result: [u8; 43] = [0; 43];
+    for i in 0..43 {
+        result[i] = out[i];
+    }
+    result
+}
+
+#[test]
+fn test_encode_32_bytes_url_known_vector() {
+    // 32 bytes 0x01..0x20 -> base64url (verified against a reference encoder).
+    let mut input: [u8; 32] = [0; 32];
+    for i in 0..32 {
+        input[i] = i as u8 + 1;
+    }
+    let expected: [u8; 43] = "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA".as_bytes();
+    let result = encode_32_bytes_url(input);
+    for i in 0..43 {
+        assert(result[i] == expected[i]);
+    }
+}
+
 #[test]
 fn test_u6_to_ascii_url_boundaries() {
     assert(u6_to_ascii_url(0) == 65); // 'A'

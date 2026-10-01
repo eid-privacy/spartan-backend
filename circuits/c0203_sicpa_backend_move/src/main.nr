@@ -1,7 +1,7 @@
 use noir_base64::{BASE64_URL_DECODER, BASE64_URL_ENCODER};
 use sha256::sha256_var;
 
-use eid::fast_base64::encode_url_into;
+use eid::fast_base64::{encode_32_bytes_url, encode_url_into};
 use eid::field_utils::p256_scalar_from_digest;
 use eid::move_right;
 use std::field::t256::{P256Point, T256Scalar, t256_msm, t256_ec_add};
@@ -178,7 +178,10 @@ fn main(
     let dob_disclosure = build_dob_disclosure(dob_salt, dob_value);
     let encoded_disclosure = BASE64_URL_ENCODER::encode_var(dob_disclosure);
 
-    let expected_digest: [u8; COORD_BASE64_LEN] = BASE64_URL_ENCODER::encode(sha256_var(
+    // Encode the digest with `fast_base64` rather than `BASE64_URL_ENCODER::encode`,
+    // for the same reason as the payload encode above: the latter's alphabet
+    // lookup is much more expensive on this backend (see OPTIMIZE.md).
+    let expected_digest: [u8; COORD_BASE64_LEN] = encode_32_bytes_url(sha256_var(
         encoded_disclosure.storage(),
         encoded_disclosure.len(),
     ));
