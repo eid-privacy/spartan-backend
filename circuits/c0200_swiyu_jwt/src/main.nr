@@ -1,14 +1,14 @@
-use noir_base64::{BASE64_URL_DECODER, BASE64_URL_ENCODER};
+use noir_base64::BASE64_URL_DECODER;
 use sha256::sha256_var;
 
-use eid::fast_base64::encode_url_into;
+use eid::fast_base64::{encode_32_bytes_url, encode_url_into};
 use eid::field_utils::{enforce_ecdsa_parameters, p256_scalar_from_digest};
 use std::field::t256::{P256Point, T256Scalar, t256_msm, t256_ec_add};
 
 mod constants;
 use constants::{
-    COORD_BASE64_LEN, DISCLOSURE_MAX_LEN, DOB_CLAIM_NAME, DOB_SALT_MAX_LEN, DOB_VALUE_MAX_LEN,
-    MIN_AGE_YEARS, PAYLOAD_MAX_LEN,
+    COORD_BASE64_LEN, DISCLOSURE_ENCODE_IN_LEN, DISCLOSURE_ENCODED_MAX_LEN, DISCLOSURE_MAX_LEN,
+    DOB_CLAIM_NAME, DOB_SALT_MAX_LEN, DOB_VALUE_MAX_LEN, MIN_AGE_YEARS, PAYLOAD_MAX_LEN,
 };
 
 pub global G: P256Point = P256Point {
@@ -64,6 +64,17 @@ fn extract_coord_for_key<let N: u32>(
     coord_bytes
 }
 
+/// Returns an untrusted claim about the base64url-decoded value of
+/// `coord_text`. Callers MUST constrain it afterward (e.g. by re-encoding
+/// with `fast_base64::encode_32_bytes_url` and comparing against
+/// `coord_text`). Runs the existing `noir_base64` decoder unconstrained so
+/// its witness-indexed lookup-table cost is never synthesized (see
+/// OPTIMIZE.md).
+unconstrained fn decode_coord_hint(coord_text: [u8; COORD_BASE64_LEN]) -> Field {
+    let decoded: [u8; 32] = BASE64_URL_DECODER::decode(coord_text);
+    Field::from_be_bytes(decoded)
+}
+
 fn birth_date_as_int(value: BoundedVec<u8, DOB_VALUE_MAX_LEN>) -> u32 {
     // YYYY-MM-DD: dashes at indices 4 and 7 are skipped
     let d = value.storage();
@@ -86,20 +97,25 @@ fn main(
     payload: BoundedVec<u8, PAYLOAD_MAX_LEN>,
     dob_salt: BoundedVec<u8, DOB_SALT_MAX_LEN>,
     dob_value: BoundedVec<u8, DOB_VALUE_MAX_LEN>,
-    dob_sd_offset: u32,
-    x_offset: u32,
+    dob_sd_offset: u16,
+    x_offset: u16,
     device_s: Field,
     // JWT/issuer ECDSA precompute (c0102 "vanilla equation" style):
     // R_jwt and s_inv_jwt s.t. R_jwt = t*s^-1*G + r*s^-1*Q_iss where
     // t = sha256(signing_input), r = R_jwt.x, s = jwt_signature[32..].
     // Kept private: t is derived from the private payload in-circuit, and the
     // equation itself is the soundness check (cf. c0102).
-    R_jwt_x: [u8; 32],
-    R_jwt_y: [u8; 32],
+    // Point coordinates below are `Field` rather than `[u8; 32]`: every one
+    // of them is only ever consumed via `Field::from_be_bytes`, so the byte
+    // array bought nothing but 32 mandatory per-byte RANGE checks each -- a
+    // `Field` input needs none, since every field element is already
+    // canonical mod p by construction of the proving system.
+    R_jwt_x: Field,
+    R_jwt_y: Field,
     s_inv_jwt: Field,
     // Public inputs
-    issuer_pub_x: pub [u8; 32],
-    issuer_pub_y: pub [u8; 32],
+    issuer_pub_x: pub Field,
+    issuer_pub_y: pub Field,
     now_date: pub u32,
     // Device ECDSA precompute (c0100 "Crescent" style):
     // T_dev = R_dev*r^-1, U_dev = -e*r^-1*G with e = challenge_nonce,
@@ -109,18 +125,30 @@ fn main(
     // equation only binds device_pub.x to (T*s + U).x.
     // R_dev is unused in-circuit but MUST stay public: the verifier needs it to
     // recompute T_dev/U_dev off-circuit. Do not remove.
+    //
+    // Kept as `[u8; 32]` rather than `Field` (unlike the other point
+    // coordinates above): since this pair is never read, a `Field` version
+    // has no opcode referencing it at all, which the backend's precommitted-
+    // witness allocation can't handle ("assignment for a variable could not
+    // be computed"). The mandatory per-byte RANGE checks on `[u8; 32]` give
+    // the synthesizer something to allocate, at the cost of the 512
+    // constraints a totally-unused `Field` pair would otherwise save.
     _R_dev_x: pub [u8; 32],
     _R_dev_y: pub [u8; 32],
-    T_dev_x: pub [u8; 32],
-    T_dev_y: pub [u8; 32],
-    U_dev_x: pub [u8; 32],
-    U_dev_y: pub [u8; 32],
+    T_dev_x: pub Field,
+    T_dev_y: pub Field,
+    U_dev_x: pub Field,
+    U_dev_y: pub Field,
 ) {
+    // Narrowed to u16: PAYLOAD_MAX_LEN is always far below 2^16, and every
+    // comparison against this length (here and inside `encode_url_into`) is
+    // sized to the operand's declared type -- u16 halves that cost versus u32.
+    let payload_len: u16 = payload.len() as u16;
     // sanity checking prover-provided offsets
     // TODO: can we find a tighter bound ?
-    assert(dob_sd_offset < payload.len() - COORD_BASE64_LEN);
+    assert(dob_sd_offset < payload_len - COORD_BASE64_LEN as u16);
     // 49 bytes = COORD_BASE634_LEN + len("x":") + closing quote
-    assert(x_offset < payload.len() - 49);
+    assert(x_offset < payload_len - 49);
     // Constructing the signing input directly into a fixed-size buffer.
     //
     // We bypass `BASE64_URL_ENCODER::encode_var` and `BoundedVec::extend_from_*`
@@ -137,14 +165,13 @@ fn main(
     }
     signing_input_storage[ENCODED_HEADER_LEN] = ASCII_DOT;
     let payload_storage = payload.storage();
-    let payload_len = payload.len();
-    let encoded_payload_len: u32 = encode_url_into(
+    let encoded_payload_len: u16 = encode_url_into(
         payload_storage,
         payload_len,
         &mut signing_input_storage,
         ENCODED_HEADER_LEN + 1,
     );
-    let signing_input_len: u32 = ENCODED_HEADER_LEN + 1 + encoded_payload_len;
+    let signing_input_len: u32 = ENCODED_HEADER_LEN + 1 + encoded_payload_len as u32;
 
     // ECDSA verification of the issuer JWT signature (c0102 "vanilla equation").
     // We assert that R_jwt = t*s^-1*G + r*s^-1*Q_iss with r := R_jwt.x. Equivalent to
@@ -154,11 +181,8 @@ fn main(
     let signing_digest: [u8; 32] =
         sha256_var(signing_input_storage, signing_input_len);
     let t_jwt = T256Scalar { hi: 0, lo: p256_scalar_from_digest(signing_digest) };
-    let R_jwt = P256Point { x: Field::from_be_bytes(R_jwt_x), y: Field::from_be_bytes(R_jwt_y) };
-    let Q_iss = P256Point {
-        x: Field::from_be_bytes(issuer_pub_x),
-        y: Field::from_be_bytes(issuer_pub_y),
-    };
+    let R_jwt = P256Point { x: R_jwt_x, y: R_jwt_y };
+    let Q_iss = P256Point { x: issuer_pub_x, y: issuer_pub_y };
     let s_inv_scalar_jwt = T256Scalar { hi: 0, lo: s_inv_jwt };
 
     // enforce ECDSA restrictions
@@ -180,16 +204,32 @@ fn main(
     assert(R_jwt.y == rhs_jwt.y, "Invalid JWT signature (y)");
 
     let dob_disclosure = build_dob_disclosure(dob_salt, dob_value);
-    let encoded_disclosure = BASE64_URL_ENCODER::encode_var(dob_disclosure);
+    // Encode the disclosure JSON with `fast_base64` rather than
+    // `BASE64_URL_ENCODER::encode_var`, for the same reason as the payload
+    // encode above: the latter's alphabet lookup is much more expensive on
+    // this backend (see OPTIMIZE.md).
+    let mut disclosure_padded: [u8; DISCLOSURE_ENCODE_IN_LEN] = [0; DISCLOSURE_ENCODE_IN_LEN];
+    let disclosure_storage = dob_disclosure.storage();
+    for i in 0..DISCLOSURE_MAX_LEN {
+        disclosure_padded[i] = disclosure_storage[i];
+    }
+    let mut encoded_disclosure_storage: [u8; DISCLOSURE_ENCODED_MAX_LEN] =
+        [0; DISCLOSURE_ENCODED_MAX_LEN];
+    let encoded_disclosure_len = encode_url_into(
+        disclosure_padded,
+        dob_disclosure.len() as u16,
+        &mut encoded_disclosure_storage,
+        0,
+    );
 
-    let expected_digest: [u8; COORD_BASE64_LEN] = BASE64_URL_ENCODER::encode(sha256_var(
-        encoded_disclosure.storage(),
-        encoded_disclosure.len(),
+    let expected_digest: [u8; COORD_BASE64_LEN] = encode_32_bytes_url(sha256_var(
+        encoded_disclosure_storage,
+        encoded_disclosure_len as u32,
     ));
 
     for i in 0..COORD_BASE64_LEN {
         assert(
-            payload_storage[dob_sd_offset + i] == expected_digest[i],
+            payload_storage[dob_sd_offset as u32 + i] == expected_digest[i],
             "DOB disclosure digest mismatch",
         );
     }
@@ -198,9 +238,25 @@ fn main(
         "User must be 25 or older",
     );
 
-    let device_key_x_bytes = extract_coord_for_key(payload_storage, x_offset, ASCII_X);
+    let device_key_x_bytes = extract_coord_for_key(payload_storage, x_offset as u32, ASCII_X);
 
-    let device_pub_x: [u8; 32] = BASE64_URL_DECODER::decode(device_key_x_bytes);
+    // Safety: `device_pub_x_field` is an untrusted claim from an
+    // unconstrained base64 decode; it is constrained below by re-encoding
+    // with `fast_base64` and asserting the result matches
+    // `device_key_x_bytes` byte-for-byte. Base64url is injective on
+    // fixed-length byte arrays, so a matching encoding can only come from
+    // the correct value -- the same soundness as an in-circuit decode,
+    // without the cost of `noir_base64`'s decoder (which indexes a lookup
+    // table by a witness; see OPTIMIZE.md).
+    let device_pub_x_field: Field = unsafe { decode_coord_hint(device_key_x_bytes) };
+    let device_pub_x_bytes: [u8; 32] = device_pub_x_field.to_be_bytes();
+    let reencoded_coord = encode_32_bytes_url(device_pub_x_bytes);
+    for i in 0..COORD_BASE64_LEN {
+        assert(
+            reencoded_coord[i] == device_key_x_bytes[i],
+            "Device pubkey coordinate does not match credential",
+        );
+    }
 
     // ECDSA verification of the device signature on challenge_nonce (c0100
     // "Crescent" style). The device pubkey is derived in-circuit from the
@@ -211,9 +267,8 @@ fn main(
     // t256_msm / t256_ec_add.
     //
     let s_dev_scalar = T256Scalar { lo: device_s, hi: 0 };
-    let T_dev = P256Point { x: Field::from_be_bytes(T_dev_x), y: Field::from_be_bytes(T_dev_y) };
-    let U_dev = P256Point { x: Field::from_be_bytes(U_dev_x), y: Field::from_be_bytes(U_dev_y) };
-    let device_pub_x_field = Field::from_be_bytes(device_pub_x);
+    let T_dev = P256Point { x: T_dev_x, y: T_dev_y };
+    let U_dev = P256Point { x: U_dev_x, y: U_dev_y };
     assert(
         device_pub_x_field == t256_ec_add(t256_msm([T_dev], [s_dev_scalar]), U_dev).x,
         "Invalid device signature on challenge nonce",
@@ -396,18 +451,18 @@ fn test_sdjwt_verification() {
         745, // dob_sd_offset
         1471, // x_offset
         device_s,
-        r_jwt_x,
-        r_jwt_y,
+        Field::from_be_bytes(r_jwt_x),
+        Field::from_be_bytes(r_jwt_y),
         s_inv_jwt,
-        issuer_x,
-        issuer_y,
+        Field::from_be_bytes(issuer_x),
+        Field::from_be_bytes(issuer_y),
         now_date,
         r_dev_x,
         r_dev_y,
-        t_dev_x,
-        t_dev_y,
-        u_dev_x,
-        u_dev_y,
+        Field::from_be_bytes(t_dev_x),
+        Field::from_be_bytes(t_dev_y),
+        Field::from_be_bytes(u_dev_x),
+        Field::from_be_bytes(u_dev_y),
     )
 }
 
