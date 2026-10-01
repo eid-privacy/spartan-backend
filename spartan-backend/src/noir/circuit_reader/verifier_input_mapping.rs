@@ -3,6 +3,7 @@ use std::{
     fs,
 };
 
+use acir::{AcirField, FieldElement};
 use noirc_artifacts::program::ProgramArtifact;
 use serde_json::{Error, Map, Value};
 
@@ -51,6 +52,15 @@ pub fn map_verifier_inputs(
         let wire_mapping = wiring.get(k).unwrap();
         let arity = &wire_mapping.len();
         let split_input = match input_map.get(k).unwrap() {
+            // A single-wire hex literal (the same "0x..." convention Prover.toml
+            // uses for Field inputs) names one Field value directly, as opposed
+            // to the multi-wire case below where the string's raw ASCII bytes
+            // are spread one-per-wire (e.g. a `str<N>`/byte-array parameter).
+            Value::String(s) if *arity == 1 && s.starts_with("0x") => {
+                let field = FieldElement::from_hex(s)
+                    .unwrap_or_else(|| panic!("invalid hex literal for input '{k}': {s}"));
+                vec![CircuitInput::FieldElement(field)]
+            }
             Value::String(s) => {
                 let mut as_bytes = s.as_bytes().to_vec();
                 as_bytes.resize(*arity, 0u8);

@@ -94,12 +94,17 @@ fn main(
     // t = sha256(signing_input), r = R_jwt.x, s = jwt_signature[32..].
     // Kept private: t is derived from the private payload in-circuit, and the
     // equation itself is the soundness check (cf. c0102).
-    R_jwt_x: [u8; 32],
-    R_jwt_y: [u8; 32],
+    // Point coordinates below are `Field` rather than `[u8; 32]`: every one
+    // of them is only ever consumed via `Field::from_be_bytes`, so the byte
+    // array bought nothing but 32 mandatory per-byte RANGE checks each -- a
+    // `Field` input needs none, since every field element is already
+    // canonical mod p by construction of the proving system.
+    R_jwt_x: Field,
+    R_jwt_y: Field,
     s_inv_jwt: Field,
     // Public inputs
-    issuer_pub_x: pub [u8; 32],
-    issuer_pub_y: pub [u8; 32],
+    issuer_pub_x: pub Field,
+    issuer_pub_y: pub Field,
     now_date: pub u32,
     // Device ECDSA precompute (c0100 "Crescent" style):
     // T_dev = R_dev*r^-1, U_dev = -e*r^-1*G with e = challenge_nonce,
@@ -109,12 +114,20 @@ fn main(
     // equation only binds device_pub.x to (T*s + U).x.
     // R_dev is unused in-circuit but MUST stay public: the verifier needs it to
     // recompute T_dev/U_dev off-circuit. Do not remove.
+    //
+    // Kept as `[u8; 32]` rather than `Field` (unlike the other point
+    // coordinates above): since this pair is never read, a `Field` version
+    // has no opcode referencing it at all, which the backend's precommitted-
+    // witness allocation can't handle ("assignment for a variable could not
+    // be computed"). The mandatory per-byte RANGE checks on `[u8; 32]` give
+    // the synthesizer something to allocate, at the cost of the 512
+    // constraints a totally-unused `Field` pair would otherwise save.
     _R_dev_x: pub [u8; 32],
     _R_dev_y: pub [u8; 32],
-    T_dev_x: pub [u8; 32],
-    T_dev_y: pub [u8; 32],
-    U_dev_x: pub [u8; 32],
-    U_dev_y: pub [u8; 32],
+    T_dev_x: pub Field,
+    T_dev_y: pub Field,
+    U_dev_x: pub Field,
+    U_dev_y: pub Field,
 ) {
     // Narrowed to u16: PAYLOAD_MAX_LEN is always far below 2^16, and every
     // comparison against this length (here and inside `encode_url_into`) is
@@ -157,11 +170,8 @@ fn main(
     let signing_digest: [u8; 32] =
         sha256_var(signing_input_storage, signing_input_len);
     let t_jwt = T256Scalar { hi: 0, lo: p256_scalar_from_digest(signing_digest) };
-    let R_jwt = P256Point { x: Field::from_be_bytes(R_jwt_x), y: Field::from_be_bytes(R_jwt_y) };
-    let Q_iss = P256Point {
-        x: Field::from_be_bytes(issuer_pub_x),
-        y: Field::from_be_bytes(issuer_pub_y),
-    };
+    let R_jwt = P256Point { x: R_jwt_x, y: R_jwt_y };
+    let Q_iss = P256Point { x: issuer_pub_x, y: issuer_pub_y };
     let s_inv_scalar_jwt = T256Scalar { hi: 0, lo: s_inv_jwt };
 
     // enforce ECDSA restrictions
@@ -214,8 +224,8 @@ fn main(
     // t256_msm / t256_ec_add.
     //
     let s_dev_scalar = T256Scalar { lo: device_s, hi: 0 };
-    let T_dev = P256Point { x: Field::from_be_bytes(T_dev_x), y: Field::from_be_bytes(T_dev_y) };
-    let U_dev = P256Point { x: Field::from_be_bytes(U_dev_x), y: Field::from_be_bytes(U_dev_y) };
+    let T_dev = P256Point { x: T_dev_x, y: T_dev_y };
+    let U_dev = P256Point { x: U_dev_x, y: U_dev_y };
     let device_pub_x_field = Field::from_be_bytes(device_pub_x);
     assert(
         device_pub_x_field == t256_ec_add(t256_msm([T_dev], [s_dev_scalar]), U_dev).x,
@@ -399,18 +409,18 @@ fn test_sdjwt_verification() {
         745, // dob_sd_offset
         1471, // x_offset
         device_s,
-        r_jwt_x,
-        r_jwt_y,
+        Field::from_be_bytes(r_jwt_x),
+        Field::from_be_bytes(r_jwt_y),
         s_inv_jwt,
-        issuer_x,
-        issuer_y,
+        Field::from_be_bytes(issuer_x),
+        Field::from_be_bytes(issuer_y),
         now_date,
         r_dev_x,
         r_dev_y,
-        t_dev_x,
-        t_dev_y,
-        u_dev_x,
-        u_dev_y,
+        Field::from_be_bytes(t_dev_x),
+        Field::from_be_bytes(t_dev_y),
+        Field::from_be_bytes(u_dev_x),
+        Field::from_be_bytes(u_dev_y),
     )
 }
 
