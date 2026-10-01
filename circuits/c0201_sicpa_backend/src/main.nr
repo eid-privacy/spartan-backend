@@ -60,6 +60,17 @@ fn extract_coord_for_key<let N: u32>(
     coord_bytes
 }
 
+/// Returns an untrusted claim about the base64url-decoded value of
+/// `coord_text`. Callers MUST constrain it afterward (e.g. by re-encoding
+/// with `fast_base64::encode_32_bytes_url` and comparing against
+/// `coord_text`). Runs the existing `noir_base64` decoder unconstrained so
+/// its witness-indexed lookup-table cost is never synthesized (see
+/// OPTIMIZE.md).
+unconstrained fn decode_coord_hint(coord_text: [u8; COORD_BASE64_LEN]) -> Field {
+    let decoded: [u8; 32] = BASE64_URL_DECODER::decode(coord_text);
+    Field::from_be_bytes(decoded)
+}
+
 fn birth_date_as_int(value: BoundedVec<u8, DOB_VALUE_MAX_LEN>) -> u32 {
     // YYYY-MM-DD: dashes at indices 4 and 7 are skipped
     let d = value.storage();
@@ -202,7 +213,23 @@ fn main(
 
     let device_key_x_bytes = extract_coord_for_key(payload_storage, x_offset, ASCII_X);
 
-    let device_pub_x: [u8; 32] = BASE64_URL_DECODER::decode(device_key_x_bytes);
+    // Safety: `device_pub_x_field` is an untrusted claim from an
+    // unconstrained base64 decode; it is constrained below by re-encoding
+    // with `fast_base64` and asserting the result matches
+    // `device_key_x_bytes` byte-for-byte. Base64url is injective on
+    // fixed-length byte arrays, so a matching encoding can only come from
+    // the correct value -- the same soundness as an in-circuit decode,
+    // without the cost of `noir_base64`'s decoder (which indexes a lookup
+    // table by a witness; see OPTIMIZE.md).
+    let device_pub_x_field: Field = unsafe { decode_coord_hint(device_key_x_bytes) };
+    let device_pub_x_bytes: [u8; 32] = device_pub_x_field.to_be_bytes();
+    let reencoded_coord = encode_32_bytes_url(device_pub_x_bytes);
+    for i in 0..COORD_BASE64_LEN {
+        assert(
+            reencoded_coord[i] == device_key_x_bytes[i],
+            "Device pubkey coordinate does not match credential",
+        );
+    }
 
     // ECDSA verification of the device signature on challenge_nonce (c0100
     // "Crescent" style). The device pubkey is derived in-circuit from the
@@ -212,7 +239,6 @@ fn main(
     let s_dev_scalar = T256Scalar { lo: device_s, hi: 0 };
     let T_dev = P256Point { x: Field::from_be_bytes(T_dev_x), y: Field::from_be_bytes(T_dev_y) };
     let U_dev = P256Point { x: Field::from_be_bytes(U_dev_x), y: Field::from_be_bytes(U_dev_y) };
-    let device_pub_x_field = Field::from_be_bytes(device_pub_x);
     assert(
         device_pub_x_field == t256_ec_add(t256_msm([T_dev], [s_dev_scalar]), U_dev).x,
         "Invalid device signature on challenge nonce",
