@@ -86,8 +86,8 @@ fn main(
     payload: BoundedVec<u8, PAYLOAD_MAX_LEN>,
     dob_salt: BoundedVec<u8, DOB_SALT_MAX_LEN>,
     dob_value: BoundedVec<u8, DOB_VALUE_MAX_LEN>,
-    dob_sd_offset: u32,
-    x_offset: u32,
+    dob_sd_offset: u16,
+    x_offset: u16,
     device_s: Field,
     // JWT/issuer ECDSA precompute (c0102 "vanilla equation" style):
     // R_jwt and s_inv_jwt s.t. R_jwt = t*s^-1*G + r*s^-1*Q_iss where
@@ -116,11 +116,15 @@ fn main(
     U_dev_x: pub [u8; 32],
     U_dev_y: pub [u8; 32],
 ) {
+    // Narrowed to u16: PAYLOAD_MAX_LEN is always far below 2^16, and every
+    // comparison against this length (here and inside `encode_url_into`) is
+    // sized to the operand's declared type -- u16 halves that cost versus u32.
+    let payload_len: u16 = payload.len() as u16;
     // sanity checking prover-provided offsets
     // TODO: can we find a tighter bound ?
-    assert(dob_sd_offset < payload.len() - COORD_BASE64_LEN);
+    assert(dob_sd_offset < payload_len - COORD_BASE64_LEN as u16);
     // 49 bytes = COORD_BASE634_LEN + len("x":") + closing quote
-    assert(x_offset < payload.len() - 49);
+    assert(x_offset < payload_len - 49);
     // Constructing the signing input directly into a fixed-size buffer.
     //
     // We bypass `BASE64_URL_ENCODER::encode_var` and `BoundedVec::extend_from_*`
@@ -137,14 +141,13 @@ fn main(
     }
     signing_input_storage[ENCODED_HEADER_LEN] = ASCII_DOT;
     let payload_storage = payload.storage();
-    let payload_len = payload.len();
-    let encoded_payload_len: u32 = encode_url_into(
+    let encoded_payload_len: u16 = encode_url_into(
         payload_storage,
         payload_len,
         &mut signing_input_storage,
         ENCODED_HEADER_LEN + 1,
     );
-    let signing_input_len: u32 = ENCODED_HEADER_LEN + 1 + encoded_payload_len;
+    let signing_input_len: u32 = ENCODED_HEADER_LEN + 1 + encoded_payload_len as u32;
 
     // ECDSA verification of the issuer JWT signature (c0102 "vanilla equation").
     // We assert that R_jwt = t*s^-1*G + r*s^-1*Q_iss with r := R_jwt.x. Equivalent to
@@ -189,7 +192,7 @@ fn main(
 
     for i in 0..COORD_BASE64_LEN {
         assert(
-            payload_storage[dob_sd_offset + i] == expected_digest[i],
+            payload_storage[dob_sd_offset as u32 + i] == expected_digest[i],
             "DOB disclosure digest mismatch",
         );
     }
@@ -198,7 +201,7 @@ fn main(
         "User must be 25 or older",
     );
 
-    let device_key_x_bytes = extract_coord_for_key(payload_storage, x_offset, ASCII_X);
+    let device_key_x_bytes = extract_coord_for_key(payload_storage, x_offset as u32, ASCII_X);
 
     let device_pub_x: [u8; 32] = BASE64_URL_DECODER::decode(device_key_x_bytes);
 
