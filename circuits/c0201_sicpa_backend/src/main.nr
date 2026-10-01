@@ -1,4 +1,4 @@
-use noir_base64::{BASE64_URL_DECODER, BASE64_URL_ENCODER};
+use noir_base64::BASE64_URL_DECODER;
 use sha256::sha256_var;
 
 use eid::fast_base64::{encode_32_bytes_url, encode_url_into};
@@ -7,8 +7,9 @@ use std::field::t256::{P256Point, T256Scalar, t256_msm, t256_ec_add};
 
 mod constants;
 use constants::{
-    COORD_BASE64_LEN, DISCLOSURE_MAX_LEN, DOB_CLAIM_NAME, DOB_SALT_MAX_LEN, DOB_VALUE_MAX_LEN,
-    ENCODED_HEADER_MAX_LEN, MIN_AGE_YEARS, PAYLOAD_MAX_LEN,
+    COORD_BASE64_LEN, DISCLOSURE_ENCODE_IN_LEN, DISCLOSURE_ENCODED_MAX_LEN, DISCLOSURE_MAX_LEN,
+    DOB_CLAIM_NAME, DOB_SALT_MAX_LEN, DOB_VALUE_MAX_LEN, ENCODED_HEADER_MAX_LEN, MIN_AGE_YEARS,
+    PAYLOAD_MAX_LEN,
 };
 
 pub global G: P256Point = P256Point {
@@ -165,14 +166,27 @@ fn main(
     assert(R_jwt.y == rhs_jwt.y, "Invalid JWT signature (y)");
 
     let dob_disclosure = build_dob_disclosure(dob_salt, dob_value);
-    let encoded_disclosure = BASE64_URL_ENCODER::encode_var(dob_disclosure);
+    // Encode the disclosure JSON with `fast_base64` rather than
+    // `BASE64_URL_ENCODER::encode_var`, for the same reason as the payload
+    // encode above: the latter's alphabet lookup is much more expensive on
+    // this backend (see OPTIMIZE.md).
+    let mut disclosure_padded: [u8; DISCLOSURE_ENCODE_IN_LEN] = [0; DISCLOSURE_ENCODE_IN_LEN];
+    let disclosure_storage = dob_disclosure.storage();
+    for i in 0..DISCLOSURE_MAX_LEN {
+        disclosure_padded[i] = disclosure_storage[i];
+    }
+    let mut encoded_disclosure_storage: [u8; DISCLOSURE_ENCODED_MAX_LEN] =
+        [0; DISCLOSURE_ENCODED_MAX_LEN];
+    let encoded_disclosure_len = encode_url_into(
+        disclosure_padded,
+        dob_disclosure.len() as u16,
+        &mut encoded_disclosure_storage,
+        0,
+    );
 
-    // Encode the digest with `fast_base64` rather than `BASE64_URL_ENCODER::encode`,
-    // for the same reason as the payload encode above: the latter's alphabet
-    // lookup is much more expensive on this backend (see OPTIMIZE.md).
     let expected_digest: [u8; COORD_BASE64_LEN] = encode_32_bytes_url(sha256_var(
-        encoded_disclosure.storage(),
-        encoded_disclosure.len(),
+        encoded_disclosure_storage,
+        encoded_disclosure_len as u32,
     ));
 
     for i in 0..COORD_BASE64_LEN {

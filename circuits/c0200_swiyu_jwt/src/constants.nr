@@ -22,6 +22,13 @@ pub global DOB_CLAIM_NAME: [u8; 10] = "birth_date".as_bytes();
 /// = 2 ('["') + salt + 3 ('","') + claim_name (10) + 3 ('","') + value + 2 ('"]')
 pub global DISCLOSURE_MAX_LEN: u32 = 20 + DOB_SALT_MAX_LEN + DOB_VALUE_MAX_LEN;
 
+/// `encode_url_into` requires its input length to be a multiple of 3; round
+/// `DISCLOSURE_MAX_LEN` up to the next one.
+pub global DISCLOSURE_ENCODE_IN_LEN: u32 = ((DISCLOSURE_MAX_LEN + 2) / 3) * 3;
+/// Matches the number of bytes `encode_url_into` writes for
+/// `DISCLOSURE_ENCODE_IN_LEN`: `(n / 3) * 4`.
+pub global DISCLOSURE_ENCODED_MAX_LEN: u32 = (DISCLOSURE_ENCODE_IN_LEN * 4) / 3;
+
 /// base64url-encoded length of a 32-byte value: ceil(32 * 4 / 3).
 pub global COORD_BASE64_LEN: u32 = 43;
 
