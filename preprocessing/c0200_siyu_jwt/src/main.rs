@@ -35,8 +35,8 @@ struct ProverToml {
     /// recent run's value available via a sidecar (jwt_signature.bytes) if you
     /// need to re-run.
     jwt_signature: Option<Vec<u8>>,
-    issuer_pub_x: Vec<u8>,
-    issuer_pub_y: Vec<u8>,
+    issuer_pub_x: String,
+    issuer_pub_y: String,
     x_offset: usize,
     y_offset: usize,
     /// The 32-byte r half of the device signature. Preprocessing only: the
@@ -173,8 +173,8 @@ fn main() {
     assert_eq!(jwt_sig.len(), 64, "jwt_signature must be 64 bytes");
     let r_jwt = to_field_repr(&jwt_sig[..32]);
     let s_jwt = to_field_repr(&jwt_sig[32..]);
-    let issuer_x = to_field_repr(&prover.issuer_pub_x);
-    let issuer_y = to_field_repr(&prover.issuer_pub_y);
+    let issuer_x = field_literal_to_repr(&prover.issuer_pub_x);
+    let issuer_y = field_literal_to_repr(&prover.issuer_pub_y);
     let Q_iss = Secp256r1Affine::from_xy(
         big_to_ff::<Fp>(&BigUint::from_bytes_be(&issuer_x)),
         big_to_ff::<Fp>(&BigUint::from_bytes_be(&issuer_y)),
@@ -240,16 +240,16 @@ fn main() {
     }
     out.push('\n');
     out.push_str("# Precomputed (c0200_siyu_jwt): JWT (issuer) ECDSA recovery\n");
-    out.push_str(&fmt_array("R_jwt_x", &R_jwt_x));
-    out.push_str(&fmt_array("R_jwt_y", &R_jwt_y));
+    out.push_str(&fmt_field("R_jwt_x", &R_jwt_x));
+    out.push_str(&fmt_field("R_jwt_y", &R_jwt_y));
     out.push_str(&fmt_field("s_inv_jwt", &ff_to_be::<Fq>(&s_inv_jwt)));
     out.push_str("\n# Precomputed (c0200_siyu_jwt): device ECDSA Crescent triple\n");
     out.push_str(&fmt_array("_R_dev_x", &R_dev_x));
     out.push_str(&fmt_array("_R_dev_y", &R_dev_y));
-    out.push_str(&fmt_array("T_dev_x", &T_dev_x));
-    out.push_str(&fmt_array("T_dev_y", &T_dev_y));
-    out.push_str(&fmt_array("U_dev_x", &U_dev_x));
-    out.push_str(&fmt_array("U_dev_y", &U_dev_y));
+    out.push_str(&fmt_field("T_dev_x", &T_dev_x));
+    out.push_str(&fmt_field("T_dev_y", &T_dev_y));
+    out.push_str(&fmt_field("U_dev_x", &U_dev_x));
+    out.push_str(&fmt_field("U_dev_y", &U_dev_y));
 
     fs::write(&toml_path, out).expect("cannot write Prover.toml");
 

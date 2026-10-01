@@ -5,22 +5,16 @@
   "dob_sd_offset": null,
   "x_offset": null,
   "device_s": null,
-  "R_jwt_x": null,
-  "R_jwt_y": null,
+  "R_jwt_x": "0x52a78ee8f3f460c0b6bd8672d50617fa9573246c8640b536c620203d16f74b39",
+  "R_jwt_y": "0x91bcd75f0a273d58139f7b8779e3db95656d8da8bd72d9912234854f188145b3",
   "s_inv_jwt": null,
-  "issuer_pub_x": [
-    167, 88, 242, 105, 202, 45, 43, 222, 196, 147, 26, 246, 10, 95, 170, 234,
-    159, 69, 58, 132, 187, 67, 155, 67, 0, 203, 214, 51, 216, 74, 233, 238
-  ],
-  "issuer_pub_y": [
-    199, 128, 82, 222, 50, 34, 94, 194, 31, 221, 211, 226, 210, 93, 204, 148, 9,
-    221, 243, 248, 105, 234, 53, 127, 104, 232, 215, 158, 176, 168, 237, 32
-  ],
+  "issuer_pub_x": "0xa758f269ca2d2bdec4931af60a5faaea9f453a84bb439b4300cbd633d84ae9ee",
+  "issuer_pub_y": "0xc78052de32225ec21fddd3e2d25dcc9409ddf3f869ea357f68e8d79eb0a8ed20",
   "now_date": 20240101,
   "_R_dev_x": null,
   "_R_dev_y": null,
-  "T_dev_x": null,
-  "T_dev_y": null,
-  "U_dev_x": null,
-  "U_dev_y": null
+  "T_dev_x": "0x07891875c83a7fa1552d1a1ccc724498f7707839aade7ec451ae068627eebfbf",
+  "T_dev_y": "0xe3db6258de8111a667b976096f82d16d97052aa64ee0aa4b08b06896e8f7713c",
+  "U_dev_x": "0x84e7d2fde129857a316f6e5453d4d73329081c4dec740aa518589ab3c63132b8",
+  "U_dev_y": "0xa16138c632e87ed7ab3d1d7871052218fd332e67dcd9d33cb54c1f4633fa0d6b"
 }
