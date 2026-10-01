@@ -130,8 +130,8 @@ fn main(
     let mut signing_input_storage_scratch: [u8; SIGNING_INPUT_MAX_LEN] = [0; SIGNING_INPUT_MAX_LEN];
     signing_input_storage_scratch[0] = ASCII_DOT;
     let payload_storage = payload.storage();
-    let payload_len = payload.len();
-    let encoded_payload_len: u32 = encode_url_into(
+    let payload_len = payload.len() as u16;
+    let encoded_payload_len: u16 = encode_url_into(
         payload_storage,
         payload_len,
         &mut signing_input_storage_scratch,
@@ -147,7 +147,7 @@ fn main(
             signing_input_storage[i] = header_storage[i];
         }
     }
-    let signing_input_len: u32 = header_len + 1 + encoded_payload_len;
+    let signing_input_len: u32 = header_len + 1 + encoded_payload_len as u32;
 
     // ECDSA verification of the issuer JWT signature (c0102 "vanilla equation").
     // We assert that R_jwt = t*s^-1*G + r*s^-1*Q_iss with r := R_jwt.x. Equivalent
