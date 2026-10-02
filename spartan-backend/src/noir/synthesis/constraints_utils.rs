@@ -437,6 +437,44 @@ pub fn mul_add<F: PrimeField, CS: ConstraintSystem<F>>(
     Ok(r)
 }
 
+/// Returns a bit (as a field element in {0, 1}) that is 1 iff `a == 0`.
+pub fn is_zero<Scalar: PrimeField, CS: ConstraintSystem<Scalar>>(
+    mut cs: CS,
+    a: &AllocatedNum<Scalar>,
+) -> Result<AllocatedNum<Scalar>, SynthesisError> {
+    let r = AllocatedNum::alloc(cs.namespace(|| "r"), || {
+        let a = a.get_value().ok_or(SynthesisError::AssignmentMissing)?;
+        Ok(if bool::from(a.is_zero()) {
+            Scalar::ONE
+        } else {
+            Scalar::ZERO
+        })
+    })?;
+
+    let t = AllocatedNum::alloc(cs.namespace(|| "t"), || {
+        let a = a.get_value().ok_or(SynthesisError::AssignmentMissing)?;
+        Ok(Option::<Scalar>::from(a.invert()).unwrap_or(Scalar::ZERO))
+    })?;
+
+    // a != 0  =>  r = 0
+    cs.enforce(
+        || "t * a = 1 - r",
+        |lc| lc + t.get_variable(),
+        |lc| lc + a.get_variable(),
+        |lc| lc + CS::one() - r.get_variable(),
+    );
+
+    // r = 1  =>  a = 0
+    cs.enforce(
+        || "r * a = 0",
+        |lc| lc + r.get_variable(),
+        |lc| lc + a.get_variable(),
+        |lc| lc,
+    );
+
+    Ok(r)
+}
+
 // #[cfg(test)]
 // mod tests {
 //   use super::*;

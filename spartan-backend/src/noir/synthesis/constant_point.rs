@@ -40,6 +40,16 @@ impl<F: PrimeField> ConstantPoint<F> {
         self.y * self.y - x * x * x + F::from(3) * x
     }
 
+    /// The standard P-256 curve coefficient `b`.
+    pub fn p256_b() -> F {
+        algebra_utils::hex_to_ff("5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b")
+    }
+
+    /// Returns whether this finite affine point lies on P-256.
+    pub fn is_on_p256_curve(&self) -> bool {
+        self.recover_b() == Self::p256_b()
+    }
+
     /// Tangent doubling with `a = -3`: `lambda = (3x^2 - 3) / (2y)`.
     /// Panics if `y == 0` (an order-2 point); the dispatcher guarantees
     /// `y != 0`, and the doubling chain of an odd-order point never produces
@@ -97,6 +107,26 @@ impl<F: PrimeField> ConstantPoint<F> {
         }
         panic!("derive_offset: no suitable point found within the attempt bound");
     }
+
+    /// The standard P-256 generator `G`.
+    ///
+    /// `G` is on-curve, has `y != 0` and has prime order `n`, which makes it a
+    /// safe dummy base for the incomplete-addition ladder: no accumulator
+    /// state in the ladder can collide with a multiple of `G`, so the
+    /// incomplete formulas stay well defined.
+    ///
+    /// Only meaningful when `F` is the P-256 base field, which the rest of this
+    /// module already assumes (`a = -3`).
+    pub fn p256_generator() -> Self {
+        Self::new(
+            algebra_utils::hex_to_ff(
+                "6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296",
+            ),
+            algebra_utils::hex_to_ff(
+                "4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5",
+            ),
+        )
+    }
 }
 
 #[cfg(test)]
@@ -107,17 +137,13 @@ mod tests {
     use crate::types::Scalar;
 
     fn generator() -> ConstantPoint<Scalar> {
-        ConstantPoint::new(
-            hex_to_ff("6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296"),
-            hex_to_ff("4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5"),
-        )
+        ConstantPoint::p256_generator()
     }
 
     #[test]
     fn recover_b_matches_p256() {
-        let b: Scalar =
-            hex_to_ff("5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b");
-        assert_eq!(generator().recover_b(), b);
+        assert_eq!(generator().recover_b(), ConstantPoint::p256_b());
+        assert!(generator().is_on_p256_curve());
     }
 
     #[test]
