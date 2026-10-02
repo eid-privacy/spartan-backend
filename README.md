@@ -125,22 +125,27 @@ invariant part of the witness) and an online phase (the actual proof). The
 offline phase can be run ahead of time and reused:
 
 ```sh
-# offline, once per circuit build
+# offline phase, persisted to disk, followed by one online proof from it
 cargo run --release -- ../circuits/c0200_swiyu_jwt --precompute
 
-# online, any number of times — picks the artifact up automatically
+# monolithic proving (setup + prep + prove); never reads the artifact
 cargo run --release -- ../circuits/c0200_swiyu_jwt --prove
 ```
 
 * `--precompute` writes a single git-ignored file,
   `<circuit_dir>/target/precompute.bin` (prover key, verifier key and prepared
-  state). It can exceed a gigabyte for the bigger circuits.
-* `--prove` loads that file when it exists, otherwise it falls back to the usual
-  monolithic proving. The base64 proof is the same either way.
+  state), then loads it back and prints a base64 proof on stdout, just like
+  `--prove`. The file can exceed a gigabyte for the bigger circuits.
+* `--prove` always proves monolithically and ignores `precompute.bin`, even
+  when it exists. The base64 proof format is the same either way.
+* Reusing the artifact across proofs is only available through the library:
+  `run_precompute(&circuit)` returns its path, and
+  `prove_with_precompute(&circuit, path)` runs only the online phase. There is
+  no silent fallback: if the file is missing or stale,
+  `prove_with_precompute` returns an error.
 * The file records a fingerprint of the circuit's ACIR bytecode and of the
   online partition declared in `online.json`. Rebuilding the circuit or editing
-  `online.json` makes it stale, so `--prove` warns and falls back to regular
-  proving; re-run `--precompute`. Changing the **values** of online inputs
+  `online.json` makes it stale; re-run `--precompute`. Changing the **values** of online inputs
   (challenge nonce, device signature, …) never invalidates the artifact — that
   is the whole point of the online path.
 * Circuits without an `online.json` still work; the precomputed state saves
@@ -171,6 +176,10 @@ Two scripts drive this from the repository root:
 
   The gap between the two speedups is the cost of re-reading the artifact in a
   fresh process; a long-lived prover process would pay it once.
+
+  **Note:** the output above predates `--prove` ignoring `precompute.bin`. With
+  the current CLI the `--prove` runs in this script are monolithic, so its
+  "online" numbers no longer measure the precomputed path.
 
 ## Benchmarks
 
