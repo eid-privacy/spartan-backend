@@ -32,6 +32,14 @@ A text box in the upper right lists the latest spartan run's verify time and
 proof size — these aren't plotted as time series.
 
 Output: benchmarks.png next to the config file.
+
+If the config has an `online:` section, a second figure, benchmarks_online.png,
+tracks the online part of a spartan proof creation (what's left after
+`--precompute`) against barretenberg, in absolute seconds. Its x-axis is the
+union of `noir` and `online` commits only, and it shows bb write_vk + prove,
+`online_wall` (the whole `--prove` process), `online_load` (reading
+precompute.bin) and `online_prove` (the online prover itself). A config with
+no `spartan:` section (e.g. swiyu_jwt_precompute) only gets this figure.
 """
 
 import csv
@@ -51,6 +59,9 @@ from matplotlib.ticker import FuncFormatter
 BARRETENBERG_STYLE = {"color": "#f28e2b", "label": "barretenberg write_vk + prove"}
 SPARTAN_STYLE = {"color": "#4e79a7", "label": "spartan_proof"}
 CONSTRAINTS_STYLE = {"color": "#59a14f", "label": "spartan_constraints (pow2 distance)"}
+ONLINE_WALL_STYLE = {"color": "#e15759", "label": "online_wall (whole --prove process)"}
+ONLINE_LOAD_STYLE = {"color": "#76b7b2", "label": "online_load (read precompute.bin)"}
+ONLINE_PROVE_STYLE = {"color": "#b07aa1", "label": "online_prove (online prover only)"}
 
 # Horizontal width (in inches) allotted per commit on the x-axis.
 COMMIT_X_SPACING = 0.8
@@ -90,6 +101,7 @@ def load_config(path):
         "name": cfg["name"],
         "noir_commits": flatten_circuit_groups(cfg.get("noir")),
         "spartan_commits": flatten_circuit_groups(cfg.get("spartan")),
+        "online_commits": flatten_circuit_groups(cfg.get("online")),
     }
 
 
@@ -201,7 +213,7 @@ def main():
 
     if repo_root is None and any(
         ref == "commit-msg"
-        for ref, _ in cfg["noir_commits"] + cfg["spartan_commits"]
+        for ref, _ in cfg["noir_commits"] + cfg["spartan_commits"] + cfg["online_commits"]
     ):
         print("ERROR: 'commit-msg' refs require running inside a git repo", file=sys.stderr)
         sys.exit(1)
@@ -215,6 +227,10 @@ def main():
     for ref, label in cfg["spartan_commits"]:
         full, short = resolve(repo_root, ref, label) if repo_root else (ref, ref[:7])
         spartan_entries.append((full, short, label or short))
+    online_entries = []
+    for ref, label in cfg["online_commits"]:
+        full, short = resolve(repo_root, ref, label) if repo_root else (ref, ref[:7])
+        online_entries.append((full, short, label or short))
 
     noir_by_full = {full: (short, label) for full, short, label in noir_entries}
     spartan_by_full = {full: (short, label) for full, short, label in spartan_entries}
@@ -271,6 +287,14 @@ def main():
         else:
             missing.append((full, short, "spartan"))
 
+    online_data = {}
+    for full, short, _ in online_entries:
+        path = results_dir / f"online-{short}.csv"
+        if path.is_file():
+            online_data[full] = parse_csv(path)
+        else:
+            missing.append((full, short, "online"))
+
     for full, short, leg in missing:
         print(
             f"NOTE: missing {leg} result for {short}; measure with: "
@@ -292,6 +316,31 @@ def main():
         )
         sys.exit(1)
     baseline = baseline_data["bb_write_vk"]["mean"] + baseline_data["bb_prove"]["mean"]
+
+    def bb_combined(full):
+        data = noir_data.get(full)
+        if not data or "bb_write_vk" not in data or "bb_prove" not in data:
+            return None
+        wvk, prove = data["bb_write_vk"], data["bb_prove"]
+        return {
+            "mean": wvk["mean"] + prove["mean"],
+            "min": wvk["min"] + prove["min"],
+            "max": wvk["max"] + prove["max"],
+        }
+
+    bb_sum_by_full = {}
+    for full in noir_data:
+        combined = bb_combined(full)
+        if combined:
+            bb_sum_by_full[full] = {"bb_sum": combined}
+
+    # Without a spartan section the main figure would only repeat bb, so a
+    # noir + online config (e.g. swiyu_jwt_precompute) gets just the online one.
+    if not spartan_entries:
+        if online_entries:
+            plot_online(cfg, config_path, repo_root, noir_entries, bb_sum_by_full,
+                        online_entries, online_data)
+        return
 
     fig, ax = plt.subplots(figsize=(max(8, n * COMMIT_X_SPACING), 6))
 
@@ -332,23 +381,6 @@ def main():
                 color=style["color"],
                 zorder=7,
             )
-
-    def bb_combined(full):
-        data = noir_data.get(full)
-        if not data or "bb_write_vk" not in data or "bb_prove" not in data:
-            return None
-        wvk, prove = data["bb_write_vk"], data["bb_prove"]
-        return {
-            "mean": wvk["mean"] + prove["mean"],
-            "min": wvk["min"] + prove["min"],
-            "max": wvk["max"] + prove["max"],
-        }
-
-    bb_sum_by_full = {}
-    for full in noir_data:
-        combined = bb_combined(full)
-        if combined:
-            bb_sum_by_full[full] = {"bb_sum": combined}
 
     plot_series(noir_x, bb_sum_by_full, "bb_sum", BARRETENBERG_STYLE)
     plot_series(spartan_x, spartan_data, "spartan_proof", SPARTAN_STYLE)
@@ -431,6 +463,85 @@ def main():
     output = str(config_path.parent / "benchmarks.png")
     plt.tight_layout()
     plt.savefig(output, dpi=150, bbox_inches="tight")
+    print(f"Saved → {output}")
+
+    if online_entries:
+        plot_online(cfg, config_path, repo_root, noir_entries, bb_sum_by_full,
+                    online_entries, online_data)
+
+
+def plot_online(cfg, config_path, repo_root, noir_entries, bb_sum_by_full,
+                online_entries, online_data):
+    """benchmarks_online.png: bb write_vk + prove vs. the online spartan part."""
+    by_full = {}  # full sha -> (short, [labels])
+    for full, short, label in noir_entries + online_entries:
+        _, labels = by_full.setdefault(full, (short, []))
+        if label not in labels:
+            labels.append(label)
+    all_full = list(by_full)
+    ordered = topo_order(repo_root, all_full) if repo_root else None
+    if ordered is None:
+        ordered = all_full
+
+    n = len(ordered)
+    x_of = {full: x for x, full in enumerate(ordered)}
+    noir_fulls = {full for full, _, _ in noir_entries}
+    online_fulls = {full for full, _, _ in online_entries}
+    xtick_labels = [
+        f"{' / '.join(by_full[full][1])}\n{by_full[full][0]}" for full in ordered
+    ]
+
+    fig, ax = plt.subplots(figsize=(max(8, n * COMMIT_X_SPACING), 6))
+
+    def series(fulls, value_of, style, linestyle="-"):
+        pts = sorted(
+            (x_of[full], v) for full in fulls if (v := value_of(full)) is not None
+        )
+        if not pts:
+            return
+        ax.plot(
+            [p[0] for p in pts], [p[1] for p in pts],
+            color=style["color"], linewidth=1.8, linestyle=linestyle,
+            marker="o", markersize=5, label=style["label"], zorder=6,
+        )
+        for x, v in pts:
+            ax.annotate(
+                fmt_time(v), (x, v), textcoords="offset points", xytext=(0, 7),
+                ha="center", fontsize=8, color=style["color"], zorder=7,
+            )
+
+    def metric(name):
+        def value_of(full):
+            data = online_data.get(full)
+            return data[name]["mean"] if data and name in data else None
+        return value_of
+
+    def bb_value(full):
+        data = bb_sum_by_full.get(full)
+        return data["bb_sum"]["mean"] if data else None
+
+    series(noir_fulls, bb_value, BARRETENBERG_STYLE)
+    series(online_fulls, metric("online_wall"), ONLINE_WALL_STYLE)
+    series(online_fulls, metric("online_prove"), ONLINE_PROVE_STYLE, linestyle=":")
+    series(online_fulls, metric("online_load"), ONLINE_LOAD_STYLE, linestyle="--")
+
+    ax.set_xticks(range(n))
+    ax.set_xticklabels(xtick_labels, fontsize=9, rotation=30, ha="right")
+    ax.set_xlabel("Commit (oldest → newest)", fontsize=12)
+    ax.set_ylabel("Seconds", fontsize=12)
+    ax.set_title(
+        f"{cfg['name']}: noir/barretenberg vs. spartan online proving (after --precompute)",
+        fontsize=14, fontweight="bold",
+    )
+    ax.set_xlim(-0.5, n - 0.5)
+    ax.set_ylim(0, ax.get_ylim()[1] * 1.1)
+    ax.grid(axis="both", alpha=0.3, linestyle="--")
+    ax.legend(loc="best", fontsize=9, framealpha=0.9)
+
+    output = str(config_path.parent / "benchmarks_online.png")
+    plt.tight_layout()
+    plt.savefig(output, dpi=150, bbox_inches="tight")
+    plt.close(fig)
     print(f"Saved → {output}")
 
 
