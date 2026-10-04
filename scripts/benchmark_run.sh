@@ -5,9 +5,10 @@
 # Writes one CSV per requested leg into --results; never deletes existing results.
 #
 # Usage:
-#   benchmark_run.sh --checkout <dir> --results <dir> --legs <noir,spartan>
-#       --noir-circuit <name> --spartan-circuit <name> --sha <short> --full-sha <full>
-#       --noir-label <text> --spartan-label <text> --runs <n>
+#   benchmark_run.sh --checkout <dir> --results <dir> --legs <noir,spartan,online>
+#       --noir-circuit <name> --spartan-circuit <name> --online-circuit <name>
+#       --sha <short> --full-sha <full>
+#       --noir-label <text> --spartan-label <text> --online-label <text> --runs <n>
 #
 # Bash 3.2 safe: parallel indexed arrays only, no mapfile/declare -A/${var^^}.
 
@@ -16,10 +17,12 @@ RESULTS=""
 LEGS=""
 NOIR_CIRCUIT=""
 SPARTAN_CIRCUIT=""
+ONLINE_CIRCUIT=""
 SHA=""
 FULL_SHA=""
 NOIR_LABEL=""
 SPARTAN_LABEL=""
+ONLINE_LABEL=""
 RUNS=5
 
 while [ "$#" -gt 0 ]; do
@@ -29,10 +32,12 @@ while [ "$#" -gt 0 ]; do
         --legs)            LEGS="$2"; shift 2 ;;
         --noir-circuit)    NOIR_CIRCUIT="$2"; shift 2 ;;
         --spartan-circuit) SPARTAN_CIRCUIT="$2"; shift 2 ;;
+        --online-circuit)  ONLINE_CIRCUIT="$2"; shift 2 ;;
         --sha)             SHA="$2"; shift 2 ;;
         --full-sha)        FULL_SHA="$2"; shift 2 ;;
         --noir-label)      NOIR_LABEL="$2"; shift 2 ;;
         --spartan-label)   SPARTAN_LABEL="$2"; shift 2 ;;
+        --online-label)    ONLINE_LABEL="$2"; shift 2 ;;
         --runs)            RUNS="$2"; shift 2 ;;
         *)
             echo "ERROR: unknown argument '$1'" >&2
@@ -51,11 +56,13 @@ done
 
 RUN_NOIR=0
 RUN_SPARTAN=0
+RUN_ONLINE=0
 IFS=',' read -r -a LEG_LIST <<< "$LEGS"
 for leg in "${LEG_LIST[@]}"; do
     case "$leg" in
         noir)    RUN_NOIR=1 ;;
         spartan) RUN_SPARTAN=1 ;;
+        online)  RUN_ONLINE=1 ;;
     esac
 done
 
@@ -65,6 +72,10 @@ if [ "$RUN_NOIR" -eq 1 ] && [ -z "$NOIR_CIRCUIT" ]; then
 fi
 if [ "$RUN_SPARTAN" -eq 1 ] && [ -z "$SPARTAN_CIRCUIT" ]; then
     echo "ERROR: --spartan-circuit is required when running the spartan leg" >&2
+    exit 1
+fi
+if [ "$RUN_ONLINE" -eq 1 ] && [ -z "$ONLINE_CIRCUIT" ]; then
+    echo "ERROR: --online-circuit is required when running the online leg" >&2
     exit 1
 fi
 
@@ -278,6 +289,113 @@ spartan_leg() {
     return 0
 }
 
+# --- online leg -------------------------------------------------------------
+#
+# Measures only the second part of a proof creation: `--precompute` runs the
+# offline phase (setup + prep, committing the invariant witness) once and
+# persists it to <circuit>/target/precompute.bin; every `--prove` run then
+# loads that artifact and runs the online prover. Per run we record:
+#   online_load   time to read + decode precompute.bin (`precompute_load` event)
+#   online_prove  the online prover itself (`prove_precomputed` span)
+#   online_wall   the whole `--prove` process (circuit loading, load, prove)
+# The offline phase is measured once (online_precompute, online_precompute_size).
+# Commits before 409e264 have no `--precompute` and fail this leg.
+
+online_leg() {
+    local circuit_dir="$CHECKOUT/circuits/$ONLINE_CIRCUIT"
+    local spartan_dir="$CHECKOUT/spartan-backend"
+    local backend="${CARGO_TARGET_DIR:-$spartan_dir/target}/release/spartan-backend"
+    local artifact="$circuit_dir/target/precompute.bin"
+    if [ ! -d "$circuit_dir" ]; then
+        echo "WARNING: commit $SHA online leg failed: circuits/$ONLINE_CIRCUIT not found" >&2
+        return 1
+    fi
+    [ -f "$circuit_dir/online.json" ] \
+        || echo "NOTE: circuits/$ONLINE_CIRCUIT has no online.json: the whole witness is committed online" >&2
+
+    if ! ( cd "$circuit_dir" && nargo-t256 compile --force && nargo-t256 execute --force ); then
+        echo "WARNING: commit $SHA online leg failed at nargo-t256 compile/execute" >&2
+        return 1
+    fi
+    if ! ( cd "$spartan_dir" && NO_COLOR=1 cargo build --release ); then
+        echo "WARNING: commit $SHA online leg failed at cargo build --release" >&2
+        return 1
+    fi
+
+    local output normalized precompute_busy
+    rm -f "$artifact"
+    output=$( RUST_LOG=info "$backend" "$circuit_dir" --precompute 2>&1 )
+    if [ $? -ne 0 ] || [ ! -f "$artifact" ]; then
+        echo "WARNING: commit $SHA online leg failed at --precompute (unsupported before 409e264?)" >&2
+        echo "--- output of failed command ---" >&2
+        echo "$output" >&2
+        return 1
+    fi
+    precompute_busy=$(echo "$output" | sed 's/µs/us/g' | grep -E '(^|[ :])precompute\{.*close' | grep -oE 'time\.busy=[^ ]+' | tail -1 | sed 's/time\.busy=//')
+    if [ -z "$precompute_busy" ]; then
+        echo "WARNING: commit $SHA online leg failed to parse --precompute timing" >&2
+        echo "--- output of command ---" >&2
+        echo "$output" >&2
+        return 1
+    fi
+    local artifact_size
+    artifact_size=$(wc -c < "$artifact" | tr -d ' ')
+
+    local i log proof wall load_ms prove_busy rc
+    local load_times=() prove_times=() wall_times=()
+    log=$(mktemp)
+    proof=$(mktemp)
+    for i in $(seq 1 "$RUNS"); do
+        TIMEFORMAT='%3R'
+        wall=$( { time RUST_LOG=info "$backend" "$circuit_dir" --prove >"$proof" 2>"$log"; } 2>&1 )
+        rc=$?
+        normalized=$(sed 's/µs/us/g' "$log")
+        if [ "$rc" -ne 0 ]; then
+            echo "WARNING: commit $SHA online leg failed at --prove (run $i)" >&2
+            echo "--- output of failed command ---" >&2
+            echo "$normalized" >&2
+            rm -f "$log" "$proof"
+            return 1
+        fi
+        # Without this event --prove silently fell back to monolithic proving
+        # (missing/stale artifact), which would measure the wrong thing.
+        load_ms=$(echo "$normalized" | grep 'precompute_load' | grep -oE 'elapsed_ms=[0-9]+' | tail -1 | sed 's/elapsed_ms=//')
+        prove_busy=$(echo "$normalized" | grep -E 'prove_precomputed\{.*close' | grep -oE 'time\.busy=[^ ]+' | tail -1 | sed 's/time\.busy=//')
+        if [ -z "$load_ms" ] || [ -z "$prove_busy" ]; then
+            echo "WARNING: commit $SHA online leg: --prove did not use precompute.bin or timing unparsable (run $i)" >&2
+            echo "--- output of command ---" >&2
+            echo "$normalized" >&2
+            rm -f "$log" "$proof"
+            return 1
+        fi
+        load_times+=("$(awk "BEGIN {printf \"%.3f\n\", $load_ms / 1000}")")
+        prove_times+=("$(to_seconds "$prove_busy")")
+        wall_times+=("$wall")
+    done
+
+    # Sanity check: the online proof must verify, else its timing is meaningless.
+    if ! ( RUST_LOG=error "$backend" "$circuit_dir" --verify < "$proof" >/dev/null 2>"$log" ); then
+        echo "WARNING: commit $SHA online leg: proof from --prove failed to verify" >&2
+        cat "$log" >&2
+        rm -f "$log" "$proof"
+        return 1
+    fi
+    rm -f "$log" "$proof" "$artifact"
+
+    local out
+    out=$(mktemp "$RESULTS/.tmp.XXXXXX")
+    {
+        write_csv_header "online" "$ONLINE_LABEL" "$ONLINE_CIRCUIT"
+        stats_row online_load "${load_times[@]}"
+        stats_row online_prove "${prove_times[@]}"
+        stats_row online_wall "${wall_times[@]}"
+        stats_row online_precompute "$(to_seconds "$precompute_busy")"
+        stats_row online_precompute_size "$artifact_size"
+    } > "$out"
+    mv "$out" "$RESULTS/online-$SHA.csv"
+    return 0
+}
+
 # --- dispatch -----------------------------------------------------------------
 
 OVERALL_RC=0
@@ -286,6 +404,9 @@ if [ "$RUN_NOIR" -eq 1 ]; then
 fi
 if [ "$RUN_SPARTAN" -eq 1 ]; then
     spartan_leg || OVERALL_RC=1
+fi
+if [ "$RUN_ONLINE" -eq 1 ]; then
+    online_leg || OVERALL_RC=1
 fi
 
 exit "$OVERALL_RC"

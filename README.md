@@ -234,7 +234,7 @@ toolchain:
 ./scripts/benchmark_commits.sh benchmarks/swiyu_jwt/config.yaml [options]
 
   --force            re-run every leg, ignoring stored results
-  --only <ref>       run only this commit (both of its legs), ignoring stored results
+  --only <ref>       run only this commit (all of its legs), ignoring stored results
   --runs <n>         override `runs:` from the config
   --dry-run          print the work plan and exit
 ```
@@ -245,8 +245,16 @@ toolchain:
   spartan-backend). Add entries over time; already-measured entries are never
   re-run, and removing an entry from the config only removes it from the plot — its
   result file on disk is kept.
+* An optional third set, `online:`, measures only the **second part** of a spartan
+  proof creation: `--precompute` once, then `--prove` `runs` times reusing
+  `target/precompute.bin`. It records `online_prove` (the online prover only),
+  `online_load` (reading precompute.bin), `online_wall` (the whole `--prove`
+  process), and the one-off `online_precompute` time and
+  `online_precompute_size`. The leg fails if `--prove` falls back to
+  monolithic proving or the online proof does not verify. Only commits with the
+  precompute CLI (409e264 and later) can go here.
 * Results are written to `<config_dir>/results/<leg>-<shortsha>.csv` (`leg` is
-  `noir` or `spartan`), one file per (leg, commit), written atomically so an
+  `noir`, `spartan` or `online`), one file per (leg, commit), written atomically so an
   interrupted run never leaves a half-written file behind. Each file has the schema
   `metric,min,max,mean,stddev,samples`, plus `#`-prefixed metadata lines recording
   the commit, run count, host, and the checked-out commit's flake pins.
@@ -268,6 +276,10 @@ gaps. The left y-axis is relative to the baseline — the **first** `noir_commit
 entry's `bb_write_vk` + `bb_prove` mean — with `bb_verify`/`spartan_verify` drawn as
 thin dashed lines. The right y-axis shows `bb_proof_size`/`spartan_proof_size` in
 bytes on a log scale, with spartan points annotated by `spartan_constraints`.
+With an `online:` section, a second figure, `benchmarks_online.png`, plots
+barretenberg's `bb_write_vk` + `bb_prove` against `online_wall`, `online_load`
+and `online_prove` in absolute seconds, over the `noir` and `online` commits only
+(no `spartan_proof` or constraint counts).
 
 ## Profiling
 
