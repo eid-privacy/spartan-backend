@@ -21,12 +21,12 @@ runs: 5
 noir:
   - circuit: c9200_swiyu_jwt
     commits:
-      - 71aead4 pre-review
-      - commit-msg fix:base64url
+      - baea485 pre-review
+      - 84f0f6e precompute-75x
 
 online:
   - circuit: c0200_swiyu_jwt
     commits:
-      - 71aead4 pre-review
+      - baea485 pre-review
       - commit-msg fix:base64url
       - 84f0f6e precompute-75x
