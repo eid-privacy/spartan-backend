@@ -1,0 +1,9 @@
+# leg=online commit=84f0f6e full=84f0f6eb7cdf765752f9799e15434fcf61dd76e9 label=precompute-75x circuit=c0200_swiyu_jwt
+# runs=5 date=2026-10-04T17:03:08Z host=Linus-Gassers-MacBook-Pro-2023.fritz.box os=Darwin arm64
+# pins=noir:v1_0_0-beta_26 bb:beta_26 t256:t256-v0_26-2
+metric,min,max,mean,stddev,samples
+online_load,0.900,0.905,0.902,0.002,0.900;0.903;0.905;0.902;0.900
+online_prove,1.040,1.060,1.054,0.008,1.060;1.040;1.060;1.050;1.060
+online_wall,2.195,2.212,2.205,0.007,2.208;2.195;2.212;2.198;2.211
+online_precompute,7.080,7.080,7.080,0.000,7.080
+online_precompute_size,29172555.000,29172555.000,29172555.000,0.000,29172555
