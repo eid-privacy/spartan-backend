@@ -1,0 +1,9 @@
+# leg=noir commit=baea485 full=baea485233bc2c53bb5f42bdb985c3919388cc90 label=pre-review circuit=c9200_swiyu_jwt
+# runs=5 date=2026-10-04T17:13:53Z host=Linus-Gassers-MacBook-Pro-2023.fritz.box os=Darwin arm64
+# pins=noir:v1_0_0-beta_26 bb:beta_26 t256:t256-v0_26-1
+metric,min,max,mean,stddev,samples
+bb_write_vk,0.953,1.007,0.980,0.018,1.007;0.953;0.991;0.969;0.981
+bb_prove,1.925,1.953,1.939,0.011,1.925;1.947;1.943;1.953;1.929
+bb_verify,0.011,0.013,0.011,0.001,0.013;0.011;0.011;0.011;0.011
+bb_proof_size,14656.000,14656.000,14656.000,0.000,14656
+bb_gates,374629.000,374629.000,374629.000,0.000,374629

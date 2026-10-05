@@ -64,17 +64,25 @@ pub fn u6_to_ascii_url(v: u8) -> u8 {
 /// each translated to ASCII via [`u6_to_ascii_url`].
 pub fn encode_url_into<let IN_LEN: u32, let OUT_LEN: u32>(
     input: [u8; IN_LEN],
-    in_len: u32,
+    in_len: u16,
     out: &mut [u8; OUT_LEN],
     out_offset: u32,
-) -> u32 {
+) -> u16 {
     // Number of 3-byte input chunks, rounded up so the final partial chunk
     // (if any) is still processed.
-    assert(in_len <= IN_LEN);
+    assert(in_len <= IN_LEN as u16);
     let num_chunks: u32 = (IN_LEN + 2) / 3;
 
     for c in 0..num_chunks {
         let i0 = c * 3;
+        // Compile-time-constant copy of `i0`, narrowed to match `in_len`'s
+        // width. Every RANGE check backing a `<` comparison is sized to the
+        // wider of its two operands' declared types, so comparing against a
+        // `u32` here (even though `i0` and `in_len` are both well under
+        // 2^16) previously cost a 32-bit range check per comparison --
+        // `in_len: u16` makes it a 16-bit one instead, for free since `i0`
+        // is a compile-time constant.
+        let i0_16 = i0 as u16;
         // The `i0 + k < in_len` predicates compare against the runtime
         // logical length, not the compile-time capacity IN_LEN, so bytes
         // beyond in_len (including the rest of a partial final chunk) are
@@ -86,9 +94,9 @@ pub fn encode_url_into<let IN_LEN: u32, let OUT_LEN: u32>(
         // the comparison and select are now genuine per-chunk witness
         // operations instead of being dead-code-eliminated at compile time.
         // Measured cost on c0200_swiyu_jwt: +7,643 ACIR opcodes (+6.0%).
-        let b0 = if i0 < in_len { input[i0] } else { 0 };
-        let b1 = if i0 + 1 < in_len { input[i0 + 1] } else { 0 };
-        let b2 = if i0 + 2 < in_len { input[i0 + 2] } else { 0 };
+        let b0 = if i0_16 < in_len { input[i0] } else { 0 };
+        let b1 = if i0_16 + 1 < in_len { input[i0 + 1] } else { 0 };
+        let b2 = if i0_16 + 2 < in_len { input[i0 + 2] } else { 0 };
 
         // Pure arithmetic decomposition of the 24 input bits into 4 6-bit
         // values. We avoid bitwise `&`, `|`, `<<`, `>>` because
@@ -113,6 +121,37 @@ pub fn encode_url_into<let IN_LEN: u32, let OUT_LEN: u32>(
         out[o + 3] = u6_to_ascii_url(v3);
     }
     (in_len * 4 + 2) / 3
+}
+
+/// Encode exactly 32 bytes (a SHA-256 digest, or a P-256/secp256r1-sized
+/// field element) to base64url, returning the full 43-character result
+/// (`ceil(32 * 4 / 3)`). Lookup-free, same approach as [`encode_url_into`].
+pub fn encode_32_bytes_url(bytes: [u8; 32]) -> [u8; 43] {
+    let mut padded: [u8; 33] = [0; 33];
+    for i in 0..32 {
+        padded[i] = bytes[i];
+    }
+    let mut out: [u8; 44] = [0; 44];
+    let _ = encode_url_into(padded, 32, &mut out, 0);
+    let mut result: [u8; 43] = [0; 43];
+    for i in 0..43 {
+        result[i] = out[i];
+    }
+    result
+}
+
+#[test]
+fn test_encode_32_bytes_url_known_vector() {
+    // 32 bytes 0x01..0x20 -> base64url (verified against a reference encoder).
+    let mut input: [u8; 32] = [0; 32];
+    for i in 0..32 {
+        input[i] = i as u8 + 1;
+    }
+    let expected: [u8; 43] = "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA".as_bytes();
+    let result = encode_32_bytes_url(input);
+    for i in 0..43 {
+        assert(result[i] == expected[i]);
+    }
 }
 
 #[test]

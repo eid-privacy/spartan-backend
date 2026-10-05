@@ -25,9 +25,10 @@ pub type VerifierKey = <Snark as R1CSSNARKTrait<E>>::VerifierKey;
 pub type PrepSnark = <Snark as R1CSSNARKTrait<E>>::PrepSNARK;
 
 /// Holds the reusable proving artifacts for one credential circuit.
+///
+/// The verifier key from `setup` is dropped: proving never needs it.
 pub struct OnlineProver {
     pk: ProverKey,
-    vk: VerifierKey,
     /// `Option` so we can move it out of `&mut self` into Vega's by-value
     /// `prove` without a (huge) clone; always `Some` outside `prove_online`.
     prep: Option<PrepSnark>,
@@ -46,26 +47,20 @@ impl OnlineProver {
     /// inputs are committed here and reused by every [`Self::prove_online`].
     pub fn setup(circuit: &CircuitParameters) -> Result<Self, VegaError> {
         let synth = Self::synthesizer(circuit);
-        let (pk, vk) = Snark::setup(synth.clone())?;
+        let (pk, _vk) = Snark::setup(synth.clone())?;
         let prep = Snark::prep_prove(&pk, synth, false)?;
         Ok(Self {
             pk,
-            vk,
             prep: Some(prep),
         })
     }
 
     /// Reconstruct an [`OnlineProver`] from persisted artifacts.
-    pub fn from_parts(pk: ProverKey, vk: VerifierKey, prep: PrepSnark) -> Self {
+    pub fn from_parts(pk: ProverKey, prep: PrepSnark) -> Self {
         Self {
             pk,
-            vk,
             prep: Some(prep),
         }
-    }
-
-    pub fn verifier_key(&self) -> &VerifierKey {
-        &self.vk
     }
 
     pub fn prover_key(&self) -> &ProverKey {

@@ -8,6 +8,13 @@ pub global PAYLOAD_MAX_LEN: u32 = 2048;
 /// e.g. ["abc123def456789012345w","dob",23331000]
 pub global DISCLOSURE_MAX_LEN: u32 = 128;
 
+/// `encode_url_into` requires its input length to be a multiple of 3; round
+/// `DISCLOSURE_MAX_LEN` up to the next one.
+pub global DISCLOSURE_ENCODE_IN_LEN: u32 = ((DISCLOSURE_MAX_LEN + 2) / 3) * 3;
+/// Matches the number of bytes `encode_url_into` writes for
+/// `DISCLOSURE_ENCODE_IN_LEN`: `(n / 3) * 4`.
+pub global DISCLOSURE_ENCODED_MAX_LEN: u32 = (DISCLOSURE_ENCODE_IN_LEN * 4) / 3;
+
 /// Maximum salt length in bytes (base64 encoded).
 pub global DOB_SALT_MAX_LEN: u32 = 32;
 

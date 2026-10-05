@@ -1,0 +1,32 @@
+# Benchmark: swiyu JWT credential presentation, online proving only.
+#
+# noir is the plain noir/barretenberg (BN254) implementation, as in
+# benchmarks/swiyu_jwt.
+# online is the t256 implementation with spartan-backend, measuring only the
+# second part of a proof creation: `--precompute` runs once, then every
+# `--prove` reuses target/precompute.bin. Per run it records online_load
+# (reading precompute.bin), online_prove (the online prover) and online_wall
+# (the whole `--prove` process). Needs the precompute CLI (409e264+).
+#
+# The FIRST commit of the first noir circuit group is the BASELINE.
+#
+# Each commits entry is "<git-ref> <free-text label>"; see
+# benchmarks/swiyu_jwt/config.yaml for the full grammar, including the
+# "commit-msg <label>" form. Plot with `devbox run plot-commits` — it writes
+# benchmarks_online.png.
+
+name: swiyu_jwt_precompute
+runs: 5
+
+noir:
+  - circuit: c9200_swiyu_jwt
+    commits:
+      - baea485 pre-review
+      - 84f0f6e precompute-75x
+
+online:
+  - circuit: c0200_swiyu_jwt
+    commits:
+      - baea485 pre-review
+      - commit-msg fix:base64url
+      - 84f0f6e precompute-75x
