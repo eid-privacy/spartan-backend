@@ -1,0 +1,9 @@
+# leg=online commit=d7b2ce5 full=d7b2ce53a4b8273a4c3526bfde97e6b6def1cede label=opt-deserialise circuit=c0200_swiyu_jwt
+# runs=5 date=2026-10-05T07:08:11Z host=simulations os=Linux x86_64
+# pins=noir:v1_0_0-beta_26 bb:beta_26 t256:t256-v0_26-2
+metric,min,max,mean,stddev,samples
+online_load,0.403,0.411,0.406,0.003,0.408;0.405;0.403;0.411;0.404
+online_prove,2.200,2.260,2.226,0.020,2.230;2.200;2.220;2.260;2.220
+online_wall,3.026,3.083,3.044,0.021,3.047;3.026;3.029;3.083;3.034
+online_precompute,7.190,7.190,7.190,0.000,7.190
+online_precompute_size,32908672.000,32908672.000,32908672.000,0.000,32908672
