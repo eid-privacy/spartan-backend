@@ -6,6 +6,7 @@ use spartan_backend::{
     instantiate_prover_circuit_from_dir, instantiate_prover_circuit_with_name,
     instantiate_verifier_circuit_from_dir, instantiate_verifier_circuit_with_name,
     noir::{circuit::CircuitParameters, synthesis::circuit_synthesizer::NoirCircuitSynthesizer},
+    precompute::precompute_path,
     prove_circuit, prove_circuit_to_base64, prove_with_precompute, report_proof_size,
     run_precompute, verify_circuit, verify_circuit_from_base64,
 };
@@ -38,8 +39,9 @@ struct Cli {
     #[arg(short = 'p', long = "prove")]
     prove: bool,
 
-    /// Run the offline phase (setup + prep) once and persist it to
-    /// `<circuit_dir>/target/precompute.bin` so later `--prove` runs can skip it.
+    /// Run the offline phase (setup + prep) and persist it to
+    /// `<circuit_dir>/target/precompute.bin`, then prove from it. The offline
+    /// phase is skipped when that file already exists.
     #[arg(long = "precompute")]
     precompute: bool,
 
@@ -55,7 +57,7 @@ enum Mode {
     ProveAndVerify,
     /// `--count-constraints`: synthesize and report R1CS sizes only.
     CountConstraints,
-    /// `--precompute`: run offline phase and persist to disk.
+    /// `--precompute`: run the offline phase unless it is already on disk, then prove.
     Precompute,
     /// `--proof-size`: prove and report serialized proof size.
     ProofSize,
@@ -177,7 +179,21 @@ fn run_mode(mode: &Mode, circuit: CircuitParameters) {
         Mode::CountConstraints => count_constraints(circuit),
         Mode::ProofSize => report_proof_size(circuit),
         Mode::Precompute => {
-            let path = run_precompute(&circuit).expect("Precomputation failed");
+            let path = precompute_path(&circuit.dir);
+            if path.exists() {
+                tracing::info!(
+                    "{}: {} already exists, skipping the precomputation pass",
+                    circuit.name,
+                    path.display()
+                );
+            } else {
+                tracing::info!(
+                    "{}: {} is missing, running the precomputation pass",
+                    circuit.name,
+                    path.display()
+                );
+                run_precompute(&circuit).expect("Precomputation failed");
+            }
             let proof_b64 = prove_with_precompute(&circuit, path).expect("Proof creation failed");
             // compared to println! this avoids a BrokenPipe once the verifier closes the stream
             let _ = writeln!(std::io::stdout(), "{}", proof_b64);
