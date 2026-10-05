@@ -22,7 +22,7 @@ noir:
   - circuit: c9200_swiyu_jwt
     commits:
       - baea485 pre-review
-      - 84f0f6e precompute-75x
+      - d7b2ce5 opt-deserialise
 
 online:
   - circuit: c0200_swiyu_jwt
@@ -30,3 +30,4 @@ online:
       - baea485 pre-review
       - commit-msg fix:base64url
       - 84f0f6e precompute-75x
+      - d7b2ce5 opt-deserialise
