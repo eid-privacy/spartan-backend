@@ -91,3 +91,30 @@ upstream) rather than by anything else changed in this repo meanwhile.
 
 For reference, past bumps that show the exact diff shape to expect:
 `868f2f1`, `2c05e62`, `03bd39b` (`git show <sha>`).
+
+# The vega-prover fork
+
+Separately from the noir fork, the three Rust crates (`spartan-backend`,
+`algebra-utils`, `c020x_verifier`) depend on `eid-privacy/vega-prover`
+(branch `raw-serde`) as a plain `git` dependency, not on the crates.io
+release and not through `[patch.crates-io]`.
+
+The fork adds `src/raw_serde.rs`: large `Vec<T>` fields are serialized as raw
+little-endian memory cut into parallel zstd frames that decompress straight
+into their final allocation, and the prover's scratch buffers are
+`#[serde(skip)]`. That is what the `FORMAT_VERSION = 3` `precompute.bin`
+relies on; see `PRECOMPUTE_IO.md`.
+
+When bumping it:
+
+1. Rebase the `raw-serde` branch onto the new upstream tag. The diff is
+   deliberately confined to `src/raw_serde.rs` plus attribute lines and
+   trait bounds, so rebases should stay cheap.
+2. Run `cargo test` and `cargo clippy --all-targets` in the fork.
+3. Update **all three** `Cargo.toml` files together and refresh each
+   `Cargo.lock`. Leaving one behind puts two incompatible copies of
+   `vega-prover` in the graph — `c020x_verifier` depends on both
+   `spartan-backend` and `vega-prover`, so the types stop matching.
+4. Re-run `--precompute` on `circuits/c0200_swiyu_jwt` and verify the proof;
+   the artifact is version-stamped, so a stale `precompute.bin` is rejected
+   rather than silently mis-decoded.
