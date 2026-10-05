@@ -1,0 +1,9 @@
+# leg=online commit=d7b2ce5 full=d7b2ce53a4b8273a4c3526bfde97e6b6def1cede label=opt-deserialise circuit=c0200_swiyu_jwt
+# runs=5 date=2026-10-05T07:05:30Z host=Linus-Gassers-MacBook-Pro-2023.local os=Darwin arm64
+# pins=noir:v1_0_0-beta_26 bb:beta_26 t256:t256-v0_26-2
+metric,min,max,mean,stddev,samples
+online_load,0.213,0.255,0.227,0.014,0.213;0.223;0.221;0.223;0.255
+online_prove,0.968,1.060,1.004,0.034,0.968;0.970;1.000;1.060;1.020
+online_wall,1.415,1.523,1.469,0.046,1.415;1.428;1.456;1.521;1.523
+online_precompute,3.690,3.690,3.690,0.000,3.690
+online_precompute_size,32908672.000,32908672.000,32908672.000,0.000,32908672

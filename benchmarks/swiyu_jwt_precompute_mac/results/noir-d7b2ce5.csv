@@ -1,0 +1,9 @@
+# leg=noir commit=d7b2ce5 full=d7b2ce53a4b8273a4c3526bfde97e6b6def1cede label=opt-deserialise circuit=c9200_swiyu_jwt
+# runs=5 date=2026-10-05T06:54:09Z host=Linus-Gassers-MacBook-Pro-2023.local os=Darwin arm64
+# pins=noir:v1_0_0-beta_26 bb:beta_26 t256:t256-v0_26-2
+metric,min,max,mean,stddev,samples
+bb_write_vk,0.937,0.988,0.962,0.017,0.988;0.963;0.970;0.937;0.954
+bb_prove,1.878,1.948,1.908,0.025,1.910;1.886;1.878;1.916;1.948
+bb_verify,0.010,0.012,0.010,0.001,0.012;0.010;0.010;0.010;0.010
+bb_proof_size,14656.000,14656.000,14656.000,0.000,14656
+bb_gates,374629.000,374629.000,374629.000,0.000,374629
