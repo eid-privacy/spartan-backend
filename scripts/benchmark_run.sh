@@ -293,13 +293,20 @@ spartan_leg() {
 #
 # Measures only the second part of a proof creation: `--precompute` runs the
 # offline phase (setup + prep, committing the invariant witness) once and
-# persists it to <circuit>/target/precompute.bin; every `--prove` run then
-# loads that artifact and runs the online prover. Per run we record:
+# persists it to <circuit>/target/precompute.bin; every timed run then loads
+# that artifact and runs the online prover. Per run we record:
 #   online_load   time to read + decode precompute.bin (`precompute_load` event)
 #   online_prove  the online prover itself (`prove_precomputed` span)
-#   online_wall   the whole `--prove` process (circuit loading, load, prove)
+#   online_wall   the whole process (circuit loading, load, prove)
 # The offline phase is measured once (online_precompute, online_precompute_size).
 # Commits before 409e264 have no `--precompute` and fail this leg.
+#
+# The CLI changed in 51dcd91: before, `--precompute` only wrote the artifact
+# and `--prove` proved from it; since then `--prove` is monolithic and
+# `--precompute` proves from the artifact itself (d7b2ce5+ skipping the offline
+# phase when the artifact already exists). The initial `--precompute` output
+# tells the two apart: if it already contains a `prove_precomputed` span, the
+# timed runs use `--precompute`, otherwise `--prove`.
 
 online_leg() {
     local circuit_dir="$CHECKOUT/circuits/$ONLINE_CIRCUIT"
@@ -341,30 +348,42 @@ online_leg() {
     local artifact_size
     artifact_size=$(wc -c < "$artifact" | tr -d ' ')
 
+    local online_flag="--prove"
+    if echo "$output" | grep -qE 'prove_precomputed\{.*close'; then
+        online_flag="--precompute"
+    fi
+
     local i log proof wall load_ms prove_busy rc
     local load_times=() prove_times=() wall_times=()
     log=$(mktemp)
     proof=$(mktemp)
     for i in $(seq 1 "$RUNS"); do
         TIMEFORMAT='%3R'
-        wall=$( { time RUST_LOG=info "$backend" "$circuit_dir" --prove >"$proof" 2>"$log"; } 2>&1 )
+        wall=$( { time RUST_LOG=info "$backend" "$circuit_dir" "$online_flag" >"$proof" 2>"$log"; } 2>&1 )
         rc=$?
         normalized=$(sed 's/µs/us/g' "$log")
         if [ "$rc" -ne 0 ]; then
-            echo "WARNING: commit $SHA online leg failed at --prove (run $i)" >&2
+            echo "WARNING: commit $SHA online leg failed at $online_flag (run $i)" >&2
             echo "--- output of failed command ---" >&2
             echo "$normalized" >&2
             rm -f "$log" "$proof"
             return 1
         fi
-        # Without this event --prove silently fell back to monolithic proving
+        # Without this event the run silently fell back to monolithic proving
         # (missing/stale artifact), which would measure the wrong thing.
         load_ms=$(echo "$normalized" | grep 'precompute_load' | grep -oE 'elapsed_ms=[0-9]+' | tail -1 | sed 's/elapsed_ms=//')
         prove_busy=$(echo "$normalized" | grep -E 'prove_precomputed\{.*close' | grep -oE 'time\.busy=[^ ]+' | tail -1 | sed 's/time\.busy=//')
         if [ -z "$load_ms" ] || [ -z "$prove_busy" ]; then
-            echo "WARNING: commit $SHA online leg: --prove did not use precompute.bin or timing unparsable (run $i)" >&2
+            echo "WARNING: commit $SHA online leg: $online_flag did not use precompute.bin or timing unparsable (run $i)" >&2
             echo "--- output of command ---" >&2
             echo "$normalized" >&2
+            rm -f "$log" "$proof"
+            return 1
+        fi
+        # 51dcd91's `--precompute` reruns the offline phase every time, so its
+        # wall time would not be online-only.
+        if echo "$normalized" | grep -qE '(^|[ :])precompute\{.*close'; then
+            echo "WARNING: commit $SHA online leg: $online_flag reran the offline phase (run $i)" >&2
             rm -f "$log" "$proof"
             return 1
         fi
@@ -375,7 +394,7 @@ online_leg() {
 
     # Sanity check: the online proof must verify, else its timing is meaningless.
     if ! ( RUST_LOG=error "$backend" "$circuit_dir" --verify < "$proof" >/dev/null 2>"$log" ); then
-        echo "WARNING: commit $SHA online leg: proof from --prove failed to verify" >&2
+        echo "WARNING: commit $SHA online leg: proof from $online_flag failed to verify" >&2
         cat "$log" >&2
         rm -f "$log" "$proof"
         return 1
