@@ -1,6 +1,7 @@
 //! Measures loading of a `target/precompute.bin` artifact, split into the raw
-//! file read and the decode (zstd + bincode), plus a per-field size breakdown
-//! of the uncompressed bincode streams and a per-scalar micro-benchmark.
+//! file read and the decode (bincode, with vega's `raw_serde` decompressing
+//! the large vectors in place), plus a per-field size breakdown of the bincode
+//! streams and a per-scalar micro-benchmark.
 //!
 //! ```text
 //! cargo run --release -- --precompute ../circuits/c0200_swiyu_jwt
@@ -20,7 +21,7 @@ use halo2curves::serde::SerdeObject;
 use serde::Serialize;
 use spartan_backend::{
     bincode_profile::BincodeProfiler,
-    precompute::{self, SCRATCH_FIELDS, precompute_path},
+    precompute::{self, precompute_path},
 };
 use vega_prover::traits::Engine;
 
@@ -65,14 +66,14 @@ fn main() {
     let (decode, (pk, prep)) = best(runs, || {
         precompute::decode(&bytes, fingerprint).expect("decode precompute.bin")
     });
-    println!("decode                     {decode:>9.3?}  (zstd + bincode, pk || prep)");
+    println!("decode                     {decode:>9.3?}  (bincode, pk || prep)");
     let (encode, _) = best(1, || {
         precompute::encode(fingerprint, &pk, &prep).expect("encode")
     });
     println!("encode                     {encode:>9.3?}");
     drop(bytes);
 
-    println!("\n== uncompressed bincode by struct-field path (>= 0.1%)");
+    println!("\n== bincode by struct-field path (>= 0.1%)");
     let mut profiler = BincodeProfiler::sizes(4);
     pk.serialize(&mut profiler).expect("profile pk");
     let pk_total = profiler.pos;
@@ -81,7 +82,8 @@ fn main() {
     prep.serialize(&mut profiler).expect("profile prep");
     print_sizes("prep", &profiler);
     println!(
-        "total {:.1} MiB (pk {:.1} + prep {:.1}); scratch fields {SCRATCH_FIELDS:?} are empty",
+        "total {:.1} MiB (pk {:.1} + prep {:.1}); the large vectors are counted \
+         as their zstd-framed `raw_serde` payload, the scratch buffers are skipped",
         mib(pk_total + profiler.pos),
         mib(pk_total),
         mib(profiler.pos)
@@ -102,8 +104,8 @@ fn print_sizes(root: &str, profiler: &BincodeProfiler) {
     }
 }
 
-/// Per-scalar cost of the serde path vs. what a raw, unchecked path (needs a
-/// vega patch) would cost.
+/// Per-scalar cost of the generic serde path vs. the raw paths. Kept as the
+/// reference for why the large vectors use `raw_serde` instead.
 fn scalar_micro() {
     let n = 4usize << 20;
     println!("\n== {}M scalars", n >> 20);

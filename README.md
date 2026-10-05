@@ -79,6 +79,18 @@ Keep circuit sources **ASCII-only** (comments included): the T-256 fork rejects
 non-ASCII characters with `Invalid comment character: only ASCII is currently
 supported`.
 
+### The vega-prover fork
+
+`spartan-backend`, `algebra-utils` and `c020x_verifier` depend on
+<https://github.com/eid-privacy/vega-prover> (branch `raw-serde`) rather than
+on the crates.io release, via a plain `git` dependency — no
+`[patch.crates-io]`. The fork stores the prover's large vectors as raw,
+zstd-framed memory so that `target/precompute.bin` loads in ~0.17 s instead of
+~0.89 s; see [`PRECOMPUTE_IO.md`](PRECOMPUTE_IO.md). The three crates must
+always reference the **same** revision, otherwise two incompatible copies of
+`vega-prover` end up in the dependency graph and the shared types stop
+matching.
+
 ### Preprocessing (ECDSA precompute)
 
 Some circuits need ECDSA-related witnesses that are computed off-circuit on the

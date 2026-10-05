@@ -4344,8 +4344,7 @@ checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
 [[package]]
 name = "vega-prover"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8691c2a88dbd870a24115593a27157c68a1c24c3e93a0223f7ca1dceb5631a9e"
+source = "git+https://github.com/eid-privacy/vega-prover?branch=raw-serde#6ca80d583cb3071f486bb19fb40f239755837709"
 dependencies = [
  "bellpepper",
  "bellpepper-core",
@@ -4374,6 +4373,7 @@ dependencies = [
  "thiserror 2.0.18",
  "tracing",
  "tracing-subscriber",
+ "zstd",
 ]
 
 [[package]]

@@ -6,5 +6,5 @@ edition = "2024"
 [dependencies]
 num-bigint = "0.5"
 num-traits = "0.2.14"
-vega-prover = "0.1.0"
+vega-prover = { git = "https://github.com/eid-privacy/vega-prover", branch = "raw-serde" }
 p256 = { version = "0.13.2" }

@@ -11,17 +11,19 @@
 //! laid out for load speed and size only:
 //!
 //! ```text
-//! version: u32 | fingerprint: u64 | pk_len: u64 | prep_len: u64 | pk_zstd_len: u64
-//! zstd(bincode(pk)) | zstd(bincode(prep) without scratch buffers)
+//! version: u32 | fingerprint: u64 | pk_len: u64
+//! bincode(pk) | bincode(prep)
 //! ```
 //!
 //! - The verifier key is not stored: `--prove` never reads it.
-//! - The prep scratch buffers ([`SCRATCH_FIELDS`]) are cleared by
-//!   `Snark::prove` before every use, so they are spliced out of the bincode
-//!   stream as empty `Vec`s (their fields are private to vega, hence the
-//!   splice instead of a `#[serde(skip)]`).
-//! - Most scalars are small (bits, bytes, ±1 coefficients), so zstd shrinks
-//!   the rest ~40x, and the two blobs are decoded on two threads.
+//! - There is no outer compression. vega's `raw_serde` already stores every
+//!   large vector — the R1CS matrices, the cached `Az`/`Bz`/`Cz` products, the
+//!   witness — as zstd-framed raw memory inside the bincode stream, and
+//!   decompresses it straight into its final allocation. What is left of the
+//!   stream is metadata and small vectors.
+//! - The prep scratch buffers are `#[serde(skip)]` in vega: `Snark::prove`
+//!   clears and refills them before every use.
+//! - The two blobs are decoded on two threads.
 //!
 //! `Snark::prove` returns a rerandomized prep which we deliberately do not write
 //! back: the file is read-only at prove time and every run reuses the same prep.
@@ -32,10 +34,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use serde::Serialize;
-
 use crate::{
-    bincode_profile::BincodeProfiler,
     noir::circuit::CircuitParameters,
     online_prover::{OnlineProver, PrepSnark, ProverKey},
 };
@@ -45,43 +44,24 @@ pub const PRECOMPUTE_FILE: &str = "precompute.bin";
 
 /// Bumped whenever the on-disk layout changes, so older files are ignored
 /// instead of being mis-deserialized.
-const FORMAT_VERSION: u32 = 2;
-
-/// zstd level: higher levels barely shrink the file and slow down saving.
-const ZSTD_LEVEL: i32 = 1;
-
-/// Top-level `PrepSnark` fields that `Snark::prove` clears before use.
-pub const SCRATCH_FIELDS: [&str; 5] = [
-    "scratch_az",
-    "scratch_bz",
-    "scratch_cz",
-    "z_buffer",
-    "evals_rx_buffer",
-];
+const FORMAT_VERSION: u32 = 3;
 
 /// Cheap staleness marker for a precomputed artifact. Not a security boundary.
 pub type Fingerprint = u64;
 
-/// Fixed-size header in front of the two zstd frames.
+/// Fixed-size header in front of the two bincode blobs.
 struct Header {
     version: u32,
     fingerprint: Fingerprint,
     pk_len: u64,
-    prep_len: u64,
-    pk_zstd_len: u64,
 }
 
 impl Header {
-    const SIZE: usize = 4 + 4 * 8;
+    const SIZE: usize = 4 + 2 * 8;
 
     fn write(&self, out: &mut Vec<u8>) {
         out.extend_from_slice(&self.version.to_le_bytes());
-        for v in [
-            self.fingerprint,
-            self.pk_len,
-            self.prep_len,
-            self.pk_zstd_len,
-        ] {
+        for v in [self.fingerprint, self.pk_len] {
             out.extend_from_slice(&v.to_le_bytes());
         }
     }
@@ -93,8 +73,6 @@ impl Header {
             version: u32::from_le_bytes(header[..4].try_into().unwrap()),
             fingerprint: u64_at(0),
             pk_len: u64_at(1),
-            prep_len: u64_at(2),
-            pk_zstd_len: u64_at(3),
         })
     }
 }
@@ -129,46 +107,20 @@ fn to_io_err<E: std::fmt::Display>(e: E) -> io::Error {
     io::Error::new(io::ErrorKind::Other, e.to_string())
 }
 
-/// bincode of `prep` with every [`SCRATCH_FIELDS`] `Vec` replaced by an empty
-/// one. If vega renames a field it is simply kept: bigger, still correct.
-fn prep_bytes(prep: &PrepSnark) -> io::Result<Vec<u8>> {
-    let bytes = bincode::serialize(prep).map_err(to_io_err)?;
-    let mut profiler = BincodeProfiler::ranges(&SCRATCH_FIELDS);
-    prep.serialize(&mut profiler).map_err(to_io_err)?;
-    if profiler.pos != bytes.len() as u64 {
-        return Err(to_io_err("bincode profiler disagrees with bincode"));
-    }
-
-    let mut out = Vec::with_capacity(bytes.len());
-    let mut at = 0;
-    for (start, end) in profiler.ranges {
-        out.extend_from_slice(&bytes[at..start as usize]);
-        out.extend_from_slice(&0u64.to_le_bytes()); // length of an empty Vec
-        at = end as usize;
-    }
-    out.extend_from_slice(&bytes[at..]);
-    Ok(out)
-}
-
 /// Encodes the prover's reusable artifacts in the `precompute.bin` format.
 pub fn encode(fingerprint: Fingerprint, pk: &ProverKey, prep: &PrepSnark) -> io::Result<Vec<u8>> {
-    let compress = |raw: Vec<u8>| -> io::Result<(u64, Vec<u8>)> {
-        Ok((raw.len() as u64, zstd::bulk::compress(&raw, ZSTD_LEVEL)?))
-    };
     let (pk, prep) = std::thread::scope(|s| {
-        let pk = s.spawn(|| bincode::serialize(pk).map_err(to_io_err).and_then(compress));
-        let prep = prep_bytes(prep).and_then(compress);
+        let pk = s.spawn(|| bincode::serialize(pk).map_err(to_io_err));
+        let prep = bincode::serialize(prep).map_err(to_io_err);
         (pk.join().expect("pk encoder panicked"), prep)
     });
-    let ((pk_len, pk), (prep_len, prep)) = (pk?, prep?);
+    let (pk, prep) = (pk?, prep?);
 
     let mut out = Vec::with_capacity(Header::SIZE + pk.len() + prep.len());
     Header {
         version: FORMAT_VERSION,
         fingerprint,
-        pk_len,
-        prep_len,
-        pk_zstd_len: pk.len() as u64,
+        pk_len: pk.len() as u64,
     }
     .write(&mut out);
     out.extend_from_slice(&pk);
@@ -211,20 +163,16 @@ pub fn decode(bytes: &[u8], expected: Fingerprint) -> Result<(ProverKey, PrepSna
         return Err(DecodeError::Stale(header.fingerprint));
     }
     let frames = &bytes[Header::SIZE..];
-    if header.pk_zstd_len > frames.len() as u64 {
+    if header.pk_len > frames.len() as u64 {
         return Err(corrupt(&"truncated prover key"));
     }
-    let (pk, prep) = frames.split_at(header.pk_zstd_len as usize);
+    let (pk, prep) = frames.split_at(header.pk_len as usize);
 
-    let unpack = |frame: &[u8], len: u64| -> Result<Vec<u8>, DecodeError> {
-        zstd::bulk::decompress(frame, len as usize).map_err(|e| corrupt(&e))
-    };
     std::thread::scope(|s| {
         let pk = s.spawn(|| -> Result<ProverKey, DecodeError> {
-            bincode::deserialize(&unpack(pk, header.pk_len)?).map_err(|e| corrupt(&e))
+            bincode::deserialize(pk).map_err(|e| corrupt(&e))
         });
-        let prep: PrepSnark =
-            bincode::deserialize(&unpack(prep, header.prep_len)?).map_err(|e| corrupt(&e))?;
+        let prep: PrepSnark = bincode::deserialize(prep).map_err(|e| corrupt(&e))?;
         Ok((pk.join().expect("pk decoder panicked")?, prep))
     })
 }

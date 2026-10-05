@@ -1,9 +1,13 @@
 # Shrinking and speeding up `target/precompute.bin`
 
-Measurements and an implementation plan for the save/load path of
+Measurements and the implementation history of the save/load path of
 `spartan-backend/src/precompute.rs`. The on-disk format is private to
 spartan-backend (only `--prove` reads it back) and the data is trusted, so
 format compatibility and validation on load do not matter.
+
+Both tiers are implemented. The current format is `FORMAT_VERSION` 3, which
+needs the [`eid-privacy/vega-prover`](https://github.com/eid-privacy/vega-prover)
+fork; see [Tier 2](#tier-2-fork-vega-prover-implemented) for the numbers.
 
 ## Benchmark
 
@@ -15,10 +19,12 @@ cargo run --release -- --precompute ../circuits/c0200_swiyu_jwt     # writes the
 cargo run --release --example precompute_bench -- ../circuits/c0200_swiyu_jwt 3
 ```
 
-It reports read vs. deserialize time, a per-field byte breakdown (via a
-counting serde `Serializer` that mirrors bincode 1.3's sizes), the
-"slim layout" prototype below, and a per-scalar micro-benchmark. File reads
-are warm-cache; run `sudo purge` first for a cold number.
+It reports read vs. decode time, a per-field byte breakdown (via a
+counting serde `Serializer` that mirrors bincode 1.3's sizes) and a
+per-scalar micro-benchmark. In the v3 format the large vectors are counted as
+their zstd-framed `raw_serde` payload, so the breakdown is of the file rather
+than of an uncompressed stream. File reads are warm-cache; run `sudo purge`
+first for a cold number.
 
 ## Baseline (c0200_swiyu_jwt, 2²² padded constraints, Apple Silicon)
 
@@ -83,36 +89,45 @@ That gives **75× smaller and ~3× faster to load**, and saving gets faster too:
 compressing takes 0.43 s, but the write drops from 2 GiB to 28 MiB. The parallel
 decode is limited by prep (577 MiB) being the larger half.
 
-**Status: implemented** (`FORMAT_VERSION` 2, `src/precompute.rs`,
-splice helper in `src/bincode_profile.rs`). End to end on c0200:
-`--precompute` writes 27.8 MiB (was 2084.5 MiB) at the same total time
-(~7 s), `precompute_load` takes 0.89 s including the fingerprint, and the
-proof from the loaded artifact verifies. c0101 also passes precompute,
-prove and verify. Old v1 files are rejected by version and fall back to
-regular proving. The benchmark now measures the v2 format.
+**Status: superseded by Tier 2** (it was `FORMAT_VERSION` 2, with the splice
+helper in `src/bincode_profile.rs`). End to end on c0200 it wrote 27.8 MiB
+(was 2084.5 MiB) at the same total time (~7 s), and `precompute_load` took
+0.89 s including the fingerprint. Tier 2 keeps the two-blob parallel decode
+and the `vk`-less layout, drops the splice in favour of `#[serde(skip)]`, and
+drops the outer zstd because the large vectors now carry their own.
 
-## Tier 2: patch vega-prover (fork + `[patch.crates-io]`) — plan
+## Tier 2: fork vega-prover (implemented)
 
 Tier 1's 0.7 s goes almost entirely to serde, not to zstd (measured below:
 unzstd 200 ms vs. bincode 1050 ms, single-threaded). Most of that is
 halo2curves' per-scalar `Deserialize`. Nothing outside vega can avoid it,
 because the scalars sit in private vega fields, so this tier needs a fork.
-Because the data is trusted, the fork can store every large vector as raw
-memory and decompress it straight into its final allocation. That leaves no
+Because the data is trusted, the fork stores every large vector as raw
+memory and decompresses it straight into its final allocation. That leaves no
 per-element work and no big intermediate buffer.
 
-### Design
+The fork is [`eid-privacy/vega-prover`](https://github.com/eid-privacy/vega-prover),
+branch `raw-serde`, wired as a plain `git` dependency (no `[patch.crates-io]`)
+in all three crates that use vega: `spartan-backend`, `algebra-utils` and
+`c020x_verifier` — they must move together, or two incompatible copies of the
+crate end up in the tree.
+
+### Design, as built
 
 1. **`#[serde(skip)]` on the five scratch fields** (`scratch_az`,
-   `scratch_bz`, `scratch_cz`, `z_buffer`, `evals_rx_buffer`). This replaces
-   the bincode splice in `precompute::prep_bytes` and
-   `bincode_profile::BincodeProfiler::ranges`, which can be deleted.
-2. **A `serde(with = "zstd_raw")` helper for large `Vec<T>`**, where `T` is
+   `scratch_bz`, `scratch_cz`, `z_buffer`, `evals_rx_buffer`). `Snark::prove`
+   clears and refills each of them before use (`z.clear()` in
+   `vega_sc_zkp.rs`, `az.clear()` in `multiply_vec_incremental_into`,
+   `out.clear()` in `EqPolynomial::evals_from_points_into`), so a deserialized
+   prep simply starts with empty allocations. This replaced the bincode splice
+   in `precompute::prep_bytes`; `bincode_profile.rs` is kept for the size
+   profiling used by `examples/precompute_bench.rs`.
+2. **A `serde(with = "crate::raw_serde")` helper for large `Vec<T>`**, where `T` is
    plain data (`E::Scalar`, `usize`). Apply it to `SparseMatrix::{data,
    indices, indptr}` (the three matrices in `pk.S`), `cached_az/bz/cz`,
    `ps.W` and `cs.aux_assignment`, i.e. the fields of the size table above.
    - **Serialize:** take the `Vec`'s memory as bytes and cut it into frames
-     of about 1M elements, a multiple of `size_of::<T>()`. Compress the
+     of about 4 MiB, a multiple of `size_of::<T>()`. Compress the
      frames in parallel with `zstd` level 1 (rayon, which vega already
      depends on). Emit one `serialize_bytes` holding: element count, frame
      count, each frame's `(raw_len, zstd_len)`, then the frames.
@@ -124,29 +139,59 @@ per-element work and no big intermediate buffer.
      The helper never allocates more than the result.
    - **Memory-layout assumption:** a halo2curves field is
      `pub struct Fq(pub [u64; 4])`, a single-field struct *without*
-     `#[repr(transparent)]`, so its layout is only de facto `[u64; 4]`. Guard
-     the helper with `const` asserts on `size_of::<T>()` and
-     `align_of::<T>()` and with `cfg(target_endian = "little")`, and add a
-     round-trip unit test per `T`. The bytes are Montgomery limbs, which is
-     what `SerdeObject::to_raw_bytes` produces, so no conversion is needed.
+     `#[repr(transparent)]`, so its layout is only de facto `[u64; 4]`. The
+     helper is generic over an `unsafe trait RawLayout` whose associated
+     `const LAYOUT_OK` asserts `size_of::<T>()` is a non-zero multiple of 8
+     and `align_of::<T>() <= 8`; a type that does not match is a **compile
+     error**, not a silent fallback to the slow path. Big-endian targets are
+     rejected by `compile_error!`. `impl_montgomery_limbs!` implements
+     `RawLayout` alongside `MontgomeryLimbs`, since that macro already asserts
+     the `[u64; 4]` layout, and `Engine::Scalar` carries the bound. Round-trip
+     unit tests cover the bn254, p256 and t256 scalars plus `usize`/`u64`, at
+     empty, sub-frame, exact-frame and multi-frame sizes, together with
+     corrupt-header rejection. The bytes are Montgomery limbs, which is what
+     `SerdeObject::to_raw_bytes` produces, so no conversion is needed.
 3. **No outer zstd.** The big vectors are already compressed inside the
    bincode stream, and what's left (metadata and small vectors) is small.
-   Keep the `pk ‖ prep` two-thread decode. Bump `FORMAT_VERSION` to 3. The
-   header no longer needs the uncompressed lengths, only `pk_len`, so the
-   two blobs can be split.
-4. The fork adds `zstd` as a vega dependency, behind a feature (for example
-   `raw-serde`), so upstream builds are unchanged.
+   The `pk ‖ prep` two-thread decode is kept. `FORMAT_VERSION` is 3 and the
+   header is `version | fingerprint | pk_len`, which is all that is needed to
+   split the two blobs.
+4. The fork adds `zstd` as an unconditional vega dependency. Applying the
+   bound widens `SparseMatrix<F: PrimeField>` to
+   `F: PrimeField + RawLayout`, which is the only part of the diff that
+   reaches outside `raw_serde.rs` and the attribute lines.
 
-### Expected result
+### Result
 
-From the experiment below, the scalars take ~34 ms to load on 8 threads
-(10.5 MiB on disk) instead of ~1 s of serde, and the `usize` indices behave
-the same way. Total load should therefore drop from 0.74 s to well under
-0.1 s. The file should grow from 27.8 MiB to roughly 33 MiB, because
-Montgomery limbs compress worse than canonical bytes. Peak memory during
-load is the decoded prover state plus the 33 MiB file, with no 1 GiB
-intermediate buffer. Cost: maintaining a vega fork, like the noir fork
-already maintained under `eid-privacy`.
+Measured on c0200 (`--precompute`, which also proves from the artifact it
+just wrote, then `--verify`):
+
+| | v1 (baseline) | v2 (Tier 1) | **v3 (Tier 2)** |
+|---|---|---|---|
+| file | 2084.5 MiB | 27.8 MiB | **31.4 MiB** |
+| `fs::read` | 0.25 s | negligible | 3 ms |
+| decode | 2.10 s | 0.74 s | **50 ms** |
+| `precompute_load` (incl. fingerprint) | — | 0.89 s | **0.17 s** |
+| encode | 1.28 s | ~0.43 s | 0.15 s |
+
+Loading is **5.3× faster than Tier 1 and 15× faster than the baseline**, for
+11% more bytes on disk — Montgomery limbs compress worse than canonical ones,
+as predicted. Peak memory during load is the decoded prover state plus the
+31 MiB file; there is no large intermediate buffer.
+
+What is left of the file is no longer scalars but the CSR index arrays:
+
+| field | MiB | share |
+|---|---|---|
+| `pk.S.{A,B,C}.indices` | 15.0 | 48% |
+| `pk.S.{A,B,C}.indptr` | 5.5 | 17% |
+| `pk.S.{A,B,C}.data` | 0.8 | 3% |
+| `prep.cached_az/bz/cz` | 5.4 | 17% |
+| `prep.ps.W`, `prep.ps.cs.aux_assignment` | 4.4 | 14% |
+
+Cost: maintaining a vega fork, like the noir fork already maintained under
+`eid-privacy`. The diff is confined to `src/raw_serde.rs` plus attribute and
+bound lines, which keeps rebases onto upstream cheap.
 
 ### Rejected alternatives
 
@@ -162,10 +207,14 @@ already maintained under `eid-privacy`.
 - **Raw limbs through an intermediate buffer** (decompress, then copy):
   52 ms instead of 34 ms, and a temporary ~0.9 GiB extra peak.
 - `Vec<usize>` → `u32` is unnecessary: zstd removes the zero upper halves.
+  (Confirmed by v3: the indices are 48% of the file but still only 15 MiB for
+  29M entries, i.e. ~4 bits each.)
 
 ## Experiment: how to encode the scalars
 
-`spartan-backend/examples/scalar_compact_bench.rs` backs the Tier 2 plan:
+`spartan-backend/examples/scalar_compact_bench.rs` is the experiment that
+chose the Tier 2 encoding. It predates the fork and still measures the
+alternatives against each other:
 
 ```bash
 cargo run --release --example scalar_compact_bench -- ../circuits/c0200_swiyu_jwt
