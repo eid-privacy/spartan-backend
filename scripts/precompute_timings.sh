@@ -43,20 +43,26 @@ to_seconds() {
 
 # Extracts the duration that follows PATTERN on the first matching log line.
 extract() {
-    local pattern="$1" log="$2"
-    to_seconds "$(grep -m1 -oE "$pattern[0-9.]+(ns|µs|ms|s)" "$log" | sed -E "s/^$pattern//")"
+    local pattern="$1" log="$2" d
+    d="$(grep -m1 -oE "$pattern[0-9.]+(ns|µs|ms|s)" "$log" | sed -E "s/^$pattern//")" || true
+    if [[ -z "$d" ]]; then
+        echo "error: no '$pattern<duration>' line in $log" >&2
+        exit 1
+    fi
+    to_seconds "$d"
 }
 
 RESULTS="$LOG_DIR/results.tsv"
 for i in $(seq 1 "$RUNS"); do
     log="$LOG_DIR/run_$i.log"
+    # spartan-backend skips the create/write phases if precompute.bin exists.
+    rm -f "$CIRCUIT_DIR/target/precompute.bin"
     RUST_LOG=info "$BIN" "$CIRCUIT_DIR" --precompute 2>"$log" >/dev/null
 
     create=$(extract "$NAME: precompute = " "$log")
     write=$(extract "to disk in " "$log")
     read=$(extract "from disk in " "$log")
-    finalise=$(to_seconds "$(grep 'prove_precomputed{' "$log" | grep -m1 'spartan_backend: close' \
-        | grep -oE 'time.busy=[0-9.]+(ns|µs|ms|s)' | sed 's/time.busy=//')")
+    finalise=$(grep 'prove_precomputed{' "$log" | grep 'spartan_backend: close' | extract "time.busy=" /dev/stdin)
 
     printf '%s\t%s\t%s\t%s\n' "$create" "$write" "$read" "$finalise" >>"$RESULTS"
     printf 'run %d/%d: create=%.3fs write=%.3fs read=%.3fs finalise=%.3fs\n' \
