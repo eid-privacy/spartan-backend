@@ -2,6 +2,6 @@
 name = "c9000_benchmark"
 type = "bin"
 authors = [""]
-description = "Benchmarking Ultrahonk against Spartan"
+description = "Benchmarking UltraHonk against Spartan"
 
 [dependencies]
