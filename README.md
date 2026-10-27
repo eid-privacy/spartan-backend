@@ -16,8 +16,9 @@ From the [final report](https://github.com/eid-privacy/zkp-reports/releases/down
 the SWIYU age proof takes 1.5s on a MacBook Pro M2 Max, and 4.5s on a 2023 mobile phone
 (Samsung Galaxy A54) with precomputation, 11.0s without. The largest proof
 (`c0202_sicpa_backend_constant`) is 202kB.
-The Android app running Noir with UltraHONK instead is in
-[zkp-android](https://github.com/eid-privacy/zkp-android).
+The Android app running these circuits with Spartan is
+[zkp-android-spartan](https://github.com/eid-privacy/zkp-android-spartan);
+the one running Noir with UltraHONK instead is [zkp-android](https://github.com/eid-privacy/zkp-android).
 
 ## Security review
 
