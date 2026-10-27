@@ -187,9 +187,9 @@ fn extract_public_param_32(
     let range = ranges
         .get(name)
         .ok_or_else(|| format!("missing public parameter '{name}' in ABI"))?;
-    if range.len() != 32 {
+    if range.len() != 1 && range.len() != 32 {
         return Err(format!(
-            "parameter '{name}' has width {}, expected 32",
+            "parameter '{name}' has width {}, expected 1 (Field) or 32 ([u8; 32])",
             range.len()
         ));
     }
@@ -199,6 +199,13 @@ fn extract_public_param_32(
             range.end,
             public_values.len()
         ));
+    }
+
+    // A `Field` coordinate: the native field is the P-256 base field, so the
+    // value is the coordinate itself and always fits in 32 bytes.
+    if range.len() == 1 {
+        return left_pad_32(&scalar_to_biguint(&public_values[range.start]).to_bytes_be())
+            .map_err(|e| format!("parameter '{name}': {e}"));
     }
 
     let mut out = [0u8; 32];
@@ -216,6 +223,15 @@ fn scalar_to_byte(value: &Scalar) -> Result<u8, String> {
         return Err(format!("value {n} does not fit in one byte"));
     }
     Ok(n.to_bytes_be().first().copied().unwrap_or(0u8))
+}
+
+fn left_pad_32(bytes: &[u8]) -> Result<[u8; 32], String> {
+    if bytes.len() > 32 {
+        return Err(format!("value of {} bytes does not fit in 32 bytes", bytes.len()));
+    }
+    let mut out = [0u8; 32];
+    out[32 - bytes.len()..].copy_from_slice(&bytes);
+    Ok(out)
 }
 
 fn parse_hex_32(input: &str) -> Result<[u8; 32], String> {
@@ -254,6 +270,7 @@ fn scalar_reduce_be_bytes(bytes: [u8; 32]) -> P256Scalar {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use p256::elliptic_curve::PrimeField;
 
     /// Every c020x circuit's `Prover.toml` carries the whole Crescent triple
     /// (`R_dev`, `T_dev`, `U_dev`) plus the hashed challenge, so the check can
@@ -284,12 +301,18 @@ mod tests {
     /// Test-only: the verifier itself never reads `Prover.toml`, it takes
     /// `R_dev` from the proof's public inputs. The file is just a convenient
     /// source of real fixtures here.
+    /// Accepts both encodings found in the fixtures: a `[u8; 32]` array, or a
+    /// hex string for parameters declared as `Field`.
     fn read_toml_byte_array(value: &toml::Value, key: &str) -> [u8; 32] {
-        let array = value
+        let entry = value
             .get(key)
-            .unwrap_or_else(|| panic!("'{key}' is missing"))
+            .unwrap_or_else(|| panic!("'{key}' is missing"));
+        if let Some(hex) = entry.as_str() {
+            return parse_hex_32(hex).unwrap_or_else(|e| panic!("'{key}': {e}"));
+        }
+        let array = entry
             .as_array()
-            .unwrap_or_else(|| panic!("'{key}' is not an array"));
+            .unwrap_or_else(|| panic!("'{key}' is neither an array nor a hex string"));
         assert_eq!(array.len(), 32, "'{key}' must have 32 entries");
         std::array::from_fn(|i| {
             u8::try_from(array[i].as_integer().expect("integer")).expect("byte")
@@ -322,6 +345,27 @@ mod tests {
             let triple = load_triple(name);
             assert_eq!(check(&triple), Ok(()), "{name} should verify");
         }
+    }
+
+    #[test]
+    fn extracts_field_and_byte_array_coordinates_equally() {
+        let coord = load_triple("c0200_swiyu_jwt").tx;
+        let field = Scalar::from_repr({
+            let mut le = coord;
+            le.reverse();
+            le.into()
+        })
+        .expect("coordinate is a canonical field element");
+        let bytes: Vec<Scalar> = coord.iter().map(|b| Scalar::from(u64::from(*b))).collect();
+
+        let mut values = vec![field];
+        values.extend(bytes);
+        let ranges = HashMap::from([
+            ("as_field".to_string(), 0..1),
+            ("as_bytes".to_string(), 1..33),
+        ]);
+        assert_eq!(extract_public_param_32(&values, &ranges, "as_field"), Ok(coord));
+        assert_eq!(extract_public_param_32(&values, &ranges, "as_bytes"), Ok(coord));
     }
 
     #[test]
