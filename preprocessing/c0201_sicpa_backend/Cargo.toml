@@ -13,3 +13,4 @@ halo2curves = "0.10.0"
 group = "0.13"
 sha2 = "0.10"
 base64 = "0.22"
+clap = { version = "4", features = ["derive"] }

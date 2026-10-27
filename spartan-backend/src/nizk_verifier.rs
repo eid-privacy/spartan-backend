@@ -4,20 +4,21 @@ use vega_prover::{
     vega_sc_zkp::VegaZkSNARK,
 };
 
+#[derive(Clone, Debug)]
+pub struct ExpectedPublicValue<S> {
+    pub position: usize,
+    pub witness_index: u32,
+    pub configured_value: Option<S>,
+}
+
 pub fn verify<E: Engine, C: VegaCircuit<E>>(
     verifier_circuit: C,
     proof: VegaZkSNARK<E>,
+    expected_public_values: &[ExpectedPublicValue<E::Scalar>],
 ) -> Result<Vec<E::Scalar>, VegaError>
 where
     E::PCS: vega_prover::traits::pcs::FoldingEngineTrait<E>,
 {
-    let expected_public_values =
-        verifier_circuit
-            .public_values()
-            .map_err(|e| VegaError::ProofVerifyError {
-                reason: format!("Could not extract expected public values: {e}"),
-            })?;
-
     let (_, vk) = {
         let _span = tracing::debug_span!("verifier_setup").entered();
         VegaZkSNARK::<E>::setup(verifier_circuit)?
@@ -28,13 +29,43 @@ where
         proof.verify(&vk)
     }?;
 
-    if public_values != expected_public_values {
-        return Err(VegaError::ProofVerifyError {
-            reason: format!(
-                "Public inputs mismatch: proof claims {:?}, verifier expects {:?}",
-                public_values, expected_public_values
-            ),
-        });
+    let mut filled_from_proof = 0usize;
+    for expected in expected_public_values {
+        let Some(actual) = public_values.get(expected.position) else {
+            return Err(VegaError::ProofVerifyError {
+                reason: format!(
+                    "Public inputs mismatch: expected witness {} at position {}, but proof has only {} public values",
+                    expected.witness_index,
+                    expected.position,
+                    public_values.len()
+                ),
+            });
+        };
+
+        if let Some(configured) = &expected.configured_value {
+            if actual != configured {
+                return Err(VegaError::ProofVerifyError {
+                    reason: format!(
+                        "Public input mismatch at witness {} (position {}): proof claims {:?}, verifier expects {:?}",
+                        expected.witness_index, expected.position, actual, configured
+                    ),
+                });
+            }
+        } else {
+            filled_from_proof += 1;
+            tracing::info!(
+                witness_index = expected.witness_index,
+                position = expected.position,
+                value = ?actual,
+                "Verifier input missing in JSON, using proof public value"
+            );
+        }
+    }
+    if filled_from_proof > 0 {
+        tracing::warn!(
+            filled_from_proof,
+            "Verifier JSON is incomplete: missing public values were taken from the proof"
+        );
     }
 
     Ok(public_values)

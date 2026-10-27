@@ -9,11 +9,18 @@ Reads `../../circuits/c0201_sicpa_backend/Prover.toml` and computes:
 - **JWT (issuer) ECDSA recovery** (c0102 "vanilla equation" style): `R_jwt_x`,
   `R_jwt_y`, `s_inv_jwt` — the recovered `R` point and `s^-1` for the issuer's
   signature over the JWT signing input.
-- **Device ECDSA Crescent triple** (c0100 style): `R_dev_x/y`, `T_dev_x/y`,
+- **Device ECDSA Crescent triple** (c0100 style): `_R_dev_x/y`, `T_dev_x/y`,
   `U_dev_x/y` — the proof-of-possession triple for the device signature over
   `challenge_nonce`, built from its two halves `device_r` and `device_s`. Only
   `device_s` is a circuit input; `device_r` lives in `Prover.toml` purely for
   this step, which folds it into `T_dev`/`U_dev`.
+
+> **Verifier-facing contract — do not remove `_R_dev_x`/`_R_dev_y`.**
+> They are **public circuit inputs** even though the circuit itself never reads
+> them: `R_dev` is the value the Crescent paper has the prover *reveal* so the
+> verifier can recompute `T = R·r⁻¹` and `U = G·(−M·r⁻¹)` with `r = R.x`.
+> [`c020x_verifier`](../../c020x_verifier) takes them from the proof's public
+> inputs.
 
 The first run consumes the one-time `jwt_signature` field from `Prover.toml`;
 subsequent runs proceed without it.
@@ -25,8 +32,7 @@ constant, the SICPA header carries the issuer key and is therefore a **public
 `encoded_header` input** to the circuit. This preprocessor reads
 `encoded_header` from `Prover.toml` to reconstruct the exact signing input
 (`encoded_header || "." || base64url(payload)`) that was hashed and signed, and
-emits `encoded_header` as a public value (flattened to its storage bytes plus
-its `len` wire) in `verifier_input.json`.
+matches the same value used by the circuit.
 
 Note also that `Prover.toml` here is produced by `create-prover.py`
 (`toml.dumps`), which writes the `BoundedVec` inputs as `[table]` sections. The
@@ -41,5 +47,4 @@ cargo run --release
 ```
 
 Writes the precomputed fields back into
-`../../circuits/c0201_sicpa_backend/Prover.toml` and also produces
-`../../circuits/c0201_sicpa_backend/verifier_input.json`.
+`../../circuits/c0201_sicpa_backend/Prover.toml`.

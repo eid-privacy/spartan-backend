@@ -4,6 +4,7 @@
 use algebra_utils::{big_to_ff, ff_to_big};
 use base64::Engine as _;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use clap::Parser;
 use group::Curve;
 use halo2curves::{CurveAffine, ff::Field, secp256r1::Secp256r1Affine};
 use num_bigint::BigUint;
@@ -47,7 +48,6 @@ struct ProverToml {
     /// circuit consumes directly.
     device_s: String,
     challenge_nonce: Vec<u8>,
-    now_date: u64,
 }
 
 fn ff_to_be<FF: halo2curves::ff::PrimeField>(f: &FF) -> FieldRepr {
@@ -95,8 +95,8 @@ fn strip_precomputed_fields(content: &str) -> String {
         "R_jwt_x =",
         "R_jwt_y =",
         "s_inv_jwt =",
-        "R_dev_x =",
-        "R_dev_y =",
+        "_R_dev_x =",
+        "_R_dev_y =",
         "T_dev_x =",
         "T_dev_y =",
         "U_dev_x =",
@@ -158,8 +158,24 @@ fn affine_to_repr(p: &Secp256r1Affine) -> (FieldRepr, FieldRepr) {
     (ff_to_be::<Fp>(&p.x), ff_to_be::<Fp>(&p.y))
 }
 
+const DEFAULT_TOML_PATH: &str = "../../circuits/c0201_sicpa_backend/Prover.toml";
+
+/// c0201_sicpa_backend Prover.toml preprocessor.
+///
+/// Reconstructs the JWT/device ECDSA recovery values (R, s_inv, T, U) needed
+/// by the c0201_sicpa_backend circuit, writes them back into Prover.toml, and
+/// regenerates the accompanying verifier_input.json next to it.
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+struct Cli {
+    /// Path to the Prover.toml file to read/update.
+    #[arg(default_value = DEFAULT_TOML_PATH)]
+    prover_toml_path: PathBuf,
+}
+
 fn main() {
-    let toml_path = PathBuf::from("../../circuits/c0201_sicpa_backend/Prover.toml");
+    let cli = Cli::parse();
+    let toml_path = cli.prover_toml_path;
     let content = fs::read_to_string(&toml_path).expect("cannot read Prover.toml");
     let prover: ProverToml = toml::from_str(&content).expect("cannot parse Prover.toml");
 
@@ -261,8 +277,8 @@ fn main() {
     block.push_str(&fmt_array("R_jwt_y", &R_jwt_y));
     block.push_str(&fmt_field("s_inv_jwt", &ff_to_be::<Fq>(&s_inv_jwt)));
     block.push_str("# Precomputed (c0201_sicpa_backend): device ECDSA Crescent triple\n");
-    block.push_str(&fmt_array("R_dev_x", &R_dev_x));
-    block.push_str(&fmt_array("R_dev_y", &R_dev_y));
+    block.push_str(&fmt_array("_R_dev_x", &R_dev_x));
+    block.push_str(&fmt_array("_R_dev_y", &R_dev_y));
     block.push_str(&fmt_array("T_dev_x", &T_dev_x));
     block.push_str(&fmt_array("T_dev_y", &T_dev_y));
     block.push_str(&fmt_array("U_dev_x", &U_dev_x));
@@ -288,56 +304,8 @@ fn main() {
 
     fs::write(&toml_path, out).expect("cannot write Prover.toml");
 
-    // 7. Regenerate verifier_input.json. Exactly the circuit's ABI parameters
-    //    must appear (the backend asserts the count); private ones are null,
-    //    public ones carry their value. The public `encoded_header` BoundedVec
-    //    flattens to its storage bytes followed by its `len` wire (matching the
-    //    Noir ABI field order). y_offset, challenge_nonce, device_r and
-    //    R_dev_x/y stay in Prover.toml for the preprocessing itself but are not
-    //    ABI parameters, so they must not be emitted here.
-    let verifier_path = PathBuf::from("../../circuits/c0201_sicpa_backend/verifier_input.json");
-    let json_array = |bytes: &[u8]| -> String {
-        let entries: Vec<String> = bytes.iter().map(|b| b.to_string()).collect();
-        format!("[{}]", entries.join(", "))
-    };
-    let mut header_flat: Vec<u8> = prover.encoded_header.storage.clone();
-    header_flat.push(prover.encoded_header.len as u8);
-    let verifier_json = format!(
-        concat!(
-            "{{\n",
-            "  \"payload\": null,\n",
-            "  \"dob_salt\": null,\n",
-            "  \"dob_value\": null,\n",
-            "  \"dob_sd_offset\": null,\n",
-            "  \"x_offset\": null,\n",
-            "  \"device_s\": null,\n",
-            "  \"R_jwt_x\": null,\n",
-            "  \"R_jwt_y\": null,\n",
-            "  \"s_inv_jwt\": null,\n",
-            "  \"encoded_header\": {},\n",
-            "  \"issuer_pub_x\": {},\n",
-            "  \"issuer_pub_y\": {},\n",
-            "  \"now_date\": {},\n",
-            "  \"T_dev_x\": {},\n",
-            "  \"T_dev_y\": {},\n",
-            "  \"U_dev_x\": {},\n",
-            "  \"U_dev_y\": {}\n",
-            "}}\n",
-        ),
-        json_array(&header_flat),
-        json_array(&issuer_x),
-        json_array(&issuer_y),
-        prover.now_date,
-        json_array(&T_dev_x),
-        json_array(&T_dev_y),
-        json_array(&U_dev_x),
-        json_array(&U_dev_y),
-    );
-    fs::write(&verifier_path, verifier_json).expect("cannot write verifier_input.json");
-
     println!(
         "c0201_sicpa_backend: wrote R_jwt, s_inv_jwt, R_dev, T_dev, U_dev to {}",
         toml_path.display()
     );
-    println!("c0201_sicpa_backend: wrote {}", verifier_path.display());
 }

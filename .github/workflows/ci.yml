@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  ci:
+  formatting:
     runs-on: ubuntu-latest
     env:
       # Treat warnings as errors for every cargo invocation in this job. Set at
@@ -35,5 +35,5 @@ jobs:
       - name: Build spartan-backend (deny warnings)
         run: devbox run build-check
 
-      - name: Run circuits
-        run: devbox run start
+      - name: Check circuits (deny warnings)
+        run: devbox run circuits-check

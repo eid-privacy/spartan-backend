@@ -43,7 +43,8 @@ impl<Scalar: PrimeField + PrimeFieldBits> TestCircuit<Scalar> {
         let proof: Result<VegaZkSNARK<E>, VegaError> = prove(prover_circuit);
         match proof {
             Ok(proof) => {
-                let verification_result = verify(verifier_circuit, proof);
+                let expected_public_values = Vec::new();
+                let verification_result = verify(verifier_circuit, proof, &expected_public_values);
                 if let Err(e) = verification_result {
                     tracing::error!("Verification failed: {:?}", e);
                 }

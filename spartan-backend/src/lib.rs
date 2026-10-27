@@ -1,4 +1,5 @@
 mod circuit_instance;
+mod errors;
 mod nizk_prover;
 mod nizk_verifier;
 pub mod noir;
@@ -8,7 +9,12 @@ mod trivial_circuit;
 pub mod types;
 mod utils;
 
-use std::env;
+use std::{
+    env,
+    io::{Error, ErrorKind},
+    path::PathBuf,
+    time::Instant,
+};
 
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use bellpepper_core::{ConstraintSystem, num::AllocatedNum, test_cs::TestConstraintSystem};
@@ -16,12 +22,85 @@ use tracing::info_span;
 pub use types::{E, Scalar};
 use vega_prover::{errors::VegaError, traits::circuit::VegaCircuit, vega_sc_zkp::VegaZkSNARK};
 
-pub use crate::circuit_instance::{instantiate_circuit_from_dir, instantiate_circuit_with_name};
-use crate::{
-    nizk_prover::prove,
-    nizk_verifier::verify,
-    noir::{circuit::CircuitParameters, synthesis::circuit_synthesizer::NoirCircuitSynthesizer},
+pub use crate::circuit_instance::{
+    instantiate_circuit_from_dir, instantiate_circuit_with_name,
+    instantiate_prover_circuit_from_dir, instantiate_prover_circuit_with_name,
+    instantiate_verifier_circuit_from_dir, instantiate_verifier_circuit_with_name,
 };
+use crate::{
+    errors::BackendError,
+    nizk_prover::prove,
+    nizk_verifier::{ExpectedPublicValue, verify},
+    noir::{
+        circuit::CircuitParameters, circuit_reader::types::input_wire::InputWire,
+        synthesis::circuit_synthesizer::NoirCircuitSynthesizer,
+    },
+    online_prover::OnlineProver,
+};
+
+/// Runs the offline phase (`setup` + `prep_prove`) once and persists it to
+/// `<circuit_dir>/target/precompute.bin`, which `--prove` then picks up.
+pub fn run_precompute(circuit: &CircuitParameters) -> Result<PathBuf, BackendError> {
+    let _span = info_span!("precompute", circuit = ?circuit.name).entered();
+
+    if circuit.online_seeds.is_empty() {
+        println!(
+            "{}: no online.json — every witness lands in the rest segment, so only `setup` \
+             is saved and the witness commitment is redone on every proof.",
+            circuit.name
+        );
+    }
+
+    let t_setup = Instant::now();
+    let prover = OnlineProver::setup(circuit)?;
+    let setup_elapsed = t_setup.elapsed();
+
+    let t_write = Instant::now();
+    let (path, size) = precompute::save(circuit, &prover)?;
+    let write_elapsed = t_write.elapsed();
+
+    tracing::info!("{}: precompute = {:.3?}", circuit.name, setup_elapsed);
+    tracing::info!(
+        "{}: wrote {} ({:.1} MiB) to disk in {:.3?}",
+        circuit.name,
+        path.display(),
+        size as f64 / (1024.0 * 1024.0),
+        write_elapsed,
+    );
+
+    Ok(path)
+}
+
+/// Produces a base64 proof, reusing `target/precompute.bin` when it is present
+/// and still matches the circuit, otherwise falling back to monolithic proving.
+pub fn prove_with_precompute(
+    circuit: &CircuitParameters,
+    path: PathBuf,
+) -> Result<String, BackendError> {
+    let t_read = Instant::now();
+    let loaded = precompute::load(circuit, path.clone());
+    let read_elapsed = t_read.elapsed();
+    tracing::info!(
+        "{}: read {} from disk in {:.3?}",
+        circuit.name,
+        path.display(),
+        read_elapsed
+    );
+    match loaded {
+        Some(mut prover) => {
+            let _span = info_span!("prove_precomputed", circuit = ?circuit.name).entered();
+            let proof = prover
+                .prove_online(circuit)
+                .map_err(|e| BackendError::from(e))?;
+            Ok(proof_to_base64(&proof))
+        }
+        None => {
+            let msg = format!("{}: no precomputed prover available", circuit.name);
+            tracing::error!(msg);
+            Err(BackendError::from(Error::new(ErrorKind::Other, msg)))
+        }
+    }
+}
 
 /// Generate a Vega zkSNARK proof for the given Noir circuit parameters.
 pub fn prove_circuit(circuit: &CircuitParameters) -> Result<VegaZkSNARK<E>, VegaError> {
@@ -74,10 +153,83 @@ pub fn verify_circuit(circuit: &CircuitParameters, proof: VegaZkSNARK<E>) -> Res
             &circuit.online_seeds,
         )
     };
+    let expected_public_values = expected_public_values(&circuit.verifier_inputs);
 
     let _span = info_span!("verification").entered();
-    verify(verifier_circuit, proof)?;
+    verify(verifier_circuit, proof, &expected_public_values)?;
     Ok(())
+}
+
+fn expected_public_values(
+    verifier_inputs: &[InputWire<Option<Scalar>>],
+) -> Vec<ExpectedPublicValue<Scalar>> {
+    let mut public_wires: Vec<InputWire<Option<Scalar>>> = verifier_inputs
+        .iter()
+        .copied()
+        .filter(|wire| wire.public)
+        .collect();
+
+    public_wires.sort_by_key(|wire| wire.witness.witness_index());
+
+    public_wires
+        .into_iter()
+        .enumerate()
+        .map(|(position, wire)| ExpectedPublicValue {
+            position,
+            witness_index: wire.witness.witness_index(),
+            configured_value: wire.value,
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use acir::native_types::Witness;
+    use ff::Field;
+
+    use super::{Scalar, expected_public_values};
+    use crate::noir::circuit_reader::types::input_wire::InputWire;
+
+    #[test]
+    fn expected_public_values_keep_missing_public_slots() {
+        let inputs = vec![
+            InputWire::new(true, Witness(5), None),
+            InputWire::new(false, Witness(2), Some(Scalar::from(7u64))),
+            InputWire::new(true, Witness(1), Some(Scalar::from(11u64))),
+            InputWire::new(true, Witness(9), Some(Scalar::from(13u64))),
+        ];
+
+        let expected = expected_public_values(&inputs);
+        assert_eq!(expected.len(), 3);
+        assert_eq!(expected[0].position, 0);
+        assert_eq!(expected[0].witness_index, 1);
+        assert_eq!(expected[0].configured_value, Some(Scalar::from(11u64)));
+        assert_eq!(expected[1].position, 1);
+        assert_eq!(expected[1].witness_index, 5);
+        assert_eq!(expected[1].configured_value, None);
+        assert_eq!(expected[2].position, 2);
+        assert_eq!(expected[2].witness_index, 9);
+        assert_eq!(expected[2].configured_value, Some(Scalar::from(13u64)));
+    }
+
+    #[test]
+    fn expected_public_values_are_sorted_by_witness_index() {
+        let inputs = vec![
+            InputWire::new(true, Witness(10), Some(Scalar::ONE)),
+            InputWire::new(true, Witness(3), Some(Scalar::from(2u64))),
+            InputWire::new(true, Witness(7), Some(Scalar::from(3u64))),
+        ];
+
+        let expected = expected_public_values(&inputs);
+        assert_eq!(
+            expected.iter().map(|v| v.witness_index).collect::<Vec<_>>(),
+            vec![3, 7, 10]
+        );
+        assert_eq!(
+            expected.iter().map(|v| v.position).collect::<Vec<_>>(),
+            vec![0, 1, 2]
+        );
+    }
 }
 
 /// Runs only the prover for the given circuit and returns the proof as a

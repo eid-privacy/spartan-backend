@@ -52,7 +52,7 @@ pinned automatically.
 
 ### Run proofs and verifications with Spartan
 
-1. Make sure inputs are set in `prover_input.json` and `verifier_input.json` for the circuit(s) you want to run.
+1. Make sure inputs are set in `prover_input.json` for the circuit(s) you want to run. `verifier_input.json` is only required for verifier paths (`--verify` or prove+verify runs), not for `--prove`. For verifier paths, any **missing public values** (`null`) are filled from the proof output and logged explicitly.
 2. In `spartan-backend/`: `cargo run [--release] <circuit_name>` where the circuit name is the directory name within
    the `circuits` directory (or via devbox: `devbox run start` to run all known passing circuits).
 
@@ -86,6 +86,37 @@ host. The [`preprocessing/`](preprocessing) directory holds one small Cargo tool
 per such circuit; each reads that circuit's `Prover.toml`, does the elliptic-curve
 math, and injects the precomputed values. See
 [`preprocessing/README.md`](preprocessing/README.md) for the full list and usage.
+
+### c020x verifier helper (stdin proof + Crescent checks)
+
+The `c020x_verifier/` crate verifies c020x proofs by:
+1. Running `spartan-backend` library verification on the base64 proof read from `stdin`
+2. Running the off-circuit Crescent device-binding check on the public
+   `_R_dev_*` / `T_dev_*` / `U_dev_*` points:
+   - point decoding / on-curve validation and non-identity checks
+   - `r = f(R_dev) = R_dev.x`, reduced mod the group order
+   - `T_dev == R_dev * r^-1`
+   - `U_dev == G * (-M * r^-1)`
+
+   `R_dev` is the point the prover reveals (it is random, so revealing it
+   preserves unlinkability). It is a **public circuit input**, so the verifier
+   takes `_R_dev_x` / `_R_dev_y` straight out of the proof's public values — no
+   prover-side file is needed. The circuit itself never reads `R_dev`; it is
+   carried purely for this check, so do not drop it as an unused parameter.
+   `M` is the *hashed* challenge, i.e. the value the circuits call
+   `challenge_nonce`, not its pre-image.
+
+Example:
+
+```bash
+echo "$PROOF_B64" | cargo run --manifest-path c020x_verifier/Cargo.toml -- \
+  --circuit-dir ../circuits/c0200_swiyu_jwt \
+  --challenge-hash-hex <64-hex-bytes>
+```
+
+`--challenge-hash-hex` is the challenge the verifier itself issued to the
+device; it must be the one this proof was made for, as each c020x circuit
+carries its own `challenge_nonce`.
 
 ### Pre-computing the offline phase (`--precompute`)
 

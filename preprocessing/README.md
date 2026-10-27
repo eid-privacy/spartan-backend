@@ -18,8 +18,8 @@ cargo run --release
 
 | Directory                              | Target circuit                        | What it precomputes                                              | Output |
 |----------------------------------------|---------------------------------------|-----------------------------------------------------------------|--------|
-| [`c0200_siyu_jwt`](c0200_siyu_jwt)     | `c0200_swiyu_jwt`                      | JWT (issuer) ECDSA recovery + device ECDSA Crescent triple      | writes `Prover.toml` and `verifier_input.json` in place |
-| [`c0201_sicpa_backend`](c0201_sicpa_backend) | `c0201_sicpa_backend`            | JWT (issuer) ECDSA recovery + device ECDSA Crescent triple (variable public `encoded_header`) | writes `Prover.toml` and `verifier_input.json` in place |
+| [`c0200_siyu_jwt`](c0200_siyu_jwt)     | `c0200_swiyu_jwt`                      | JWT (issuer) ECDSA recovery + device ECDSA Crescent triple      | writes `Prover.toml` in place |
+| [`c0201_sicpa_backend`](c0201_sicpa_backend) | `c0201_sicpa_backend`            | JWT (issuer) ECDSA recovery + device ECDSA Crescent triple (variable public `encoded_header`) | writes `Prover.toml` in place |
 | [`ecdsa_pok`](ecdsa_pok)               | `c0102_signature_vanilla_equation`    | Vanilla ECDSA recovery point `R` and `s⁻¹`                      | prints updated `Prover.toml` to stdout |
 | [`ecdsa_pop`](ecdsa_pop)               | `c0100_holder_binding_crescent_style` | Device-key proof-of-possession triple `(R, T, U)`               | writes `Prover.toml` in place |
 | [`zkattest_pok`](zkattest_pok)         | `c0101_signature_pok_zkattest_style`  | ZKAttest-style `z = s·r⁻¹`, recovered `R`, and `r⁻¹·G`          | prints updated `Prover.toml` to stdout |
