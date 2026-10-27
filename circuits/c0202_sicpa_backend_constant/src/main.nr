@@ -2,7 +2,7 @@ use noir_base64::{BASE64_URL_DECODER, BASE64_URL_ENCODER};
 use sha256::sha256_var;
 
 use eid::fast_base64::encode_url_into;
-use eid::field_utils::array_to_field;
+use eid::field_utils::{enforce_ecdsa_parameters, p256_scalar_from_digest};
 use std::field::t256::{P256Point, T256Scalar, t256_msm, t256_ec_add};
 
 mod constants;
@@ -113,6 +113,11 @@ fn main(
     U_dev_x: pub [u8; 32],
     U_dev_y: pub [u8; 32],
 ) {
+    // sanity checking prover-provided offsets
+    // TODO: can we find a tighter bound ?
+    assert(dob_sd_offset < payload.len() - COORD_BASE64_LEN);
+    // 49 bytes = COORD_BASE634_LEN + len("x":") + closing quote
+    assert(x_offset < payload.len() - 49);
     // Constructing the signing input directly into a fixed-size buffer.
     //
     // Unlike c0200, the SICPA header is not a compile-time constant: it is the
@@ -140,14 +145,28 @@ fn main(
     // We assert that R_jwt = t*s^-1*G + r*s^-1*Q_iss with r := R_jwt.x. Equivalent
     // to standard ECDSA: it binds R_jwt.x to the signature root, given the
     // prover commits to R_jwt and s_inv off-circuit.
+    // setup values
     let signing_digest: [u8; 32] = sha256_var(signing_input_storage, signing_input_len);
-    let t_jwt = T256Scalar { hi: 0, lo: array_to_field(signing_digest) };
-    let R_jwt = P256Point { x: array_to_field(R_jwt_x), y: array_to_field(R_jwt_y) };
-    let Q_iss = P256Point { x: array_to_field(issuer_pub_x), y: array_to_field(issuer_pub_y) };
+    let t_jwt = T256Scalar { hi: 0, lo: p256_scalar_from_digest(signing_digest) };
+    let R_jwt = P256Point { x: Field::from_be_bytes(R_jwt_x), y: Field::from_be_bytes(R_jwt_y) };
+    let Q_iss = P256Point {
+        x: Field::from_be_bytes(issuer_pub_x),
+        y: Field::from_be_bytes(issuer_pub_y),
+    };
     let s_inv_scalar_jwt = T256Scalar { hi: 0, lo: s_inv_jwt };
+
+    // enforce ECDSA restrictions
+    enforce_ecdsa_parameters(s_inv_jwt, R_jwt);
+
+    // verification itself
     let sG_jwt = t256_msm([G], [s_inv_scalar_jwt]);
     let sQ_jwt = t256_msm([Q_iss], [s_inv_scalar_jwt]);
     let tsG_jwt = t256_msm([sG_jwt], [t_jwt]);
+    // r = R_jwt.x (mod the P-256 scalar order, here reused as a scalar). This
+    // is a valid P-256 point coordinate, already < p, so it needs no
+    // wraparound handling like the digest above; it can still land in [n, p)
+    // and be rejected as a non-canonical scalar, but only with probability
+    // (p-n)/p ~= 2^-130 -- negligible, so it's left unreduced.
     let r_jwt_scalar = T256Scalar { hi: 0, lo: R_jwt.x };
     let rsQ_jwt = t256_msm([sQ_jwt], [r_jwt_scalar]);
     let rhs_jwt = t256_ec_add(tsG_jwt, rsQ_jwt);
@@ -186,9 +205,9 @@ fn main(
     // Note: device_s is an unverified prover-supplied scalar; the equation
     // below is what enforces soundness.
     let s_dev_scalar = T256Scalar { lo: device_s, hi: 0 };
-    let T_dev = P256Point { x: array_to_field(T_dev_x), y: array_to_field(T_dev_y) };
-    let U_dev = P256Point { x: array_to_field(U_dev_x), y: array_to_field(U_dev_y) };
-    let device_pub_x_field = array_to_field(device_pub_x);
+    let T_dev = P256Point { x: Field::from_be_bytes(T_dev_x), y: Field::from_be_bytes(T_dev_y) };
+    let U_dev = P256Point { x: Field::from_be_bytes(U_dev_x), y: Field::from_be_bytes(U_dev_y) };
+    let device_pub_x_field = Field::from_be_bytes(device_pub_x);
     assert(
         device_pub_x_field == t256_ec_add(t256_msm([T_dev], [s_dev_scalar]), U_dev).x,
         "Invalid device signature on challenge nonce",
