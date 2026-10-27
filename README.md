@@ -1,5 +1,7 @@
 # Spartan backend for Noir (Tom-256)
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23694668.svg)](https://doi.org/10.5281/zenodo.23694668)
+
 ⚠️ **This is demo code, do not use for production or sensitive applications** ⚠️
 
 This repository contains a Spartan prover backend for Noir, using the
@@ -331,6 +333,11 @@ This records a profile and opens a flamegraph in the browser. See
 
 * On some Macs it might happen that the `nargo` binary gets killed instantly on invocation.
   It requires re-signing: `codesign --sign - --force --preserve-metadata=entitlements $(which nargo-t256)`
+
+## How to cite
+
+Archived on Zenodo: [10.5281/zenodo.23694668](https://doi.org/10.5281/zenodo.23694668) (this DOI always resolves to the latest version).
+GitHub's "Cite this repository" button gives APA and BibTeX, from [CITATION.cff](CITATION.cff).
 
 ## License
 
