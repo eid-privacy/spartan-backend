@@ -12,7 +12,7 @@ The circuits in [circuits](circuits/) go from trivial (`c00xx`) via holder bindi
 (`c01xx`) to the full e-ID proofs (`c02xx`): an age proof on an unmodified SWIYU SD-JWT
 including holder binding (`c0200_swiyu_jwt`), and the circuits used in SICPA's Digital
 Trust Platform (`c0201`..`c0203`).
-From the [final report](https://github.com/eid-privacy/zkp-reports/releases/download/latest/eid_privacy-101.292-IP-ICT-ms4-report.pdf):
+From the [final report](https://github.com/eid-privacy/zkp-reports/releases/download/latest/eid-privacy-MS4.pdf):
 the SWIYU age proof takes 1.5s on a MacBook Pro M2 Max, and 4.5s on a 2023 mobile phone
 (Samsung Galaxy A54) with precomputation, 11.0s without. The largest proof
 (`c0202_sicpa_backend_constant`) is 202kB.
