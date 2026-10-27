@@ -1,14 +1,15 @@
-use noir_base64::{BASE64_URL_DECODER, BASE64_URL_ENCODER};
+use noir_base64::BASE64_URL_DECODER;
 use sha256::sha256_var;
 
-use eid::fast_base64::encode_url_into;
+use eid::fast_base64::{encode_32_bytes_url, encode_url_into};
 use eid::field_utils::{enforce_ecdsa_parameters, p256_scalar_from_digest};
 use std::field::t256::{P256Point, T256Scalar, t256_msm, t256_ec_add};
 
 mod constants;
 use constants::{
-    COORD_BASE64_LEN, DISCLOSURE_MAX_LEN, DOB_CLAIM_NAME, DOB_SALT_MAX_LEN, DOB_VALUE_MAX_LEN,
-    ENCODED_HEADER_LEN, MIN_AGE_YEARS, PAYLOAD_MAX_LEN,
+    COORD_BASE64_LEN, DISCLOSURE_ENCODE_IN_LEN, DISCLOSURE_ENCODED_MAX_LEN, DISCLOSURE_MAX_LEN,
+    DOB_CLAIM_NAME, DOB_SALT_MAX_LEN, DOB_VALUE_MAX_LEN, ENCODED_HEADER_LEN, MIN_AGE_YEARS,
+    PAYLOAD_MAX_LEN,
 };
 
 pub global G: P256Point = P256Point {
@@ -57,6 +58,17 @@ fn extract_coord_for_key<let N: u32>(
         coord_bytes[i] = payload_storage[key_offset + 5 + i];
     }
     coord_bytes
+}
+
+/// Returns an untrusted claim about the base64url-decoded value of
+/// `coord_text`. Callers MUST constrain it afterward (e.g. by re-encoding
+/// with `fast_base64::encode_32_bytes_url` and comparing against
+/// `coord_text`). Runs the existing `noir_base64` decoder unconstrained so
+/// its witness-indexed lookup-table cost is never synthesized (see
+/// OPTIMIZE.md).
+unconstrained fn decode_coord_hint(coord_text: [u8; COORD_BASE64_LEN]) -> Field {
+    let decoded: [u8; 32] = BASE64_URL_DECODER::decode(coord_text);
+    Field::from_be_bytes(decoded)
 }
 
 fn birth_date_as_int(value: BoundedVec<u8, DOB_VALUE_MAX_LEN>) -> u32 {
@@ -132,14 +144,14 @@ fn main(
     }
     signing_input_storage[ENCODED_HEADER_LEN] = ASCII_DOT;
     let payload_storage = payload.storage();
-    let payload_len = payload.len();
-    let encoded_payload_len: u32 = encode_url_into(
+    let payload_len = payload.len() as u16;
+    let encoded_payload_len: u16 = encode_url_into(
         payload_storage,
         payload_len,
         &mut signing_input_storage,
         ENCODED_HEADER_LEN + 1,
     );
-    let signing_input_len: u32 = ENCODED_HEADER_LEN + 1 + encoded_payload_len;
+    let signing_input_len: u32 = ENCODED_HEADER_LEN + 1 + encoded_payload_len as u32;
 
     // ECDSA verification of the issuer JWT signature (c0102 "vanilla equation").
     // We assert that R_jwt = t*s^-1*G + r*s^-1*Q_iss with r := R_jwt.x. Equivalent
@@ -174,11 +186,27 @@ fn main(
     assert(R_jwt.y == rhs_jwt.y, "Invalid JWT signature (y)");
 
     let dob_disclosure = build_dob_disclosure(dob_salt, dob_value);
-    let encoded_disclosure = BASE64_URL_ENCODER::encode_var(dob_disclosure);
+    // Encode the disclosure JSON with `fast_base64` rather than
+    // `BASE64_URL_ENCODER::encode_var`, for the same reason as the payload
+    // encode above: the latter's alphabet lookup is much more expensive on
+    // this backend (see OPTIMIZE.md).
+    let mut disclosure_padded: [u8; DISCLOSURE_ENCODE_IN_LEN] = [0; DISCLOSURE_ENCODE_IN_LEN];
+    let disclosure_storage = dob_disclosure.storage();
+    for i in 0..DISCLOSURE_MAX_LEN {
+        disclosure_padded[i] = disclosure_storage[i];
+    }
+    let mut encoded_disclosure_storage: [u8; DISCLOSURE_ENCODED_MAX_LEN] =
+        [0; DISCLOSURE_ENCODED_MAX_LEN];
+    let encoded_disclosure_len = encode_url_into(
+        disclosure_padded,
+        dob_disclosure.len() as u16,
+        &mut encoded_disclosure_storage,
+        0,
+    );
 
-    let expected_digest: [u8; COORD_BASE64_LEN] = BASE64_URL_ENCODER::encode(sha256_var(
-        encoded_disclosure.storage(),
-        encoded_disclosure.len(),
+    let expected_digest: [u8; COORD_BASE64_LEN] = encode_32_bytes_url(sha256_var(
+        encoded_disclosure_storage,
+        encoded_disclosure_len as u32,
     ));
 
     for i in 0..COORD_BASE64_LEN {
@@ -194,7 +222,23 @@ fn main(
 
     let device_key_x_bytes = extract_coord_for_key(payload_storage, x_offset, ASCII_X);
 
-    let device_pub_x: [u8; 32] = BASE64_URL_DECODER::decode(device_key_x_bytes);
+    // Safety: `device_pub_x_field` is an untrusted claim from an
+    // unconstrained base64 decode; it is constrained below by re-encoding
+    // with `fast_base64` and asserting the result matches
+    // `device_key_x_bytes` byte-for-byte. Base64url is injective on
+    // fixed-length byte arrays, so a matching encoding can only come from
+    // the correct value -- the same soundness as an in-circuit decode,
+    // without the cost of `noir_base64`'s decoder (which indexes a lookup
+    // table by a witness; see OPTIMIZE.md).
+    let device_pub_x_field: Field = unsafe { decode_coord_hint(device_key_x_bytes) };
+    let device_pub_x_bytes: [u8; 32] = device_pub_x_field.to_be_bytes();
+    let reencoded_coord = encode_32_bytes_url(device_pub_x_bytes);
+    for i in 0..COORD_BASE64_LEN {
+        assert(
+            reencoded_coord[i] == device_key_x_bytes[i],
+            "Device pubkey coordinate does not match credential",
+        );
+    }
 
     // ECDSA verification of the device signature on challenge_nonce (c0100
     // "Crescent" style). The device pubkey is derived in-circuit from the
@@ -207,7 +251,6 @@ fn main(
     let s_dev_scalar = T256Scalar { lo: device_s, hi: 0 };
     let T_dev = P256Point { x: Field::from_be_bytes(T_dev_x), y: Field::from_be_bytes(T_dev_y) };
     let U_dev = P256Point { x: Field::from_be_bytes(U_dev_x), y: Field::from_be_bytes(U_dev_y) };
-    let device_pub_x_field = Field::from_be_bytes(device_pub_x);
     assert(
         device_pub_x_field == t256_ec_add(t256_msm([T_dev], [s_dev_scalar]), U_dev).x,
         "Invalid device signature on challenge nonce",

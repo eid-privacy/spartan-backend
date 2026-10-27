@@ -1,3 +1,4 @@
+pub mod bincode_profile;
 mod circuit_instance;
 mod errors;
 mod nizk_prover;

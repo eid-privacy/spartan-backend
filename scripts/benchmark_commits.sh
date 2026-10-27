@@ -3,10 +3,12 @@
 # Config-driven benchmark driver: measures noir/barretenberg and spartan-backend
 # performance across the commit history described in a config file (see
 # benchmarks/swiyu_jwt/config.yaml for an example and BENCHMARK_PLAN.md for the
-# full spec). Two curves share one timeline: noir/bb across the commits that bump
-# the noir/barretenberg/nargo-t256 flake pins, spartan across our own commits.
+# full spec). Up to three legs share one timeline: noir/bb across the commits that
+# bump the noir/barretenberg/nargo-t256 flake pins, spartan across our own
+# commits, and (optionally) online: spartan's `--precompute` once, then only the
+# online `--prove` part, for commits that have the precompute CLI (409e264+).
 # Commits are grouped under the circuit name they were built with (`circuit:` +
-# `commits:` under `noir:`/`spartan:`), so renaming a circuit directory only
+# `commits:` under `noir:`/`spartan:`/`online:`), so renaming a circuit directory only
 # means opening a new group for future commits — old groups and their stored
 # results keep referencing the name they were actually measured under.
 #
@@ -15,11 +17,21 @@
 # it only *calls* `devbox run` inside a per-commit checkout so every commit is
 # measured with its own pinned toolchain. No yq/jq/python, no devbox shellenv.
 #
+# A commits entry's ref is normally a git ref (hash/branch/tag). It may
+# instead be the literal "commit-msg", in which case the entry's label is used
+# to find the commit by searching all refs for a commit whose message has a
+# line "Benchmark: <label>" — e.g. "commit-msg optimisations" resolves to
+# whichever commit currently carries "Benchmark: optimisations" in its
+# message. Rebasing/rewriting a commit doesn't change that message, so the
+# config never needs its hash updated afterwards. If several commits carry the
+# same trailer, the most recently committed one is used and a warning is
+# printed listing the dates of the others.
+#
 # Usage:
 #   scripts/benchmark_commits.sh <config.yaml> [options]
 #
 #     --force            re-run every leg, ignoring stored results
-#     --only <ref>       run only this commit (both of its legs), ignoring stored results
+#     --only <ref>       run only this commit (all of its legs), ignoring stored results
 #     --runs <n>         override `runs:` from the config
 #     --dry-run          print the work plan and exit
 #     -h | --help
@@ -33,7 +45,7 @@ usage() {
 Usage: scripts/benchmark_commits.sh <config.yaml> [options]
 
   --force            re-run every leg, ignoring stored results
-  --only <ref>       run only this commit (both of its legs), ignoring stored results
+  --only <ref>       run only this commit (all of its legs), ignoring stored results
   --runs <n>         override `runs:` from the config
   --dry-run          print the work plan and exit
   -h | --help
@@ -87,6 +99,7 @@ NAME=""
 RUNS_CFG="5"
 NOIR_REFS=(); NOIR_LABELS=(); NOIR_CIRCUITS=()
 SPARTAN_REFS=(); SPARTAN_LABELS=(); SPARTAN_CIRCUITS=()
+ONLINE_REFS=(); ONLINE_LABELS=(); ONLINE_CIRCUITS=()
 
 section=""
 cur_circuit=""
@@ -112,6 +125,7 @@ while IFS= read -r raw_line || [ -n "$raw_line" ]; do
             case "$section" in
                 noir)    NOIR_REFS+=("$ref");    NOIR_LABELS+=("$label");    NOIR_CIRCUITS+=("$cur_circuit") ;;
                 spartan) SPARTAN_REFS+=("$ref"); SPARTAN_LABELS+=("$label"); SPARTAN_CIRCUITS+=("$cur_circuit") ;;
+                online)  ONLINE_REFS+=("$ref");  ONLINE_LABELS+=("$label");  ONLINE_CIRCUITS+=("$cur_circuit") ;;
                 *) parse_error "$lineno" "$raw_line" ;;
             esac
             ;;
@@ -135,7 +149,7 @@ while IFS= read -r raw_line || [ -n "$raw_line" ]; do
                 section=""
                 cur_circuit=""
                 in_commits=0
-            elif [[ "$line" =~ ^(noir|spartan):[[:space:]]*$ ]]; then
+            elif [[ "$line" =~ ^(noir|spartan|online):[[:space:]]*$ ]]; then
                 section="${BASH_REMATCH[1]}"
                 cur_circuit=""
                 in_commits=0
@@ -161,11 +175,67 @@ CHECKOUT="$REPO_ROOT/benchmarks/checkout"
 
 # --- §4 step 2: resolve refs ---------------------------------------------------
 
+# resolve_ref <ref> <label> -> prints the resolved full SHA on stdout.
+# A plain <ref> is passed straight to `git rev-parse`. The literal ref
+# "commit-msg" instead searches all refs for the commit(s) whose message
+# contains the line "Benchmark: <label>". If more than one commit matches,
+# the most recently committed one is used and a warning listing the other
+# matching commits' dates is printed to stderr.
+resolve_ref() {
+    local ref="$1" label="$2"
+    if [ "$ref" != "commit-msg" ]; then
+        git -C "$REPO_ROOT" rev-parse "$ref" 2>/dev/null
+        return
+    fi
+
+    [ -n "$label" ] \
+        || { echo "ERROR: $CONFIG: 'commit-msg' ref requires a label to search for (matched as 'Benchmark: <label>')" >&2; exit 1; }
+
+    local escaped
+    escaped=$(printf '%s' "$label" | sed -E 's/[.[\*^$(){}+?|]/\\&/g; s/\]/\\]/g')
+
+    local hits=() ts=() disp=() sha t d
+    while IFS='|' read -r sha t d; do
+        [ -n "$sha" ] && { hits+=("$sha"); ts+=("$t"); disp+=("$d"); }
+    done < <(git -C "$REPO_ROOT" log --all -E --grep="^Benchmark: ${escaped}\$" --format='%H|%ct|%cI')
+
+    if [ "${#hits[@]}" -eq 0 ]; then
+        echo "ERROR: $CONFIG: no commit found with message trailer 'Benchmark: $label'" >&2
+        exit 1
+    fi
+
+    if [ "${#hits[@]}" -eq 1 ]; then
+        printf '%s\n' "${hits[0]}"
+        return
+    fi
+
+    # Multiple commits carry this trailer: take the most recently committed one
+    # (by committer date) and warn, listing the dates of the ones not chosen, so
+    # a stale duplicate doesn't silently win forever and the ambiguity is visible.
+    local combined=() k
+    for ((k = 0; k < ${#hits[@]}; k++)); do
+        combined+=("${ts[$k]}|${hits[$k]}|${disp[$k]}")
+    done
+    local sorted
+    sorted=$(printf '%s\n' "${combined[@]}" | sort -t'|' -k1,1nr)
+
+    local chosen_sha chosen_disp
+    chosen_sha=$(printf '%s\n' "$sorted" | head -n1 | cut -d'|' -f2)
+    chosen_disp=$(printf '%s\n' "$sorted" | head -n1 | cut -d'|' -f3)
+
+    echo "WARNING: $CONFIG: multiple commits found with message trailer 'Benchmark: $label'; using the most recent, $chosen_sha ($chosen_disp). Other commits with this trailer:" >&2
+    printf '%s\n' "$sorted" | tail -n +2 | while IFS='|' read -r t sha d; do
+        echo "  $sha ($d)" >&2
+    done
+
+    printf '%s\n' "$chosen_sha"
+}
+
 NOIR_FULL=(); NOIR_SHORT=()
 for ((i = 0; i < ${#NOIR_REFS[@]}; i++)); do
-    full=$(git -C "$REPO_ROOT" rev-parse "${NOIR_REFS[$i]}" 2>/dev/null) \
+    full=$(resolve_ref "${NOIR_REFS[$i]}" "${NOIR_LABELS[$i]}") \
         || { echo "ERROR: noir_commits ref '${NOIR_REFS[$i]}' does not resolve" >&2; exit 1; }
-    short=$(git -C "$REPO_ROOT" rev-parse --short "${NOIR_REFS[$i]}")
+    short=$(git -C "$REPO_ROOT" rev-parse --short "$full")
     NOIR_FULL+=("$full")
     NOIR_SHORT+=("$short")
     [ -n "${NOIR_LABELS[$i]}" ] || NOIR_LABELS[$i]="$short"
@@ -173,12 +243,22 @@ done
 
 SPARTAN_FULL=(); SPARTAN_SHORT=()
 for ((i = 0; i < ${#SPARTAN_REFS[@]}; i++)); do
-    full=$(git -C "$REPO_ROOT" rev-parse "${SPARTAN_REFS[$i]}" 2>/dev/null) \
+    full=$(resolve_ref "${SPARTAN_REFS[$i]}" "${SPARTAN_LABELS[$i]}") \
         || { echo "ERROR: spartan_commits ref '${SPARTAN_REFS[$i]}' does not resolve" >&2; exit 1; }
-    short=$(git -C "$REPO_ROOT" rev-parse --short "${SPARTAN_REFS[$i]}")
+    short=$(git -C "$REPO_ROOT" rev-parse --short "$full")
     SPARTAN_FULL+=("$full")
     SPARTAN_SHORT+=("$short")
     [ -n "${SPARTAN_LABELS[$i]}" ] || SPARTAN_LABELS[$i]="$short"
+done
+
+ONLINE_FULL=(); ONLINE_SHORT=()
+for ((i = 0; i < ${#ONLINE_REFS[@]}; i++)); do
+    full=$(resolve_ref "${ONLINE_REFS[$i]}" "${ONLINE_LABELS[$i]}") \
+        || { echo "ERROR: online_commits ref '${ONLINE_REFS[$i]}' does not resolve" >&2; exit 1; }
+    short=$(git -C "$REPO_ROOT" rev-parse --short "$full")
+    ONLINE_FULL+=("$full")
+    ONLINE_SHORT+=("$short")
+    [ -n "${ONLINE_LABELS[$i]}" ] || ONLINE_LABELS[$i]="$short"
 done
 
 ONLY_FULL=""
@@ -189,7 +269,7 @@ fi
 
 # --- §4 step 3: build the ordered union (oldest first, topological) -----------
 
-ALL_REFS=("${NOIR_FULL[@]}" "${SPARTAN_FULL[@]}")
+ALL_REFS=("${NOIR_FULL[@]}" "${SPARTAN_FULL[@]}" "${ONLINE_FULL[@]}")
 REQUESTED_FULL="$(printf '%s\n' "${ALL_REFS[@]}" | sort -u)"
 ORDERED=()
 while IFS= read -r sha; do
@@ -200,7 +280,7 @@ done < <(git -C "$REPO_ROOT" rev-list --topo-order --reverse "${ALL_REFS[@]}" \
 # --- §4 step 4: skip completed work / print the plan ---------------------------
 
 EXEC_SHA=(); EXEC_SHORT=(); EXEC_LEGS=(); EXEC_NOIR_LABEL=(); EXEC_SPARTAN_LABEL=()
-EXEC_NOIR_CIRCUIT=(); EXEC_SPARTAN_CIRCUIT=()
+EXEC_NOIR_CIRCUIT=(); EXEC_SPARTAN_CIRCUIT=(); EXEC_ONLINE_LABEL=(); EXEC_ONLINE_CIRCUIT=()
 COMMITS_TOTAL="${#ORDERED[@]}"
 LEGS_TOTAL=0
 LEGS_SKIPPED=0
@@ -227,6 +307,16 @@ for sha in "${ORDERED[@]}"; do
             is_spartan=1
             spartan_label="${SPARTAN_LABELS[$i]}"
             spartan_circuit="${SPARTAN_CIRCUITS[$i]}"
+            break
+        fi
+    done
+
+    is_online=0; online_label=""; online_circuit=""
+    for ((i = 0; i < ${#ONLINE_FULL[@]}; i++)); do
+        if [ "${ONLINE_FULL[$i]}" = "$sha" ]; then
+            is_online=1
+            online_label="${ONLINE_LABELS[$i]}"
+            online_circuit="${ONLINE_CIRCUITS[$i]}"
             break
         fi
     done
@@ -278,13 +368,26 @@ for sha in "${ORDERED[@]}"; do
         fi
     fi
 
+    if [ "$is_online" -eq 1 ]; then
+        [ -n "$legs_display" ] && legs_display="$legs_display, online" || legs_display="online"
+        LEGS_TOTAL=$(( LEGS_TOTAL + 1 ))
+        file="$RESULTS_DIR/online-$short.csv"
+        if [ "$in_scope" -eq 0 ]; then
+            [ -n "$skip_legs" ] && skip_legs="$skip_legs, online" || skip_legs="online"
+        elif [ -f "$file" ] && [ "$force_this" -eq 0 ]; then
+            LEGS_SKIPPED=$(( LEGS_SKIPPED + 1 ))
+            [ -n "$skip_legs" ] && skip_legs="$skip_legs, online" || skip_legs="online"
+        else
+            [ -n "$legs_needed" ] && legs_needed="$legs_needed,online" || legs_needed="online"
+            [ -n "$run_legs" ] && run_legs="$run_legs, online" || run_legs="online"
+        fi
+    fi
+
     if [ -z "$run_legs" ]; then
         if [ "$in_scope" -eq 0 ]; then
             status="skip: not selected (--only)"
         else
-            both="both"
-            [ "$is_noir" -eq 1 ] && [ "$is_spartan" -eq 1 ] || both="present"
-            status="skip: $([ "$both" = "both" ] && echo "both present" || echo "present")"
+            status="skip: $skip_legs present"
         fi
     elif [ -z "$skip_legs" ]; then
         status="run"
@@ -292,12 +395,15 @@ for sha in "${ORDERED[@]}"; do
         status="run $run_legs; $skip_legs present"
     fi
 
-    label="$noir_label"
-    if [ "$is_noir" -eq 1 ] && [ "$is_spartan" -eq 1 ] && [ "$noir_label" != "$spartan_label" ]; then
-        label="$noir_label / $spartan_label"
-    elif [ "$is_noir" -eq 0 ]; then
-        label="$spartan_label"
-    fi
+    # Distinct labels of the legs present on this commit, joined with " / ".
+    label=""
+    for l in "$noir_label" "$spartan_label" "$online_label"; do
+        [ -n "$l" ] || continue
+        case " / $label / " in
+            *" / $l / "*) ;;
+            *) [ -n "$label" ] && label="$label / $l" || label="$l" ;;
+        esac
+    done
 
     PLAN_LINES+=("$(printf '  %-10s %-14s legs: %-16s (%s)' "$short" "$label" "$legs_display" "$status")")
 
@@ -309,6 +415,8 @@ for sha in "${ORDERED[@]}"; do
         EXEC_SPARTAN_LABEL+=("$spartan_label")
         EXEC_NOIR_CIRCUIT+=("$noir_circuit")
         EXEC_SPARTAN_CIRCUIT+=("$spartan_circuit")
+        EXEC_ONLINE_LABEL+=("$online_label")
+        EXEC_ONLINE_CIRCUIT+=("$online_circuit")
     fi
 done
 
@@ -332,6 +440,8 @@ for ((idx = 0; idx < TOTAL_EXEC; idx++)); do
     spartan_label="${EXEC_SPARTAN_LABEL[$idx]}"
     noir_circuit="${EXEC_NOIR_CIRCUIT[$idx]}"
     spartan_circuit="${EXEC_SPARTAN_CIRCUIT[$idx]}"
+    online_label="${EXEC_ONLINE_LABEL[$idx]}"
+    online_circuit="${EXEC_ONLINE_CIRCUIT[$idx]}"
 
     echo
     echo "=== commit $(( idx + 1 )) / $TOTAL_EXEC: $short (legs: $legs_csv) ==="
@@ -353,10 +463,12 @@ for ((idx = 0; idx < TOTAL_EXEC; idx++)); do
                 --legs            "$legs_csv" \
                 --noir-circuit    "$noir_circuit" \
                 --spartan-circuit "$spartan_circuit" \
+                --online-circuit  "$online_circuit" \
                 --sha             "$short" \
                 --full-sha        "$sha" \
                 --noir-label      "$noir_label" \
                 --spartan-label   "$spartan_label" \
+                --online-label    "$online_label" \
                 --runs            "$RUNS" ); then
         echo "WARNING: commit $short failed, continuing" >&2
     fi

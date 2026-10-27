@@ -1,11 +1,29 @@
 //! Persist the offline ("prep") phase of a proof next to the circuit so that a
 //! later `--prove` run can skip `setup` + `prep_prove` entirely.
 //!
-//! The artifact is a single bincode file, `<circuit_dir>/target/precompute.bin`.
-//! It embeds a [`Fingerprint`] of what actually invalidates a prepared state:
-//! the ACIR bytecode and the online seed witnesses. Input *values* are excluded
-//! — changing them between proofs is the entire point of the online path. A
+//! The artifact is `<circuit_dir>/target/precompute.bin`. It embeds a
+//! [`Fingerprint`] of what actually invalidates a prepared state: the ACIR
+//! bytecode and the online seed witnesses. Input *values* are excluded —
+//! changing them between proofs is the entire point of the online path. A
 //! mismatch is a warning, not an error: we fall back to monolithic proving.
+//!
+//! The format is private to this module and the file is trusted, so it is
+//! laid out for load speed and size only:
+//!
+//! ```text
+//! version: u32 | fingerprint: u64 | pk_len: u64
+//! bincode(pk) | bincode(prep)
+//! ```
+//!
+//! - The verifier key is not stored: `--prove` never reads it.
+//! - There is no outer compression. vega's `raw_serde` already stores every
+//!   large vector — the R1CS matrices, the cached `Az`/`Bz`/`Cz` products, the
+//!   witness — as zstd-framed raw memory inside the bincode stream, and
+//!   decompresses it straight into its final allocation. What is left of the
+//!   stream is metadata and small vectors.
+//! - The prep scratch buffers are `#[serde(skip)]` in vega: `Snark::prove`
+//!   clears and refills them before every use.
+//! - The two blobs are decoded on two threads.
 //!
 //! `Snark::prove` returns a rerandomized prep which we deliberately do not write
 //! back: the file is read-only at prove time and every run reuses the same prep.
@@ -16,11 +34,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use serde::{Deserialize, Serialize};
-
 use crate::{
     noir::circuit::CircuitParameters,
-    online_prover::{OnlineProver, PrepSnark, ProverKey, VerifierKey},
+    online_prover::{OnlineProver, PrepSnark, ProverKey},
 };
 
 /// Name of the artifact written inside the circuit's `target/` directory.
@@ -28,31 +44,37 @@ pub const PRECOMPUTE_FILE: &str = "precompute.bin";
 
 /// Bumped whenever the on-disk layout changes, so older files are ignored
 /// instead of being mis-deserialized.
-const FORMAT_VERSION: u32 = 1;
+const FORMAT_VERSION: u32 = 3;
 
 /// Cheap staleness marker for a precomputed artifact. Not a security boundary.
 pub type Fingerprint = u64;
 
-/// The on-disk contents of `target/precompute.bin`.
-#[derive(Serialize, Deserialize)]
-pub struct PrecomputeFile {
-    pub version: u32,
-    pub fingerprint: Fingerprint,
-    pub pk: ProverKey,
-    pub vk: VerifierKey,
-    pub prep: PrepSnark,
-}
-
-/// Borrowed mirror of [`PrecomputeFile`] used for writing, so we never clone the
-/// (large) prover key and prepared state. bincode is positional, so the field
-/// order must stay identical.
-#[derive(Serialize)]
-struct PrecomputeFileRef<'a> {
+/// Fixed-size header in front of the two bincode blobs.
+struct Header {
     version: u32,
     fingerprint: Fingerprint,
-    pk: &'a ProverKey,
-    vk: &'a VerifierKey,
-    prep: &'a PrepSnark,
+    pk_len: u64,
+}
+
+impl Header {
+    const SIZE: usize = 4 + 2 * 8;
+
+    fn write(&self, out: &mut Vec<u8>) {
+        out.extend_from_slice(&self.version.to_le_bytes());
+        for v in [self.fingerprint, self.pk_len] {
+            out.extend_from_slice(&v.to_le_bytes());
+        }
+    }
+
+    fn read(bytes: &[u8]) -> Option<Self> {
+        let header = bytes.get(..Self::SIZE)?;
+        let u64_at = |i: usize| u64::from_le_bytes(header[4 + 8 * i..][..8].try_into().unwrap());
+        Some(Self {
+            version: u32::from_le_bytes(header[..4].try_into().unwrap()),
+            fingerprint: u64_at(0),
+            pk_len: u64_at(1),
+        })
+    }
 }
 
 /// Path of the precompute artifact for a circuit directory.
@@ -85,6 +107,76 @@ fn to_io_err<E: std::fmt::Display>(e: E) -> io::Error {
     io::Error::new(io::ErrorKind::Other, e.to_string())
 }
 
+/// Encodes the prover's reusable artifacts in the `precompute.bin` format.
+pub fn encode(fingerprint: Fingerprint, pk: &ProverKey, prep: &PrepSnark) -> io::Result<Vec<u8>> {
+    let (pk, prep) = std::thread::scope(|s| {
+        let pk = s.spawn(|| bincode::serialize(pk).map_err(to_io_err));
+        let prep = bincode::serialize(prep).map_err(to_io_err);
+        (pk.join().expect("pk encoder panicked"), prep)
+    });
+    let (pk, prep) = (pk?, prep?);
+
+    let mut out = Vec::with_capacity(Header::SIZE + pk.len() + prep.len());
+    Header {
+        version: FORMAT_VERSION,
+        fingerprint,
+        pk_len: pk.len() as u64,
+    }
+    .write(&mut out);
+    out.extend_from_slice(&pk);
+    out.extend_from_slice(&prep);
+    Ok(out)
+}
+
+/// Why [`decode`] rejected an artifact.
+#[derive(Debug)]
+pub enum DecodeError {
+    Version(u32),
+    Stale(Fingerprint),
+    Corrupt(String),
+}
+
+impl std::fmt::Display for DecodeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DecodeError::Version(v) => {
+                write!(
+                    f,
+                    "written by format version {v} (expected {FORMAT_VERSION})"
+                )
+            }
+            DecodeError::Stale(fp) => write!(f, "stale (fingerprint {fp:#x})"),
+            DecodeError::Corrupt(e) => write!(f, "corrupt: {e}"),
+        }
+    }
+}
+
+/// Decodes a `precompute.bin`, rejecting it before the expensive part when its
+/// version or fingerprint does not match.
+pub fn decode(bytes: &[u8], expected: Fingerprint) -> Result<(ProverKey, PrepSnark), DecodeError> {
+    let corrupt = |e: &dyn std::fmt::Display| DecodeError::Corrupt(e.to_string());
+    let header = Header::read(bytes).ok_or_else(|| corrupt(&"truncated header"))?;
+    if header.version != FORMAT_VERSION {
+        return Err(DecodeError::Version(header.version));
+    }
+    if header.fingerprint != expected {
+        return Err(DecodeError::Stale(header.fingerprint));
+    }
+    let frames = &bytes[Header::SIZE..];
+    if header.pk_len > frames.len() as u64 {
+        return Err(corrupt(&"truncated prover key"));
+    }
+    let (pk, prep) = frames.split_at(header.pk_len as usize);
+
+    std::thread::scope(|s| {
+        let pk = s.spawn(|| -> Result<ProverKey, DecodeError> {
+            bincode::deserialize(pk).map_err(|e| corrupt(&e))
+        });
+        let prep: PrepSnark = bincode::deserialize(prep).map_err(|e| corrupt(&e))?;
+        Ok((pk.join().expect("pk decoder panicked")?, prep))
+    })
+}
+
 /// Write the prover's reusable artifacts to `target/precompute.bin` inside the
 /// circuit directory. Returns the path written and its size in bytes.
 pub fn save(circuit: &CircuitParameters, prover: &OnlineProver) -> io::Result<(PathBuf, u64)> {
@@ -93,15 +185,7 @@ pub fn save(circuit: &CircuitParameters, prover: &OnlineProver) -> io::Result<(P
         std::fs::create_dir_all(parent)?;
     }
 
-    let file = PrecomputeFileRef {
-        version: FORMAT_VERSION,
-        fingerprint: fingerprint(circuit),
-        pk: prover.prover_key(),
-        vk: prover.verifier_key(),
-        prep: prover.prep(),
-    };
-
-    let bytes = bincode::serialize(&file).map_err(to_io_err)?;
+    let bytes = encode(fingerprint(circuit), prover.prover_key(), prover.prep())?;
     let len = bytes.len() as u64;
     std::fs::write(&path, bytes)?;
     Ok((path, len))
@@ -127,38 +211,26 @@ pub fn load(circuit: &CircuitParameters, path: PathBuf) -> Option<OnlineProver> 
     };
 
     let size_bytes = bytes.len() as u64;
-    let file: PrecomputeFile = match bincode::deserialize(&bytes) {
-        Ok(file) => file,
+    let (pk, prep) = match decode(&bytes, fingerprint(circuit)) {
+        Ok(parts) => parts,
+        Err(DecodeError::Stale(found)) => {
+            tracing::warn!(
+                "{} is stale (fingerprint {:#x}, circuit is {:#x}); re-run --precompute. \
+                 Falling back to regular proving.",
+                path.display(),
+                found,
+                fingerprint(circuit)
+            );
+            return None;
+        }
         Err(e) => {
             tracing::warn!(
-                "Failed to deserialize {}: {e}; ignoring the precomputed artifact",
+                "{} is {e}; ignoring the precomputed artifact",
                 path.display()
             );
             return None;
         }
     };
-
-    if file.version != FORMAT_VERSION {
-        tracing::warn!(
-            "{} was written by format version {} (expected {}); ignoring it",
-            path.display(),
-            file.version,
-            FORMAT_VERSION
-        );
-        return None;
-    }
-
-    let expected = fingerprint(circuit);
-    if file.fingerprint != expected {
-        tracing::warn!(
-            "{} is stale (fingerprint {:#x}, circuit is {:#x}); re-run --precompute. \
-             Falling back to regular proving.",
-            path.display(),
-            file.fingerprint,
-            expected
-        );
-        return None;
-    }
 
     tracing::info!("Loaded precomputed artifact from {}", path.display());
     // Machine-parsable counterpart, parsed by scripts/online_bench.sh.
@@ -167,5 +239,5 @@ pub fn load(circuit: &CircuitParameters, path: PathBuf) -> Option<OnlineProver> 
         size_bytes,
         "precompute_load"
     );
-    Some(OnlineProver::from_parts(file.pk, file.vk, file.prep))
+    Some(OnlineProver::from_parts(pk, prep))
 }

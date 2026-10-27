@@ -79,6 +79,18 @@ Keep circuit sources **ASCII-only** (comments included): the T-256 fork rejects
 non-ASCII characters with `Invalid comment character: only ASCII is currently
 supported`.
 
+### The vega-prover fork
+
+`spartan-backend`, `algebra-utils` and `c020x_verifier` depend on
+<https://github.com/eid-privacy/vega-prover> (branch `raw-serde`) rather than
+on the crates.io release, via a plain `git` dependency — no
+`[patch.crates-io]`. The fork stores the prover's large vectors as raw,
+zstd-framed memory so that `target/precompute.bin` loads in ~0.17 s instead of
+~0.89 s; see [`PRECOMPUTE_IO.md`](PRECOMPUTE_IO.md). The three crates must
+always reference the **same** revision, otherwise two incompatible copies of
+`vega-prover` end up in the dependency graph and the shared types stop
+matching.
+
 ### Preprocessing (ECDSA precompute)
 
 Some circuits need ECDSA-related witnesses that are computed off-circuit on the
@@ -125,22 +137,27 @@ invariant part of the witness) and an online phase (the actual proof). The
 offline phase can be run ahead of time and reused:
 
 ```sh
-# offline, once per circuit build
+# offline phase, persisted to disk, followed by one online proof from it
 cargo run --release -- ../circuits/c0200_swiyu_jwt --precompute
 
-# online, any number of times — picks the artifact up automatically
+# monolithic proving (setup + prep + prove); never reads the artifact
 cargo run --release -- ../circuits/c0200_swiyu_jwt --prove
 ```
 
 * `--precompute` writes a single git-ignored file,
   `<circuit_dir>/target/precompute.bin` (prover key, verifier key and prepared
-  state). It can exceed a gigabyte for the bigger circuits.
-* `--prove` loads that file when it exists, otherwise it falls back to the usual
-  monolithic proving. The base64 proof is the same either way.
+  state), then loads it back and prints a base64 proof on stdout, just like
+  `--prove`. The file can exceed a gigabyte for the bigger circuits.
+* `--prove` always proves monolithically and ignores `precompute.bin`, even
+  when it exists. The base64 proof format is the same either way.
+* Reusing the artifact across proofs is only available through the library:
+  `run_precompute(&circuit)` returns its path, and
+  `prove_with_precompute(&circuit, path)` runs only the online phase. There is
+  no silent fallback: if the file is missing or stale,
+  `prove_with_precompute` returns an error.
 * The file records a fingerprint of the circuit's ACIR bytecode and of the
   online partition declared in `online.json`. Rebuilding the circuit or editing
-  `online.json` makes it stale, so `--prove` warns and falls back to regular
-  proving; re-run `--precompute`. Changing the **values** of online inputs
+  `online.json` makes it stale; re-run `--precompute`. Changing the **values** of online inputs
   (challenge nonce, device signature, …) never invalidates the artifact — that
   is the whole point of the online path.
 * Circuits without an `online.json` still work; the precomputed state saves
@@ -171,6 +188,10 @@ Two scripts drive this from the repository root:
 
   The gap between the two speedups is the cost of re-reading the artifact in a
   fresh process; a long-lived prover process would pay it once.
+
+  **Note:** the output above predates `--prove` ignoring `precompute.bin`. With
+  the current CLI the `--prove` runs in this script are monolithic, so its
+  "online" numbers no longer measure the precomputed path.
 
 ## Benchmarks
 
@@ -225,7 +246,7 @@ toolchain:
 ./scripts/benchmark_commits.sh benchmarks/swiyu_jwt/config.yaml [options]
 
   --force            re-run every leg, ignoring stored results
-  --only <ref>       run only this commit (both of its legs), ignoring stored results
+  --only <ref>       run only this commit (all of its legs), ignoring stored results
   --runs <n>         override `runs:` from the config
   --dry-run          print the work plan and exit
 ```
@@ -236,8 +257,16 @@ toolchain:
   spartan-backend). Add entries over time; already-measured entries are never
   re-run, and removing an entry from the config only removes it from the plot — its
   result file on disk is kept.
+* An optional third set, `online:`, measures only the **second part** of a spartan
+  proof creation: `--precompute` once, then `--prove` `runs` times reusing
+  `target/precompute.bin`. It records `online_prove` (the online prover only),
+  `online_load` (reading precompute.bin), `online_wall` (the whole `--prove`
+  process), and the one-off `online_precompute` time and
+  `online_precompute_size`. The leg fails if `--prove` falls back to
+  monolithic proving or the online proof does not verify. Only commits with the
+  precompute CLI (409e264 and later) can go here.
 * Results are written to `<config_dir>/results/<leg>-<shortsha>.csv` (`leg` is
-  `noir` or `spartan`), one file per (leg, commit), written atomically so an
+  `noir`, `spartan` or `online`), one file per (leg, commit), written atomically so an
   interrupted run never leaves a half-written file behind. Each file has the schema
   `metric,min,max,mean,stddev,samples`, plus `#`-prefixed metadata lines recording
   the commit, run count, host, and the checked-out commit's flake pins.
@@ -259,6 +288,10 @@ gaps. The left y-axis is relative to the baseline — the **first** `noir_commit
 entry's `bb_write_vk` + `bb_prove` mean — with `bb_verify`/`spartan_verify` drawn as
 thin dashed lines. The right y-axis shows `bb_proof_size`/`spartan_proof_size` in
 bytes on a log scale, with spartan points annotated by `spartan_constraints`.
+With an `online:` section, a second figure, `benchmarks_online.png`, plots
+barretenberg's `bb_write_vk` + `bb_prove` against `online_wall`, `online_load`
+and `online_prove` in absolute seconds, over the `noir` and `online` commits only
+(no `spartan_proof` or constraint counts).
 
 ## Profiling
 
@@ -276,3 +309,18 @@ This records a profile and opens a flamegraph in the browser. See
 
 * On some Macs it might happen that the `nargo` binary gets killed instantly on invocation.
   It requires re-signing: `codesign --sign - --force --preserve-metadata=entitlements $(which nargo-t256)`
+
+## License
+
+Copyright (c) 2026 EPFL and SICPA SA.
+
+Licensed under either of
+
+* Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
+* MIT license ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
+
+at your option.
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in this work by you, as defined in the Apache-2.0 license, shall be
+dual licensed as above, without any additional terms or conditions.

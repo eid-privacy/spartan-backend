@@ -1,0 +1,8 @@
+# leg=spartan commit=71aead4 full=71aead493531684320153a7b679d39d00eca5c2b label=pre-review circuit=c0200_swiyu_jwt
+# runs=5 date=2026-09-23T14:45:30Z host=simulations os=Linux x86_64
+# pins=noir:v1_0_0-beta_26 bb:beta_26 t256:t256-v0_26-1
+metric,min,max,mean,stddev,samples
+spartan_proof,6.920,7.000,6.972,0.035,6.940;6.920;7.000;7.000;7.000
+spartan_verify,4.320,4.380,4.346,0.023,4.320;4.350;4.360;4.320;4.380
+spartan_constraints,1928985.000,1928985.000,1928985.000,0.000,1928985
+spartan_proof_size,150378.000,150378.000,150378.000,0.000,150378

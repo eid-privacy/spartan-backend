@@ -16,6 +16,12 @@
 # the x tick. Entries may be added over time; already-measured entries are not
 # re-run. Removing an entry only removes it from the plot — its result file
 # is kept.
+#
+# <git-ref> may instead be the literal "commit-msg", in which case the label
+# is used to find the commit by searching all refs for a commit message
+# containing the line "Benchmark: <label>" (e.g. "commit-msg optimisations"
+# looks for "Benchmark: optimisations"). Unlike a hash, that lookup survives
+# rebasing the branch being benchmarked.
 
 name: swiyu_jwt
 runs: 5
@@ -28,6 +34,7 @@ noir:
   - circuit: c9200_swiyu_jwt
     commits:
       - 1895902 beta26
+      - commit-msg fix:base64url
 
 spartan:
   - circuit: c0200_swiyu_jwt
@@ -36,3 +43,13 @@ spartan:
       - b45ef92 optimisations
       - 3965965 vega
       - 1895902 beta26
+      - 71aead4 pre-review
+      - commit-msg fix:unconstrained
+      - commit-msg fix:input_mis
+      - commit-msg fix:range
+      - commit-msg fix:offsets
+      - commit-msg fix:ECDSA
+      - commit-msg fix:infinity
+      - commit-msg fix:MSM
+      - commit-msg fix:digest
+      - commit-msg fix:base64url

@@ -6,3 +6,4 @@ circuits/c9000_benchmark/src/const.nr
 scripts/samply/
 /benchmarks/checkout/
 /benchmarks/*/benchmarks.png
+/benchmarks/*/benchmarks_online.png

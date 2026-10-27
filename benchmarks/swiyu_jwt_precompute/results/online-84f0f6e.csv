@@ -1,0 +1,9 @@
+# leg=online commit=84f0f6e full=84f0f6eb7cdf765752f9799e15434fcf61dd76e9 label=precompute-75x circuit=c0200_swiyu_jwt
+# runs=5 date=2026-10-04T18:04:14Z host=simulations os=Linux x86_64
+# pins=noir:v1_0_0-beta_26 bb:beta_26 t256:t256-v0_26-2
+metric,min,max,mean,stddev,samples
+online_load,1.508,1.531,1.519,0.008,1.525;1.531;1.508;1.516;1.515
+online_prove,2.150,2.200,2.178,0.020,2.200;2.200;2.160;2.150;2.180
+online_wall,4.074,4.150,4.108,0.030,4.135;4.150;4.074;4.077;4.106
+online_precompute,11.200,11.200,11.200,0.000,11.200
+online_precompute_size,29174558.000,29174558.000,29174558.000,0.000,29174558
