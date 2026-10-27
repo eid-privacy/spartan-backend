@@ -1,9 +1,30 @@
-# Progress tracker: Spartan backend for Noir
+# Spartan backend for Noir (Tom-256)
 
 ⚠️ **This is demo code, do not use for production or sensitive applications** ⚠️
 
-This repository contains a set of Noir circuits meant to be incrementally complicated.
-They track the evolution of our Spartan backend for Noir.
+This repository contains a Spartan prover backend for Noir, using the
+[vega-prover](https://github.com/eid-privacy/vega-prover) and the
+[Tom-256 fork of Noir](https://github.com/eid-privacy/noir/tree/tom-256) (`nargo-t256`).
+As the order of Tom-256 equals the base field of P-256, the circuits verify
+ECDSA-P256 signatures natively, without emulating non-native field arithmetic.
+
+The circuits in [circuits](circuits/) go from trivial (`c00xx`) via holder binding
+(`c01xx`) to the full e-ID proofs (`c02xx`): an age proof on an unmodified SWIYU SD-JWT
+including holder binding (`c0200_swiyu_jwt`), and the circuits used in SICPA's Digital
+Trust Platform (`c0201`..`c0203`).
+From the [final report](https://github.com/eid-privacy/zkp-reports/releases/download/latest/eid_privacy-101.292-IP-ICT-ms4-report.pdf):
+the SWIYU age proof takes 1.5s on a MacBook Pro M2 Max, and 4.5s on a 2023 mobile phone
+(Samsung Galaxy A54) with precomputation, 11.0s without. The largest proof
+(`c0202_sicpa_backend_constant`) is 202kB.
+The Android app running Noir with UltraHONK instead is in
+[zkp-android](https://github.com/eid-privacy/zkp-android).
+
+## Security review
+
+The circuits and the Spartan prover were reviewed by [zkSecurity](https://zksecurity.xyz/) in 2026-10, see
+[zkp-reports/security-review](https://github.com/eid-privacy/zkp-reports/tree/main/security-review).
+Findings #00, #03, #05, #06, #09 and #0e are fixed in this repository (PR #78),
+findings #07 and #11 in the [noir fork](https://github.com/eid-privacy/noir/tree/tom-256).
 
 **Note: the "target" directory are intentionally versioned since changes to `nargo` and the resulting changes to the
 bytecode are important to track.**
