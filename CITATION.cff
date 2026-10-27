@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it as below.
+type: software
+title: "Spartan backend for Noir (Tom-256)"
+authors:
+  - family-names: Gasser
+    given-names: Linus
+    affiliation: EPFL
+  - family-names: Humbert
+    given-names: Clément
+    affiliation: SICPA
+  - family-names: Kulic
+    given-names: Darko
+    affiliation: SICPA
+  - family-names: Dengler
+    given-names: Carine
+    affiliation: EPFL
+repository-code: https://github.com/eid-privacy/spartan-backend
+license:
+  - MIT
+  - Apache-2.0
+abstract: >-
+  Spartan prover backend for Noir over the Tom-256 curve, whose order equals the base
+  field of P-256, so circuits verify ECDSA-P256 signatures natively. Includes the e-ID
+  circuits (age proof on an unmodified SWIYU SD-JWT with ECDSA-P256 holder binding, SICPA
+  Digital Trust Platform circuits), precomputation of the prover state, and benchmarks.
+  Contains the fixes for the zkSecurity review.
+keywords:
+  - zero-knowledge proofs
+  - Spartan
+  - Noir
+  - Tom-256
+  - ECDSA
+  - P-256
+  - SD-JWT
+  - e-ID
+  - swiyu
+  - holder binding

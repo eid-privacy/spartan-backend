@@ -1,0 +1,60 @@
+{
+  "title": "Spartan backend for Noir (Tom-256)",
+  "upload_type": "software",
+  "description": "Spartan prover backend for Noir over the Tom-256 curve, whose order equals the base field of P-256, so circuits verify ECDSA-P256 signatures natively. Includes the e-ID circuits (age proof on an unmodified SWIYU SD-JWT with ECDSA-P256 holder binding, SICPA Digital Trust Platform circuits), precomputation of the prover state, and benchmarks. Contains the fixes for the zkSecurity review.",
+  "creators": [
+    {
+      "name": "Gasser, Linus",
+      "affiliation": "EPFL"
+    },
+    {
+      "name": "Humbert, Clément",
+      "affiliation": "SICPA"
+    },
+    {
+      "name": "Kulic, Darko",
+      "affiliation": "SICPA"
+    },
+    {
+      "name": "Dengler, Carine",
+      "affiliation": "EPFL"
+    }
+  ],
+  "license": "MIT",
+  "access_right": "open",
+  "keywords": [
+    "zero-knowledge proofs",
+    "Spartan",
+    "Noir",
+    "Tom-256",
+    "ECDSA",
+    "P-256",
+    "SD-JWT",
+    "e-ID",
+    "swiyu",
+    "holder binding"
+  ],
+  "notes": "Funded by Innosuisse, grant 101.292 IP-ICT \"Secure and Privacy-Preserving Credentials for E-ID\", a collaboration between EPFL / C4DT and SICPA SA. Research / demo code, not for production use.",
+  "communities": [
+    {
+      "identifier": "eid-privacy"
+    }
+  ],
+  "related_identifiers": [
+    {
+      "relation": "isSupplementTo",
+      "resource_type": "publication-report",
+      "identifier": "https://github.com/eid-privacy/zkp-reports"
+    },
+    {
+      "relation": "requires",
+      "resource_type": "software",
+      "identifier": "https://github.com/eid-privacy/noir"
+    },
+    {
+      "relation": "requires",
+      "resource_type": "software",
+      "identifier": "https://github.com/eid-privacy/vega-prover"
+    }
+  ]
+}
